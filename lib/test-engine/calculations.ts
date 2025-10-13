@@ -145,22 +145,30 @@ export function calculateSequenceTimings(
   sequenceLength: number,
   topN: number = 10
 ): SequenceTiming[] {
-  // Build the full text
-  const fullText = targetWords.join(' ');
+  // Filter out special keys (Backspace, Tab, etc.)
+  // Only keep actual typed characters
+  const typedKeystrokes = keystrokes.filter(
+    (k) => k.key.length === 1 // Only single characters (includes space)
+  );
+
+  if (typedKeystrokes.length < sequenceLength) {
+    return []; // Not enough keystrokes to analyze
+  }
 
   // Map to store sequence timings
   const sequenceMap = new Map<string, number[]>();
 
   // Process keystrokes to find sequences
-  for (let i = 0; i < keystrokes.length - sequenceLength + 1; i++) {
-    const sequence = keystrokes
+  for (let i = 0; i < typedKeystrokes.length - sequenceLength + 1; i++) {
+    const sequence = typedKeystrokes
       .slice(i, i + sequenceLength)
       .map((k) => k.key)
       .join('');
 
-    // Calculate time difference
+    // Calculate time difference between first and last keystroke in sequence
     const timeDiff =
-      keystrokes[i + sequenceLength - 1].timestamp - keystrokes[i].timestamp;
+      typedKeystrokes[i + sequenceLength - 1].timestamp -
+      typedKeystrokes[i].timestamp;
 
     // Store timing
     if (!sequenceMap.has(sequence)) {
@@ -177,7 +185,7 @@ export function calculateSequenceTimings(
       timings.reduce((sum, t) => sum + t, 0) / timings.length;
     results.push({
       sequence,
-      averageTime,
+      averageTime: Math.round(averageTime), // Round to nearest ms
       occurrences: timings.length,
     });
   });

@@ -1,11 +1,14 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TestResult } from '@/lib/types';
 import { StatsCard } from './StatsCard';
+import { SequenceAnalysis } from './SequenceAnalysis';
 import { Zap, Target, Check, X } from 'lucide-react';
 import { useTestStore } from '@/store/test-store';
 import { getRandomTest, textToWords } from '@/lib/test-content';
+import { calculateSequenceTimings } from '@/lib/test-engine/calculations';
 
 interface ResultsViewProps {
   result: TestResult;
@@ -14,6 +17,17 @@ interface ResultsViewProps {
 export function ResultsView({ result }: ResultsViewProps) {
   const router = useRouter();
   const { initializeTest, resetTest } = useTestStore();
+
+  // Calculate sequence timings
+  const twoCharSequences = useMemo(
+    () => calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 2, 10),
+    [result.keystrokeTimings, result.targetWords]
+  );
+
+  const threeCharSequences = useMemo(
+    () => calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 3, 10),
+    [result.keystrokeTimings, result.targetWords]
+  );
 
   const handleTryAgain = () => {
     // Reset the store and go back to home
@@ -88,6 +102,14 @@ export function ResultsView({ result }: ResultsViewProps) {
               <span className="font-mono font-bold">{result.duration}s</span>
             </div>
           </div>
+        </div>
+
+        {/* Sequence Analysis */}
+        <div className="mb-8">
+          <SequenceAnalysis
+            twoCharSequences={twoCharSequences}
+            threeCharSequences={threeCharSequences}
+          />
         </div>
 
         {/* Actions */}
