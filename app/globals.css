@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-editor-muted;
+  }
+
+  body {
+    @apply bg-editor-bg text-editor-fg font-sans;
+  }
+}
+
+@layer utilities {
+  .test-word-correct {
+    @apply text-editor-success opacity-80;
+  }
+
+  .test-word-incorrect {
+    @apply text-editor-error opacity-80;
+  }
+
+  .test-word-current {
+    @apply text-editor-fg;
+  }
+
+  .test-word-pending {
+    @apply text-editor-muted;
+  }
+
+  .test-char-correct {
+    @apply text-blue-400;
+  }
+
+  .test-char-incorrect {
+    @apply text-editor-error bg-editor-error/20 rounded-sm;
+  }
+
+  .test-char-pending {
+    @apply text-editor-fg;
+  }
+}
