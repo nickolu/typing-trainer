@@ -9,9 +9,17 @@ export function SequenceAnalysis({
   twoCharSequences,
   threeCharSequences,
 }: SequenceAnalysisProps) {
-  const formatSequence = (seq: string) => {
-    // Replace space with visible character
-    return seq.replace(/ /g, '␣');
+  const renderSequence = (seq: string) => {
+    return seq.split('').map((char, idx) => {
+      if (char === ' ') {
+        return (
+          <span key={idx} className="inline-block bg-editor-accent/20 border border-editor-accent/40 rounded px-1 mx-0.5">
+            ␣
+          </span>
+        );
+      }
+      return <span key={idx}>{char}</span>;
+    });
   };
 
   if (twoCharSequences.length === 0 && threeCharSequences.length === 0) {
@@ -50,7 +58,7 @@ export function SequenceAnalysis({
                       #{index + 1}
                     </span>
                     <span className="font-mono text-lg font-bold">
-                      &quot;{formatSequence(seq.sequence)}&quot;
+                      &quot;{renderSequence(seq.sequence)}&quot;
                     </span>
                     <span className="text-editor-muted text-sm">
                       ({seq.occurrences}x)
@@ -82,7 +90,7 @@ export function SequenceAnalysis({
                       #{index + 1}
                     </span>
                     <span className="font-mono text-lg font-bold">
-                      &quot;{formatSequence(seq.sequence)}&quot;
+                      &quot;{renderSequence(seq.sequence)}&quot;
                     </span>
                     <span className="text-editor-muted text-sm">
                       ({seq.occurrences}x)

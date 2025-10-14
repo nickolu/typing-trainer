@@ -311,7 +311,13 @@ export function TypingTest() {
                           key={i}
                           className="px-3 py-1 bg-purple-600/20 border border-purple-600/40 rounded-full text-sm font-mono font-bold text-purple-300"
                         >
-                          {seq}
+                          {seq.split('').map((char, idx) => (
+                            char === ' ' ? (
+                              <span key={idx} className="inline-block bg-purple-400/30 border border-purple-400/50 rounded px-0.5 mx-0.5">␣</span>
+                            ) : (
+                              <span key={idx}>{char}</span>
+                            )
+                          ))}
                         </span>
                       ))}
                     </div>

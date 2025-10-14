@@ -47,10 +47,10 @@ export function SettingsToolbar({ disabled = false, onContentChange }: SettingsT
       'ai-quote': 'AI Quotes',
       'ai-technical': 'AI Technical',
       'ai-common': 'AI Common',
-      'ai-sequences': 'AI Weaknesses',
+      'ai-sequences': 'AI Character Sequences',
       'ai-custom': 'AI Custom',
     };
-    return styleMap[defaultContentStyle] || 'Content';
+    return styleMap[defaultContentStyle] || '';
   };
 
   return (

@@ -43,6 +43,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
 
   const [sequenceInput, setSequenceInput] = useState('');
   const [isLoadingSequences, setIsLoadingSequences] = useState(false);
+  const [sequenceError, setSequenceError] = useState<string | null>(null);
 
   const modelOptions = [
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cheap)' },
@@ -51,9 +52,11 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
   ];
 
   const handleAddSequence = () => {
-    const trimmed = sequenceInput.trim();
-    if (trimmed && !customSequences.includes(trimmed)) {
-      setCustomSequences([...customSequences, trimmed]);
+    // Don't trim - preserve all spaces including leading/trailing
+    const sequence = sequenceInput;
+    // Only check that it's not empty (all spaces would be valid)
+    if (sequence.length > 0 && !customSequences.includes(sequence)) {
+      setCustomSequences([...customSequences, sequence]);
       setSequenceInput('');
     }
   };
@@ -64,14 +67,18 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
 
   const handleUseSlowestSequences = async () => {
     setIsLoadingSequences(true);
+    setSequenceError(null);
     try {
       const { getAggregateSlowSequences } = await import('@/lib/db');
       const slowSequences = await getAggregateSlowSequences(5);
       if (slowSequences.length > 0) {
         setCustomSequences(slowSequences);
+      } else {
+        setSequenceError('No historical data available. Complete some tests first to identify your slowest sequences.');
       }
     } catch (error) {
       console.error('Failed to load slow sequences:', error);
+      setSequenceError(error instanceof Error ? error.message : 'Failed to load sequences from history');
     } finally {
       setIsLoadingSequences(false);
     }
@@ -241,6 +248,13 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                     </button>
                   </div>
 
+                  {/* Error message */}
+                  {sequenceError && (
+                    <div className="mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+                      {sequenceError}
+                    </div>
+                  )}
+
                   {/* Input for adding sequences */}
                   <div className="flex gap-2 mb-3">
                     <input
@@ -253,12 +267,12 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                           handleAddSequence();
                         }
                       }}
-                      placeholder="Enter sequence (e.g., 'th', 'ing', 'qu')"
+                      placeholder="Enter sequence (e.g., 'th', ' e ', 'qu')"
                       className="flex-1 px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
                     />
                     <button
                       onClick={handleAddSequence}
-                      disabled={!sequenceInput.trim()}
+                      disabled={sequenceInput.length === 0}
                       className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
                     >
                       Add
@@ -273,7 +287,15 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                           key={i}
                           className="flex items-center gap-2 px-3 py-1 bg-purple-600/20 border border-purple-600/40 rounded-full"
                         >
-                          <span className="text-sm font-mono font-bold text-purple-300">{seq}</span>
+                          <span className="text-sm font-mono font-bold text-purple-300">
+                            {seq.split('').map((char, idx) => (
+                              char === ' ' ? (
+                                <span key={idx} className="inline-block bg-purple-400/30 border border-purple-400/50 rounded px-0.5 mx-0.5">␣</span>
+                              ) : (
+                                <span key={idx}>{char}</span>
+                              )
+                            ))}
+                          </span>
                           <button
                             onClick={() => handleRemoveSequence(i)}
                             className="hover:bg-purple-600/30 rounded-full p-0.5 transition-colors"
