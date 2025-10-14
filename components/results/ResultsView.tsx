@@ -127,13 +127,16 @@ export function ResultsView({ result }: ResultsViewProps) {
       const words = textToWords(practiceResult.text, requiredWords);
 
       // Initialize test with practice metadata
+      // Combine sequences and words - treat them all as practice targets
+      const allPracticeTargets = [...selectedSequences, ...selectedWords];
+
       resetTest();
       initializeTest(
         {
           duration: defaultDuration,
           testContentId: 'ai-targeted-practice',
           isPractice: true,
-          practiceSequences: selectedSequences,
+          practiceSequences: allPracticeTargets,
         },
         words
       );

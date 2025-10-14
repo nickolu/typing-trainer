@@ -36,7 +36,7 @@ export interface TestResult {
 
   // Practice metadata
   isPractice?: boolean; // Is this a targeted practice session
-  practiceSequences?: string[]; // Sequences being practiced
+  practiceSequences?: string[]; // Character sequences and/or full words being practiced
 
   // Mistake data
   mistakeCount?: number; // Total incorrect keystrokes
@@ -74,7 +74,7 @@ export interface TestConfig {
   duration: number; // seconds
   testContentId: string;
   isPractice?: boolean; // Is this a targeted practice session
-  practiceSequences?: string[]; // Sequences being practiced
+  practiceSequences?: string[]; // Character sequences and/or full words being practiced
 }
 
 // In-memory test state (used by Zustand)
@@ -85,7 +85,7 @@ export interface TestState {
   targetWords: string[];
   testContentId: string | null;
   isPractice: boolean; // Is this a targeted practice session
-  practiceSequences: string[]; // Sequences being practiced
+  practiceSequences: string[]; // Character sequences and/or full words being practiced
 
   // Runtime state
   status: TestStatus;

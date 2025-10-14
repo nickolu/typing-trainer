@@ -22,7 +22,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   targetWords: [],
   testContentId: null,
   isPractice: false,
-  practiceSequences: [],
+  practiceSequences: [], // Can include both character sequences and full words
   status: 'idle',
   startTime: null,
   endTime: null,

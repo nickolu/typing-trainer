@@ -276,8 +276,13 @@ export async function generateMistakePractice(
   },
   options: Omit<GenerateContentOptions, 'focusSequences'> = {}
 ): Promise<GenerateContentResult> {
-  if (sequences.length === 0) {
-    throw new Error('At least one sequence is required for mistake practice');
+  // Check if we have anything to practice
+  const hasSequences = sequences.length > 0;
+  const hasWords = mistakeData.commonWords && mistakeData.commonWords.length > 0;
+  const hasSubstitutions = mistakeData.characterSubstitutions && mistakeData.characterSubstitutions.length > 0;
+
+  if (!hasSequences && !hasWords && !hasSubstitutions) {
+    throw new Error('At least one sequence, word, or character substitution is required for mistake practice');
   }
 
   if (sequences.length > 20) {
@@ -304,9 +309,11 @@ export async function generateMistakePractice(
   // Build a detailed prompt for mistake-focused practice
   let prompt = `Generate a typing test passage with at least ${minWords} words that will help the user practice correcting their typing mistakes. `;
 
-  // Add information about mistake sequences
-  prompt += `The user frequently makes mistakes with these character sequences: ${sequences.join(', ')}. `;
-  prompt += `Include these sequences frequently throughout the text in a natural way. `;
+  // Add information about mistake sequences (if any)
+  if (hasSequences) {
+    prompt += `The user frequently makes mistakes with these character sequences: ${sequences.join(', ')}. `;
+    prompt += `Include these sequences frequently throughout the text in a natural way. `;
+  }
 
   // Add character substitution info if available
   if (mistakeData.characterSubstitutions && mistakeData.characterSubstitutions.length > 0) {
