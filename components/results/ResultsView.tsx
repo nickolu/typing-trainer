@@ -2,12 +2,14 @@
 
 import { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TestResult } from '@/lib/types';
 import { StatsCard } from './StatsCard';
 import { SequenceAnalysis } from './SequenceAnalysis';
 import { Zap, Target, Check, X } from 'lucide-react';
 import { useTestStore } from '@/store/test-store';
-import { getRandomTest, textToWords } from '@/lib/test-content';
+import { useSettingsStore } from '@/store/settings-store';
+import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
 import { calculateSequenceTimings } from '@/lib/test-engine/calculations';
 
 interface ResultsViewProps {
@@ -16,6 +18,7 @@ interface ResultsViewProps {
 
 export function ResultsView({ result }: ResultsViewProps) {
   const router = useRouter();
+  const { defaultDuration } = useSettingsStore();
   const { initializeTest, resetTest } = useTestStore();
 
   // Calculate sequence timings
@@ -38,11 +41,12 @@ export function ResultsView({ result }: ResultsViewProps) {
   const handleNewTest = () => {
     // Initialize a new test and go to home
     const testContent = getRandomTest();
-    const words = textToWords(testContent.text);
+    const requiredWords = calculateRequiredWords(defaultDuration);
+    const words = textToWords(testContent.text, requiredWords);
 
     initializeTest(
       {
-        duration: 30,
+        duration: defaultDuration,
         testContentId: testContent.id,
       },
       words
@@ -114,11 +118,17 @@ export function ResultsView({ result }: ResultsViewProps) {
 
         {/* Actions */}
         <div className="flex gap-4 justify-center">
+          <Link
+            href="/stats"
+            className="px-6 py-3 bg-editor-muted/50 hover:bg-editor-muted/70 text-editor-fg rounded-lg font-medium transition-colors"
+          >
+            View Stats
+          </Link>
           <button
             onClick={handleTryAgain}
             className="px-6 py-3 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
           >
-            Try Same Test Again
+            Try Again
           </button>
           <button
             onClick={handleNewTest}

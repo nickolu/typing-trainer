@@ -308,6 +308,17 @@ export function getTestsByCategory(
   return staticTests.filter((test) => test.category === category);
 }
 
+// Helper function to calculate required words for a given duration
+// Assumes average typing speed of 50 WPM
+export function calculateRequiredWords(durationSeconds: number): number {
+  const ASSUMED_WPM = 50;
+  const durationMinutes = durationSeconds / 60;
+  const requiredWords = Math.ceil(ASSUMED_WPM * durationMinutes);
+
+  // Ensure at least 50 words for very short tests
+  return Math.max(50, requiredWords);
+}
+
 // Helper function to convert test text to words array
 // For 30-second tests, we need ~150 words (assumes 40-60 WPM typing speed)
 export function textToWords(text: string, minWords: number = 150): string[] {

@@ -2,13 +2,17 @@
 
 import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useTestStore } from '@/store/test-store';
+import { useSettingsStore } from '@/store/settings-store';
 import { TestDisplay } from './TestDisplay';
 import { TestTimer } from './TestTimer';
-import { getRandomTest, textToWords } from '@/lib/test-content';
+import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
+import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
 
 export function TypingTest() {
   const router = useRouter();
+  const { defaultDuration } = useSettingsStore();
   const {
     status,
     duration,
@@ -30,17 +34,18 @@ export function TypingTest() {
   useEffect(() => {
     if (status === 'idle' && targetWords.length === 0) {
       const testContent = getRandomTest();
-      const words = textToWords(testContent.text);
+      const requiredWords = calculateRequiredWords(defaultDuration);
+      const words = textToWords(testContent.text, requiredWords);
 
       initializeTest(
         {
-          duration: 30,
+          duration: defaultDuration,
           testContentId: testContent.id,
         },
         words
       );
     }
-  }, [status, targetWords, initializeTest]);
+  }, [status, targetWords, initializeTest, defaultDuration]);
 
   // Handle test completion
   const handleComplete = useCallback(async () => {
@@ -56,8 +61,21 @@ export function TypingTest() {
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Only process if test is active
-      if (status !== 'active') {
+      // If test is idle, start it on first character input
+      if (status === 'idle') {
+        // Only start on actual characters (not Shift, Ctrl, etc.)
+        if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          startTest();
+          // Let the key press be handled by the active state logic below
+          // by not returning here
+        } else {
+          // Don't start on modifier keys
+          return;
+        }
+      }
+
+      // Only process if test is active (or just became active)
+      if (status !== 'active' && status !== 'idle') {
         return;
       }
 
@@ -86,7 +104,7 @@ export function TypingTest() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [status, handleKeyPress, handleBackspace, handleTab]);
+  }, [status, handleKeyPress, handleBackspace, handleTab, startTest]);
 
   // Show loading state
   if (targetWords.length === 0) {
@@ -101,35 +119,32 @@ export function TypingTest() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8">
       {/* Header with timer */}
-      <div className="w-full max-w-4xl mb-8">
+      <div className="w-full max-w-4xl mb-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold">Typing Test</h1>
-          <TestTimer
-            duration={duration}
-            startTime={startTime}
-            onComplete={handleComplete}
-          />
+          <div className="flex items-center gap-4">
+            <Link
+              href="/stats"
+              className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
+            >
+              View Stats
+            </Link>
+            <TestTimer
+              duration={duration}
+              startTime={startTime}
+              onComplete={handleComplete}
+            />
+          </div>
         </div>
+      </div>
+
+      {/* Settings Toolbar */}
+      <div className="w-full max-w-4xl">
+        <SettingsToolbar />
       </div>
 
       {/* Test display */}
       <div className="w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden">
-        {/* Start overlay */}
-        {status === 'idle' && (
-          <div className="absolute inset-0 bg-editor-bg/95 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg">
-            <h2 className="text-2xl font-bold mb-4">Ready to Start?</h2>
-            <p className="text-editor-muted mb-6 text-center max-w-md">
-              Click the button below to begin your 30-second typing test. Focus on accuracy and speed!
-            </p>
-            <button
-              onClick={startTest}
-              className="px-8 py-4 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium text-lg transition-colors"
-            >
-              Start Test
-            </button>
-          </div>
-        )}
-
         <div className="h-48 overflow-y-auto p-8 scroll-smooth">
           <TestDisplay
             targetWords={targetWords}
@@ -141,11 +156,14 @@ export function TypingTest() {
       </div>
 
       {/* Footer hints */}
-      {status === 'active' && (
-        <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
+      <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
+        {status === 'idle' && (
+          <p>Start typing to begin the test...</p>
+        )}
+        {status === 'active' && (
           <p>Press Tab to skip to the next word</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
