@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTestStore } from '@/store/test-store';
-import { useSettingsStore } from '@/store/settings-store';
+import { useSettingsStore, isAIContentStyle } from '@/store/settings-store';
 import { TestDisplay } from './TestDisplay';
 import { TestTimer } from './TestTimer';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
@@ -12,7 +12,7 @@ import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-c
 
 export function TypingTest() {
   const router = useRouter();
-  const { defaultDuration } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, autoSave } = useSettingsStore();
   const {
     status,
     duration,
@@ -22,13 +22,18 @@ export function TypingTest() {
     currentWordIndex,
     startTime,
     result,
+    isPractice,
+    practiceSequences,
     initializeTest,
     startTest,
     handleKeyPress,
     handleBackspace,
     handleTab,
     completeTest,
+    resetTest,
   } = useTestStore();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Initialize test on mount
   useEffect(() => {
@@ -47,16 +52,154 @@ export function TypingTest() {
     }
   }, [status, targetWords, initializeTest, defaultDuration]);
 
+  // Cleanup: Reset test when component unmounts (e.g., navigating away)
+  useEffect(() => {
+    return () => {
+      // Get the latest state when unmounting
+      const currentStatus = useTestStore.getState().status;
+      if (currentStatus === 'active') {
+        resetTest();
+      }
+    };
+  }, [resetTest]);
+
+  // Handle content generation/loading
+  const handleContentLoad = useCallback(async () => {
+    setGenerationError(null);
+    const isAI = isAIContentStyle(defaultContentStyle);
+
+    if (isAI) {
+      // Generate AI content
+      setIsGenerating(true);
+
+      try {
+        const requiredWords = calculateRequiredWords(defaultDuration);
+
+        // Check if the style is "ai-sequences" - use targeted practice mode
+        if (defaultContentStyle === 'ai-sequences') {
+          // Import the function dynamically to avoid dependency issues
+          const { getAggregateSlowSequences } = await import('@/lib/db');
+          const slowSequences = await getAggregateSlowSequences(5);
+
+          if (slowSequences.length === 0) {
+            setGenerationError('No historical data available. Complete some tests first to identify your weaknesses.');
+            setIsGenerating(false);
+            return;
+          }
+
+          // Use the practice API endpoint
+          const response = await fetch('/api/generate-practice', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              sequences: slowSequences,
+              options: {
+                model: llmModel,
+                temperature: llmTemperature,
+                minWords: requiredWords,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate practice content');
+          }
+
+          const result = await response.json();
+          const words = textToWords(result.text, requiredWords);
+
+          // Initialize test with practice metadata
+          resetTest();
+          initializeTest(
+            {
+              duration: defaultDuration,
+              testContentId: 'ai-sequences',
+              isPractice: true,
+              practiceSequences: slowSequences,
+            },
+            words
+          );
+        } else {
+          // Regular AI content generation
+          // Map AI style to API style
+          const apiStyle = defaultContentStyle.replace('ai-', '') as 'prose' | 'quote' | 'technical' | 'common' | 'custom';
+
+          const response = await fetch('/api/generate-content', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              options: {
+                model: llmModel,
+                temperature: llmTemperature,
+                style: apiStyle,
+                customPrompt: customPrompt || undefined,
+                minWords: requiredWords,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate content');
+          }
+
+          const result = await response.json();
+          const words = textToWords(result.text, requiredWords);
+
+          // Initialize test with generated content
+          resetTest();
+          initializeTest(
+            {
+              duration: defaultDuration,
+              testContentId: `ai-${apiStyle}`,
+            },
+            words
+          );
+        }
+      } catch (error) {
+        console.error('AI generation error:', error);
+        setGenerationError(
+          error instanceof Error ? error.message : 'Failed to generate content'
+        );
+      } finally {
+        setIsGenerating(false);
+      }
+    } else {
+      // Load static content
+      const testContent = getRandomTest(defaultContentStyle === 'random' ? undefined : defaultContentStyle);
+      const requiredWords = calculateRequiredWords(defaultDuration);
+      const words = textToWords(testContent.text, requiredWords);
+
+      resetTest();
+      initializeTest(
+        {
+          duration: defaultDuration,
+          testContentId: testContent.id,
+        },
+        words
+      );
+    }
+  }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, defaultDuration, resetTest, initializeTest]);
+
   // Handle test completion
   const handleComplete = useCallback(async () => {
     try {
-      const result = await completeTest();
-      // Navigate to results page
-      router.push(`/results/${result.id}`);
+      const result = await completeTest(autoSave);
+      // Navigate to results page only if we got a valid result
+      if (result) {
+        router.push(`/results/${result.id}`);
+      }
+      // If result is null, the test state was invalid and has been reset
+      // User will see a fresh test ready to start
     } catch (error) {
       console.error('Failed to complete test:', error);
     }
-  }, [completeTest, router]);
+  }, [completeTest, router, autoSave]);
 
   // Handle keyboard events
   useEffect(() => {
@@ -106,8 +249,8 @@ export function TypingTest() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [status, handleKeyPress, handleBackspace, handleTab, startTest]);
 
-  // Show loading state
-  if (targetWords.length === 0) {
+  // Show initial loading state (only when no content at all)
+  if (targetWords.length === 0 && !isGenerating) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-editor-muted">Loading test...</p>
@@ -115,7 +258,7 @@ export function TypingTest() {
     );
   }
 
-  // Show test UI
+  // Show test UI with contextual loading
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8">
       {/* Header with timer */}
@@ -138,13 +281,67 @@ export function TypingTest() {
         </div>
       </div>
 
+      {/* Practice Mode Banner */}
+      {(!autoSave || (isPractice && practiceSequences.length > 0)) && (
+        <div className="w-full max-w-4xl mb-4">
+          <div className="bg-purple-600/10 border border-purple-600/30 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <div className="w-8 h-8 bg-purple-600/20 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">🎯</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-purple-400 mb-1">Practice Mode</h3>
+                {practiceSequences.length > 0 ? (
+                  <>
+                    <p className="text-sm text-editor-muted mb-2">
+                      This test focuses on improving your speed with these sequences:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {practiceSequences.map((seq, i) => (
+                        <span
+                          key={i}
+                          className="px-3 py-1 bg-purple-600/20 border border-purple-600/40 rounded-full text-sm font-mono font-bold text-purple-300"
+                        >
+                          {seq}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-editor-muted">
+                    Results will not be saved to your history. Toggle "Save Results" to save this test.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Settings Toolbar */}
       <div className="w-full max-w-4xl">
-        <SettingsToolbar />
+        <SettingsToolbar
+          disabled={status === 'active'}
+          onContentChange={handleContentLoad}
+        />
+        {generationError && (
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+            <p className="text-sm text-red-400">{generationError}</p>
+          </div>
+        )}
       </div>
 
       {/* Test display */}
-      <div className="w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden">
+      <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${
+        isGenerating ? 'opacity-50' : 'opacity-100'
+      } transition-opacity`}>
+        {isGenerating && (
+          <div className="absolute inset-0 flex items-center justify-center bg-editor-bg/80 backdrop-blur-sm z-10">
+            <p className="text-editor-muted">Generating new content...</p>
+          </div>
+        )}
         <div className="h-48 overflow-y-auto p-8 scroll-smooth">
           <TestDisplay
             targetWords={targetWords}
@@ -157,7 +354,7 @@ export function TypingTest() {
 
       {/* Footer hints */}
       <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
-        {status === 'idle' && (
+        {status === 'idle' && !isGenerating && (
           <p>Start typing to begin the test...</p>
         )}
         {status === 'active' && (

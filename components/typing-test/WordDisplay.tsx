@@ -55,7 +55,7 @@ export function WordDisplay({ word, typed, state }: WordDisplayProps) {
           return (
             <span key={index} className={className}>
               {showCursorBefore && (
-                <span className="absolute -left-0.5 top-0 bottom-0 w-0.5 bg-editor-accent animate-pulse" />
+                <span className="absolute -left-0.5 top-0 bottom-0 w-0.5 bg-editor-accent animate-pulse cursor-slide" />
               )}
               {charComp.char}
             </span>

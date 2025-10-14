@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { TestResult } from '@/lib/types';
 import { getAllTestResults } from '@/lib/db';
 import { StatsTable } from '@/components/stats/StatsTable';
+import { WPMChart } from '@/components/charts/WPMChart';
+import { AccuracyChart } from '@/components/charts/AccuracyChart';
 
 export default function StatsPage() {
   const [results, setResults] = useState<TestResult[]>([]);
@@ -55,7 +57,7 @@ export default function StatsPage() {
           </p>
         </div>
 
-        {/* Results Table */}
+        {/* Content */}
         {results.length === 0 ? (
           <div className="bg-editor-bg border border-editor-muted rounded-lg p-12 text-center">
             <p className="text-xl text-editor-muted mb-4">
@@ -72,7 +74,16 @@ export default function StatsPage() {
             </Link>
           </div>
         ) : (
-          <StatsTable results={results} />
+          <div className="space-y-8">
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <WPMChart results={results} />
+              <AccuracyChart results={results} />
+            </div>
+
+            {/* Results Table */}
+            <StatsTable results={results} />
+          </div>
         )}
       </div>
     </div>

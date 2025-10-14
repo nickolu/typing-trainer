@@ -19,6 +19,8 @@ export const useTestStore = create<TestState>((set, get) => ({
   duration: 30,
   targetWords: [],
   testContentId: null,
+  isPractice: false,
+  practiceSequences: [],
   status: 'idle',
   startTime: null,
   endTime: null,
@@ -35,6 +37,8 @@ export const useTestStore = create<TestState>((set, get) => ({
       duration: config.duration,
       targetWords: words,
       testContentId: config.testContentId,
+      isPractice: config.isPractice || false,
+      practiceSequences: config.practiceSequences || [],
       status: 'idle',
       startTime: null,
       endTime: null,
@@ -161,11 +165,29 @@ export const useTestStore = create<TestState>((set, get) => ({
   },
 
   // Complete the test
-  completeTest: async () => {
+  completeTest: async (shouldSave: boolean = true) => {
     const state = get();
 
+    // Guard against invalid state - if test isn't active, reset and return
     if (state.status !== 'active' || !state.startTime || !state.testId) {
-      throw new Error('Cannot complete test: test not active');
+      console.warn('Cannot complete test: test not active. Resetting state.');
+      set({
+        testId: null,
+        duration: 30,
+        targetWords: [],
+        testContentId: null,
+        isPractice: false,
+        practiceSequences: [],
+        status: 'idle',
+        startTime: null,
+        endTime: null,
+        currentWordIndex: 0,
+        currentInput: '',
+        completedWords: [],
+        keystrokes: [],
+        result: null,
+      });
+      return null;
     }
 
     const endTime = performance.now();
@@ -209,10 +231,14 @@ export const useTestStore = create<TestState>((set, get) => ({
       totalWords: state.targetWords.length,
       totalTypedWords: totalTyped,
       keystrokeTimings: state.keystrokes,
+      isPractice: state.isPractice || !shouldSave, // Mark as practice if not saving
+      practiceSequences: state.practiceSequences.length > 0 ? state.practiceSequences : undefined,
     };
 
-    // Save to IndexedDB
-    await saveTestResult(result);
+    // Save to IndexedDB only if shouldSave is true
+    if (shouldSave) {
+      await saveTestResult(result);
+    }
 
     // Update state
     set({
@@ -231,6 +257,8 @@ export const useTestStore = create<TestState>((set, get) => ({
       duration: 30,
       targetWords: [],
       testContentId: null,
+      isPractice: false,
+      practiceSequences: [],
       status: 'idle',
       startTime: null,
       endTime: null,

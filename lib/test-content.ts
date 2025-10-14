@@ -290,10 +290,11 @@ export const staticTests: TestContent[] = [
   },
 ];
 
-// Helper function to get a random test
-export function getRandomTest(): TestContent {
-  const randomIndex = Math.floor(Math.random() * staticTests.length);
-  return staticTests[randomIndex];
+// Helper function to get a random test (optionally filtered by category)
+export function getRandomTest(category?: TestContent['category']): TestContent {
+  const tests = category ? getTestsByCategory(category) : staticTests;
+  const randomIndex = Math.floor(Math.random() * tests.length);
+  return tests[randomIndex];
 }
 
 // Helper function to get a test by ID

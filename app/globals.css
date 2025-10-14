@@ -40,4 +40,20 @@
   .test-char-pending {
     @apply text-editor-fg;
   }
+
+  /* Smooth cursor animation */
+  @keyframes cursor-slide {
+    0% {
+      opacity: 0;
+      transform: translateX(-4px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .cursor-slide {
+    animation: cursor-slide 0.1s ease-out;
+  }
 }

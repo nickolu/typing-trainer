@@ -30,6 +30,10 @@ export interface TestResult {
 
   // Keystroke timing (for future features)
   keystrokeTimings: KeystrokeEvent[]; // Raw data for analysis
+
+  // Practice metadata
+  isPractice?: boolean; // Is this a targeted practice session
+  practiceSequences?: string[]; // Sequences being practiced
 }
 
 // Static test content
@@ -61,6 +65,8 @@ export interface CharacterMatch {
 export interface TestConfig {
   duration: number; // seconds
   testContentId: string;
+  isPractice?: boolean; // Is this a targeted practice session
+  practiceSequences?: string[]; // Sequences being practiced
 }
 
 // In-memory test state (used by Zustand)
@@ -70,6 +76,8 @@ export interface TestState {
   duration: number;
   targetWords: string[];
   testContentId: string | null;
+  isPractice: boolean; // Is this a targeted practice session
+  practiceSequences: string[]; // Sequences being practiced
 
   // Runtime state
   status: TestStatus;
@@ -93,6 +101,6 @@ export interface TestState {
   handleKeyPress: (key: string) => void;
   handleBackspace: () => void;
   handleTab: () => void;
-  completeTest: () => Promise<TestResult>;
+  completeTest: (shouldSave?: boolean) => Promise<TestResult | null>;
   resetTest: () => void;
 }
