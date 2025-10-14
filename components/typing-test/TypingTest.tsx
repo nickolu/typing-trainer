@@ -197,12 +197,12 @@ export function TypingTest() {
   const handleComplete = useCallback(async () => {
     try {
       const result = await completeTest(autoSave);
-      // Navigate to results page only if we got a valid result
-      if (result) {
+      // Navigate to results page only if we got a valid result AND it was saved
+      if (result && autoSave) {
         router.push(`/results/${result.id}`);
       }
-      // If result is null, the test state was invalid and has been reset
-      // User will see a fresh test ready to start
+      // If practice mode (autoSave is false), result is stored in test store
+      // and will be displayed inline - no navigation needed
     } catch (error) {
       console.error('Failed to complete test:', error);
     }
@@ -346,10 +346,33 @@ export function TypingTest() {
         )}
       </div>
 
+      {/* Practice Mode Results Display */}
+      {status === 'complete' && result && !autoSave && (
+        <div className="w-full max-w-4xl mb-6 bg-purple-600/10 border border-purple-600/30 rounded-lg p-6">
+          <h2 className="text-2xl font-bold text-purple-400 mb-4">Practice Complete!</h2>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-editor-bg/50 rounded-lg p-4">
+              <div className="text-sm text-editor-muted mb-1">WPM</div>
+              <div className="text-3xl font-bold">{result.wpm}</div>
+            </div>
+            <div className="bg-editor-bg/50 rounded-lg p-4">
+              <div className="text-sm text-editor-muted mb-1">Accuracy</div>
+              <div className="text-3xl font-bold">{result.accuracy}%</div>
+            </div>
+          </div>
+          <button
+            onClick={resetTest}
+            className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Test display */}
       <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${
         isGenerating ? 'opacity-50' : 'opacity-100'
-      } transition-opacity`}>
+      } transition-opacity ${status === 'complete' ? 'hidden' : ''}`}>
         {isGenerating && (
           <div className="absolute inset-0 flex items-center justify-center bg-editor-bg/80 backdrop-blur-sm z-10">
             <p className="text-editor-muted">Generating new content...</p>
