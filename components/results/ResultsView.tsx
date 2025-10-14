@@ -222,6 +222,23 @@ export function ResultsView({ result }: ResultsViewProps) {
           </div>
         )}
 
+        {/* Generating Practice Loading State */}
+        {isGeneratingPractice && (
+          <div className="bg-purple-600/10 border border-purple-600/30 rounded-lg p-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <BrainCircuit className="w-6 h-6 text-purple-400 animate-spin" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-purple-400 mb-1">Generating Targeted Practice...</h3>
+                <p className="text-sm text-editor-muted">
+                  Creating custom content for your selected sequences. This may take a few moments.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex gap-4 justify-center flex-wrap">
           <button
@@ -229,8 +246,17 @@ export function ResultsView({ result }: ResultsViewProps) {
             disabled={isGeneratingPractice}
             className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
           >
-            <Target className="w-5 h-5" />
-            Generate Targeted Practice
+            {isGeneratingPractice ? (
+              <>
+                <BrainCircuit className="w-5 h-5 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Target className="w-5 h-5" />
+                Generate Targeted Practice
+              </>
+            )}
           </button>
           <Link
             href="/stats"
