@@ -18,6 +18,7 @@ interface SettingsState {
   llmModel: string;
   llmTemperature: number;
   customPrompt: string;
+  customSequences: string[]; // User-defined character sequences for practice
 
   // Actions
   setDefaultDuration: (duration: TestDuration) => void;
@@ -26,6 +27,7 @@ interface SettingsState {
   setLlmModel: (model: string) => void;
   setLlmTemperature: (temperature: number) => void;
   setCustomPrompt: (prompt: string) => void;
+  setCustomSequences: (sequences: string[]) => void;
   resetSettings: () => void;
 }
 
@@ -41,6 +43,7 @@ const defaultSettings = {
   llmModel: 'gpt-4o-mini',
   llmTemperature: 0.7,
   customPrompt: '',
+  customSequences: [] as string[],
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -59,6 +62,8 @@ export const useSettingsStore = create<SettingsState>()(
       setLlmTemperature: (temperature) => set({ llmTemperature: temperature }),
 
       setCustomPrompt: (prompt) => set({ customPrompt: prompt }),
+
+      setCustomSequences: (sequences) => set({ customSequences: sequences }),
 
       resetSettings: () => set(defaultSettings),
     }),

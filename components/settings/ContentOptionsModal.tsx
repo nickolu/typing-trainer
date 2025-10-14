@@ -1,7 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
-import { X, BookOpen, Sparkles } from 'lucide-react';
+import { X, BookOpen, Sparkles, Target } from 'lucide-react';
 
 interface ContentOptionsModalProps {
   isOpen: boolean;
@@ -15,10 +16,12 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     customPrompt,
     llmModel,
     llmTemperature,
+    customSequences,
     setDefaultContentStyle,
     setCustomPrompt,
     setLlmModel,
     setLlmTemperature,
+    setCustomSequences,
   } = useSettingsStore();
 
   const staticOptions: { value: ContentStyle; label: string; description: string }[] = [
@@ -34,15 +37,45 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     { value: 'ai-quote', label: 'AI Quotes', description: 'Generated quotes' },
     { value: 'ai-technical', label: 'AI Technical', description: 'Generated code docs' },
     { value: 'ai-common', label: 'AI Common', description: 'Generated phrases' },
-    { value: 'ai-sequences', label: 'AI Weaknesses', description: 'Practice slow sequences' },
+    { value: 'ai-sequences', label: 'AI Character Sequence', description: 'Practice specific sequences' },
     { value: 'ai-custom', label: 'AI Custom', description: 'Custom AI prompt' },
   ];
+
+  const [sequenceInput, setSequenceInput] = useState('');
+  const [isLoadingSequences, setIsLoadingSequences] = useState(false);
 
   const modelOptions = [
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cheap)' },
     { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
     { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (Best Quality)' },
   ];
+
+  const handleAddSequence = () => {
+    const trimmed = sequenceInput.trim();
+    if (trimmed && !customSequences.includes(trimmed)) {
+      setCustomSequences([...customSequences, trimmed]);
+      setSequenceInput('');
+    }
+  };
+
+  const handleRemoveSequence = (index: number) => {
+    setCustomSequences(customSequences.filter((_, i) => i !== index));
+  };
+
+  const handleUseSlowestSequences = async () => {
+    setIsLoadingSequences(true);
+    try {
+      const { getAggregateSlowSequences } = await import('@/lib/db');
+      const slowSequences = await getAggregateSlowSequences(5);
+      if (slowSequences.length > 0) {
+        setCustomSequences(slowSequences);
+      }
+    } catch (error) {
+      console.error('Failed to load slow sequences:', error);
+    } finally {
+      setIsLoadingSequences(false);
+    }
+  };
 
   const handleSave = () => {
     if (onSave) {
@@ -188,6 +221,73 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                     rows={4}
                     className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
                   />
+                </div>
+              )}
+
+              {/* Character Sequences (only for ai-sequences style) */}
+              {defaultContentStyle === 'ai-sequences' && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium">
+                      Character Sequences
+                    </label>
+                    <button
+                      onClick={handleUseSlowestSequences}
+                      disabled={isLoadingSequences}
+                      className="flex items-center gap-1 px-3 py-1 text-xs bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white rounded font-medium transition-colors"
+                    >
+                      <Target className={`w-3 h-3 ${isLoadingSequences ? 'animate-spin' : ''}`} />
+                      {isLoadingSequences ? 'Loading...' : 'Use Slowest Sequences'}
+                    </button>
+                  </div>
+
+                  {/* Input for adding sequences */}
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      type="text"
+                      value={sequenceInput}
+                      onChange={(e) => setSequenceInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSequence();
+                        }
+                      }}
+                      placeholder="Enter sequence (e.g., 'th', 'ing', 'qu')"
+                      className="flex-1 px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                    />
+                    <button
+                      onClick={handleAddSequence}
+                      disabled={!sequenceInput.trim()}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors text-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Display added sequences */}
+                  {customSequences.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {customSequences.map((seq, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 px-3 py-1 bg-purple-600/20 border border-purple-600/40 rounded-full"
+                        >
+                          <span className="text-sm font-mono font-bold text-purple-300">{seq}</span>
+                          <button
+                            onClick={() => handleRemoveSequence(i)}
+                            className="hover:bg-purple-600/30 rounded-full p-0.5 transition-colors"
+                          >
+                            <X className="w-3 h-3 text-purple-300" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-editor-muted">
+                      Add character sequences you want to practice, or click "Use Slowest Sequences" to auto-fill based on your history.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

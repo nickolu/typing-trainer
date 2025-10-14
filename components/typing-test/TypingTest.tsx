@@ -12,7 +12,7 @@ import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-c
 
 export function TypingTest() {
   const router = useRouter();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, autoSave } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave } = useSettingsStore();
   const {
     status,
     duration,
@@ -77,12 +77,19 @@ export function TypingTest() {
 
         // Check if the style is "ai-sequences" - use targeted practice mode
         if (defaultContentStyle === 'ai-sequences') {
-          // Import the function dynamically to avoid dependency issues
-          const { getAggregateSlowSequences } = await import('@/lib/db');
-          const slowSequences = await getAggregateSlowSequences(5);
+          // Use custom sequences if available, otherwise fallback to historical data
+          let sequencesToUse: string[] = [];
 
-          if (slowSequences.length === 0) {
-            setGenerationError('No historical data available. Complete some tests first to identify your weaknesses.');
+          if (customSequences.length > 0) {
+            sequencesToUse = customSequences;
+          } else {
+            // Fallback: Import and get historical slow sequences
+            const { getAggregateSlowSequences } = await import('@/lib/db');
+            sequencesToUse = await getAggregateSlowSequences(5);
+          }
+
+          if (sequencesToUse.length === 0) {
+            setGenerationError('No sequences defined. Add sequences in the content settings or click "Use Slowest Sequences" to auto-fill from your history.');
             setIsGenerating(false);
             return;
           }
@@ -94,7 +101,7 @@ export function TypingTest() {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              sequences: slowSequences,
+              sequences: sequencesToUse,
               options: {
                 model: llmModel,
                 temperature: llmTemperature,
@@ -118,7 +125,7 @@ export function TypingTest() {
               duration: defaultDuration,
               testContentId: 'ai-sequences',
               isPractice: true,
-              practiceSequences: slowSequences,
+              practiceSequences: sequencesToUse,
             },
             words
           );
@@ -184,7 +191,7 @@ export function TypingTest() {
         words
       );
     }
-  }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, defaultDuration, resetTest, initializeTest]);
+  }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
 
   // Handle test completion
   const handleComplete = useCallback(async () => {
