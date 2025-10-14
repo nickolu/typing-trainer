@@ -1,5 +1,6 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { WordDisplay } from './WordDisplay';
+import { TypingCursor } from './TypingCursor';
 import { WordState } from '@/lib/types';
 
 interface TestDisplayProps {
@@ -20,6 +21,7 @@ export function TestDisplay({
   showHighlights = true,
 }: TestDisplayProps) {
   const currentWordRef = useRef<HTMLDivElement>(null);
+  const textContainerRef = useRef<HTMLDivElement>(null);
 
   // Calculate which character indices should be highlighted for each word
   // and which inter-word spaces should be highlighted
@@ -88,7 +90,7 @@ export function TestDisplay({
 
   return (
     <div className="w-full max-w-4xl mx-auto">
-      <div className="font-mono text-2xl leading-relaxed flex flex-wrap">
+      <div ref={textContainerRef} className="font-mono text-2xl leading-relaxed flex flex-wrap relative">
         {targetWords.map((word, index) => {
           let state: WordState;
           let typed = '';
@@ -116,6 +118,7 @@ export function TestDisplay({
             <div
               key={index}
               ref={isCurrent ? currentWordRef : null}
+              data-word-index={index}
               className="inline-flex items-center"
             >
               <WordDisplay
@@ -139,6 +142,14 @@ export function TestDisplay({
             </div>
           );
         })}
+
+        {/* Smooth animated cursor */}
+        <TypingCursor
+          containerRef={textContainerRef}
+          currentWordIndex={currentWordIndex}
+          currentCharIndex={currentInput.length}
+          isActive={true}
+        />
       </div>
     </div>
   );

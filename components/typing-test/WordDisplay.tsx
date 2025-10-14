@@ -96,18 +96,12 @@ export function WordDisplay({ word, typed, state, highlightIndices = new Set() }
               : cn(baseClassName, 'bg-purple-500/20 rounded')
             : baseClassName;
 
-          // Show cursor before this character if it's the first untyped character
-          const showCursorBefore = index === typed.length;
-
           return (
             <span
               key={index}
               className={className}
               style={isTargeted && isSpace ? { minWidth: '0.5rem' } : undefined}
             >
-              {showCursorBefore && (
-                <span className="absolute -left-0.5 top-0 bottom-0 w-0.5 bg-editor-accent animate-pulse cursor-slide" />
-              )}
               {charComp.char}
             </span>
           );
