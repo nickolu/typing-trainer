@@ -179,39 +179,41 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                 <h3 className="font-bold text-sm text-purple-400">AI Settings</h3>
               </div>
 
-              {/* Model Selection */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Model</label>
-                <select
-                  value={llmModel}
-                  onChange={(e) => setLlmModel(e.target.value)}
-                  className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                >
-                  {modelOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Temperature and Model on one row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Temperature */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Temperature</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={llmTemperature}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      if (!isNaN(val) && val >= 0 && val <= 1) {
+                        setLlmTemperature(val);
+                      }
+                    }}
+                    className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  />
+                </div>
 
-              {/* Temperature */}
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Temperature: {llmTemperature.toFixed(1)}
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={llmTemperature}
-                  onChange={(e) => setLlmTemperature(parseFloat(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-editor-muted mt-1">
-                  <span>Focused</span>
-                  <span>Creative</span>
+                {/* Model Selection */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Model</label>
+                  <select
+                    value={llmModel}
+                    onChange={(e) => setLlmModel(e.target.value)}
+                    className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  >
+                    {modelOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
