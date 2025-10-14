@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (sequences.length > 5) {
+    if (sequences.length > 20) {
       return NextResponse.json(
-        { error: 'Maximum 5 sequences allowed' },
+        { error: 'Maximum 20 sequences allowed' },
         { status: 400 }
       );
     }

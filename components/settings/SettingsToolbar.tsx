@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settings-store';
-import { Clock, Save, BookOpen } from 'lucide-react';
+import { Clock, Save, BookOpen, ShieldOff } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 
 interface SettingsToolbarProps {
@@ -14,9 +14,11 @@ export function SettingsToolbar({ disabled = false, onContentChange }: SettingsT
   const {
     defaultDuration,
     autoSave,
+    noBackspaceMode,
     defaultContentStyle,
     setDefaultDuration,
     setAutoSave,
+    setNoBackspaceMode,
   } = useSettingsStore();
 
   const [showContentOptions, setShowContentOptions] = useState(false);
@@ -81,19 +83,45 @@ export function SettingsToolbar({ disabled = false, onContentChange }: SettingsT
             </div>
           </div>
 
-          {/* Save Results / Practice Mode Toggle */}
-          <div className="flex items-center gap-3">
-            <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-purple-400'}`} />
+          {/* No Backspace Mode Toggle */}
+          <div className="flex items-center gap-3 group relative">
+            <ShieldOff className={`w-5 h-5 ${noBackspaceMode ? 'text-orange-400' : 'text-editor-muted'}`} />
+            <span className="text-sm font-medium text-editor-muted">No Corrections</span>
+            <button
+              onClick={() => !disabled && setNoBackspaceMode(!noBackspaceMode)}
+              disabled={disabled}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                noBackspaceMode ? 'bg-orange-500' : 'bg-editor-muted/30'
+              }`}
+              aria-label="Toggle no corrections mode"
+            >
+              <div
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  noBackspaceMode ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              />
+            </button>
+            {/* Tooltip */}
+            <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              {noBackspaceMode
+                ? 'Backspace is disabled. You cannot correct mistakes - focus on accuracy!'
+                : 'Enable to disable backspace during tests. Forces you to type accurately without corrections.'}
+            </div>
+          </div>
+
+          {/* Save Results Toggle */}
+          <div className="flex items-center gap-3 group relative">
+            <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-editor-muted'}`} />
             <span className="text-sm font-medium text-editor-muted">
-              {autoSave ? 'Save Results' : 'Practice Mode'}
+              Save Results
             </span>
             <button
               onClick={() => !disabled && setAutoSave(!autoSave)}
               disabled={disabled}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                autoSave ? 'bg-editor-accent' : 'bg-purple-600'
+                autoSave ? 'bg-editor-accent' : 'bg-editor-muted/30'
               }`}
-              title={autoSave ? 'Click to enable Practice Mode (results won\'t be saved)' : 'Click to save results to history'}
+              aria-label="Toggle save results"
             >
               <div
                 className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
@@ -101,6 +129,12 @@ export function SettingsToolbar({ disabled = false, onContentChange }: SettingsT
                 }`}
               />
             </button>
+            {/* Tooltip */}
+            <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+              {autoSave
+                ? 'Test results will be saved to your history for tracking progress.'
+                : 'Test results will NOT be saved. Use this for casual practice without affecting your stats.'}
+            </div>
           </div>
 
           {/* Content Selection Button - More Prominent */}

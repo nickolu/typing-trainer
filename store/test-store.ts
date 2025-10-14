@@ -11,7 +11,9 @@ import {
   calculateAccuracy,
   normalizeTypedWords,
 } from '@/lib/test-engine/calculations';
+import { analyzeMistakes } from '@/lib/test-engine/mistake-analysis';
 import { saveTestResult } from '@/lib/db';
+import { useSettingsStore } from './settings-store';
 
 export const useTestStore = create<TestState>((set, get) => ({
   // Initial state
@@ -85,6 +87,8 @@ export const useTestStore = create<TestState>((set, get) => ({
         key: ' ',
         wordIndex: state.currentWordIndex,
         charIndex: state.currentInput.length,
+        wasCorrect: true, // Space key always correct (it's a delimiter)
+        isBackspace: false,
       };
 
       // Move to next word
@@ -101,12 +105,19 @@ export const useTestStore = create<TestState>((set, get) => ({
     // Add character to current input
     const newInput = state.currentInput + key;
 
-    // Record keystroke
+    // Determine if this keystroke is correct
+    const expectedChar = currentWord[state.currentInput.length];
+    const wasCorrect = key === expectedChar;
+
+    // Record keystroke with mistake tracking
     const keystroke: KeystrokeEvent = {
       timestamp: performance.now(),
       key,
       wordIndex: state.currentWordIndex,
       charIndex: state.currentInput.length,
+      expectedChar,
+      wasCorrect,
+      isBackspace: false,
     };
 
     set({
@@ -119,6 +130,13 @@ export const useTestStore = create<TestState>((set, get) => ({
   handleBackspace: () => {
     const state = get();
 
+    // Check if no-backspace mode is enabled
+    const noBackspaceMode = useSettingsStore.getState().noBackspaceMode;
+    if (noBackspaceMode) {
+      // Do nothing if no-backspace mode is enabled
+      return;
+    }
+
     if (state.status !== 'active' || state.currentInput.length === 0) return;
 
     // Remove last character
@@ -130,6 +148,8 @@ export const useTestStore = create<TestState>((set, get) => ({
       key: 'Backspace',
       wordIndex: state.currentWordIndex,
       charIndex: state.currentInput.length - 1,
+      wasCorrect: true, // Backspace is a correction action, not a mistake
+      isBackspace: true,
     };
 
     set({
@@ -153,6 +173,8 @@ export const useTestStore = create<TestState>((set, get) => ({
       key: 'Tab',
       wordIndex: state.currentWordIndex,
       charIndex: state.currentInput.length,
+      wasCorrect: false, // Tab is used to skip, considered incorrect
+      isBackspace: false,
     };
 
     // Move to next word
@@ -216,6 +238,22 @@ export const useTestStore = create<TestState>((set, get) => ({
       state.duration
     );
 
+    // Analyze mistakes
+    const mistakeAnalysis = analyzeMistakes(
+      state.keystrokes,
+      state.targetWords,
+      normalizedTypedWords
+    );
+
+    // Build character substitutions map
+    const characterSubstitutions: Record<string, string[]> = {};
+    for (const sub of mistakeAnalysis.characterSubstitutions) {
+      if (!characterSubstitutions[sub.expected]) {
+        characterSubstitutions[sub.expected] = [];
+      }
+      characterSubstitutions[sub.expected].push(sub.actual);
+    }
+
     // Create result object
     const result: TestResult = {
       id: state.testId,
@@ -233,6 +271,9 @@ export const useTestStore = create<TestState>((set, get) => ({
       keystrokeTimings: state.keystrokes,
       isPractice: state.isPractice || !shouldSave, // Mark as practice if not saving
       practiceSequences: state.practiceSequences.length > 0 ? state.practiceSequences : undefined,
+      mistakeCount: mistakeAnalysis.totalMistakes,
+      correctionCount: mistakeAnalysis.totalCorrections,
+      characterSubstitutions: Object.keys(characterSubstitutions).length > 0 ? characterSubstitutions : undefined,
     };
 
     // Save to IndexedDB only if shouldSave is true

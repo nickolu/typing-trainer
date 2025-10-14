@@ -4,6 +4,9 @@ export interface KeystrokeEvent {
   key: string; // Character typed
   wordIndex: number; // Which word
   charIndex: number; // Position in word
+  expectedChar?: string; // What character should have been typed
+  wasCorrect: boolean; // Was this keystroke correct
+  isBackspace: boolean; // Was this a correction
 }
 
 // Test result stored in IndexedDB
@@ -34,6 +37,11 @@ export interface TestResult {
   // Practice metadata
   isPractice?: boolean; // Is this a targeted practice session
   practiceSequences?: string[]; // Sequences being practiced
+
+  // Mistake data
+  mistakeCount?: number; // Total incorrect keystrokes
+  correctionCount?: number; // Total backspaces used
+  characterSubstitutions?: Record<string, string[]>; // Map of expected → actual chars
 }
 
 // Static test content

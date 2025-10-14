@@ -6,11 +6,14 @@ import Link from 'next/link';
 import { TestResult } from '@/lib/types';
 import { StatsCard } from './StatsCard';
 import { SequenceAnalysis } from './SequenceAnalysis';
+import { MistakeAnalysis } from './MistakeAnalysis';
+import { TargetedPracticeModal } from './TargetedPracticeModal';
 import { Zap, Target, Check, X, BrainCircuit } from 'lucide-react';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
 import { calculateSequenceTimings } from '@/lib/test-engine/calculations';
+import { analyzeMistakes, getMistakeSequencesForPractice } from '@/lib/test-engine/mistake-analysis';
 
 interface ResultsViewProps {
   result: TestResult;
@@ -20,6 +23,7 @@ export function ResultsView({ result }: ResultsViewProps) {
   const router = useRouter();
   const { defaultDuration, llmModel, llmTemperature } = useSettingsStore();
   const { initializeTest, resetTest } = useTestStore();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
   const [practiceError, setPracticeError] = useState<string | null>(null);
 
@@ -57,40 +61,62 @@ export function ResultsView({ result }: ResultsViewProps) {
     router.push('/');
   };
 
-  const handlePracticeWeaknesses = async () => {
+  const handleGenerateTargetedPractice = async (selectedSequences: string[], selectedWords: string[]) => {
     setPracticeError(null);
     setIsGeneratingPractice(true);
+    setIsModalOpen(false); // Close modal
 
     try {
-      // Extract top 5 slowest sequences (combine 2-char and 3-char, sort by avgTime)
-      const allSequences = [...twoCharSequences, ...threeCharSequences]
-        .sort((a, b) => b.avgTime - a.avgTime)
-        .slice(0, 5)
-        .map((seq) => seq.sequence);
-
-      if (allSequences.length === 0) {
-        setPracticeError('Not enough data to create practice content');
+      // Combine sequences and words for practice
+      if (selectedSequences.length === 0 && selectedWords.length === 0) {
+        setPracticeError('Please select at least one item to practice');
         setIsGeneratingPractice(false);
         return;
       }
 
       const requiredWords = calculateRequiredWords(defaultDuration);
 
-      // Call the API to generate targeted practice content
-      const response = await fetch('/api/generate-practice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sequences: allSequences,
-          options: {
-            model: llmModel,
-            temperature: llmTemperature,
-            minWords: requiredWords,
+      // Determine which API endpoint to use based on selections
+      // If we have words, use the mistake practice endpoint, otherwise use regular practice
+      const hasMistakeData = selectedWords.length > 0;
+
+      let response;
+      if (hasMistakeData) {
+        // Use mistake practice endpoint which can handle both sequences and words
+        response = await fetch('/api/generate-mistake-practice', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      });
+          body: JSON.stringify({
+            sequences: selectedSequences,
+            mistakeData: {
+              commonWords: selectedWords.map(word => ({ target: word, typed: '', count: 1 })),
+            },
+            options: {
+              model: llmModel,
+              temperature: llmTemperature,
+              minWords: requiredWords,
+            },
+          }),
+        });
+      } else {
+        // Use regular practice endpoint for sequences only
+        response = await fetch('/api/generate-practice', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sequences: selectedSequences,
+            options: {
+              model: llmModel,
+              temperature: llmTemperature,
+              minWords: requiredWords,
+            },
+          }),
+        });
+      }
 
       if (!response.ok) {
         const error = await response.json();
@@ -105,9 +131,9 @@ export function ResultsView({ result }: ResultsViewProps) {
       initializeTest(
         {
           duration: defaultDuration,
-          testContentId: 'ai-practice',
+          testContentId: 'ai-targeted-practice',
           isPractice: true,
-          practiceSequences: allSequences,
+          practiceSequences: selectedSequences,
         },
         words
       );
@@ -184,6 +210,11 @@ export function ResultsView({ result }: ResultsViewProps) {
           />
         </div>
 
+        {/* Mistake Analysis */}
+        <div className="mb-8">
+          <MistakeAnalysis result={result} />
+        </div>
+
         {/* Practice Error */}
         {practiceError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-8">
@@ -194,12 +225,12 @@ export function ResultsView({ result }: ResultsViewProps) {
         {/* Actions */}
         <div className="flex gap-4 justify-center flex-wrap">
           <button
-            onClick={handlePracticeWeaknesses}
+            onClick={() => setIsModalOpen(true)}
             disabled={isGeneratingPractice}
             className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
           >
-            <BrainCircuit className={`w-5 h-5 ${isGeneratingPractice ? 'animate-spin' : ''}`} />
-            {isGeneratingPractice ? 'Generating...' : 'Practice My Weaknesses'}
+            <Target className="w-5 h-5" />
+            Generate Targeted Practice
           </button>
           <Link
             href="/stats"
@@ -221,6 +252,14 @@ export function ResultsView({ result }: ResultsViewProps) {
           </button>
         </div>
       </div>
+
+      {/* Targeted Practice Modal */}
+      <TargetedPracticeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        result={result}
+        onGeneratePractice={handleGenerateTargetedPractice}
+      />
     </div>
   );
 }

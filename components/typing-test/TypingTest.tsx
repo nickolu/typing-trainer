@@ -12,7 +12,7 @@ import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-c
 
 export function TypingTest() {
   const router = useRouter();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode } = useSettingsStore();
   const {
     status,
     duration,
@@ -51,6 +51,20 @@ export function TypingTest() {
       );
     }
   }, [status, targetWords, initializeTest, defaultDuration]);
+
+  // Update test duration when defaultDuration changes (and test is idle)
+  useEffect(() => {
+    if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
+      // Reinitialize the test with new duration but same words
+      initializeTest(
+        {
+          duration: defaultDuration,
+          testContentId: 'regenerated',
+        },
+        targetWords
+      );
+    }
+  }, [defaultDuration, status, targetWords, duration, initializeTest]);
 
   // Cleanup: Reset test when component unmounts (e.g., navigating away)
   useEffect(() => {
@@ -288,8 +302,27 @@ export function TypingTest() {
         </div>
       </div>
 
-      {/* Practice Mode Banner */}
-      {(!autoSave || (isPractice && practiceSequences.length > 0)) && (
+      {/* No Corrections Mode Banner */}
+      {noBackspaceMode && status === 'active' && (
+        <div className="w-full max-w-4xl mb-4">
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-7 h-7 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">🔒</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-orange-400 text-sm">No Corrections Mode Active</h3>
+                <p className="text-xs text-editor-muted">Backspace is disabled - focus on accuracy!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Targeted Practice Banner - Only show when practicing specific sequences */}
+      {isPractice && practiceSequences.length > 0 && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-purple-600/10 border border-purple-600/30 rounded-lg p-4">
             <div className="flex items-start gap-3">
@@ -299,34 +332,26 @@ export function TypingTest() {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-purple-400 mb-1">Practice Mode</h3>
-                {practiceSequences.length > 0 ? (
-                  <>
-                    <p className="text-sm text-editor-muted mb-2">
-                      This test focuses on improving your speed with these sequences:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {practiceSequences.map((seq, i) => (
-                        <span
-                          key={i}
-                          className="px-3 py-1 bg-purple-600/20 border border-purple-600/40 rounded-full text-sm font-mono font-bold text-purple-300"
-                        >
-                          {seq.split('').map((char, idx) => (
-                            char === ' ' ? (
-                              <span key={idx} className="inline-block bg-purple-400/30 border border-purple-400/50 rounded px-0.5 mx-0.5">␣</span>
-                            ) : (
-                              <span key={idx}>{char}</span>
-                            )
-                          ))}
-                        </span>
+                <h3 className="font-bold text-purple-400 mb-1">Targeted Practice</h3>
+                <p className="text-sm text-editor-muted mb-2">
+                  This test focuses on improving your typing with these sequences:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {practiceSequences.map((seq, i) => (
+                    <span
+                      key={i}
+                      className="px-3 py-1 bg-purple-600/20 border border-purple-600/40 rounded-full text-sm font-mono font-bold text-purple-300"
+                    >
+                      {seq.split('').map((char, idx) => (
+                        char === ' ' ? (
+                          <span key={idx} className="inline-block bg-purple-400/30 border border-purple-400/50 rounded px-0.5 mx-0.5">␣</span>
+                        ) : (
+                          <span key={idx}>{char}</span>
+                        )
                       ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-sm text-editor-muted">
-                    Results will not be saved to your history. Toggle "Save Results" to save this test.
-                  </p>
-                )}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -346,10 +371,11 @@ export function TypingTest() {
         )}
       </div>
 
-      {/* Practice Mode Results Display */}
+      {/* Quick Results Display - Show inline when results aren't being saved */}
       {status === 'complete' && result && !autoSave && (
-        <div className="w-full max-w-4xl mb-6 bg-purple-600/10 border border-purple-600/30 rounded-lg p-6">
-          <h2 className="text-2xl font-bold text-purple-400 mb-4">Practice Complete!</h2>
+        <div className="w-full max-w-4xl mb-6 bg-editor-bg/80 border border-editor-muted rounded-lg p-6">
+          <h2 className="text-2xl font-bold mb-4">Test Complete!</h2>
+          <p className="text-sm text-editor-muted mb-4">Results not saved (Save Results is off)</p>
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div className="bg-editor-bg/50 rounded-lg p-4">
               <div className="text-sm text-editor-muted mb-1">WPM</div>
@@ -362,7 +388,7 @@ export function TypingTest() {
           </div>
           <button
             onClick={resetTest}
-            className="w-full px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors"
+            className="w-full px-4 py-3 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
           >
             Try Again
           </button>
@@ -384,6 +410,7 @@ export function TypingTest() {
             completedWords={completedWords}
             currentInput={currentInput}
             currentWordIndex={currentWordIndex}
+            practiceSequences={isPractice ? practiceSequences : []}
           />
         </div>
       </div>

@@ -7,6 +7,7 @@ interface TestDisplayProps {
   completedWords: string[];
   currentInput: string;
   currentWordIndex: number;
+  practiceSequences?: string[];
 }
 
 export function TestDisplay({
@@ -14,6 +15,7 @@ export function TestDisplay({
   completedWords,
   currentInput,
   currentWordIndex,
+  practiceSequences = [],
 }: TestDisplayProps) {
   const currentWordRef = useRef<HTMLDivElement>(null);
 
@@ -59,6 +61,7 @@ export function TestDisplay({
                 word={word}
                 typed={typed}
                 state={state}
+                practiceSequences={practiceSequences}
               />
             </div>
           );

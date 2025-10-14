@@ -145,8 +145,8 @@ export async function generateTargetedPractice(
     throw new Error('At least one sequence is required for targeted practice');
   }
 
-  if (sequences.length > 5) {
-    throw new Error('Maximum 5 sequences allowed for targeted practice');
+  if (sequences.length > 20) {
+    throw new Error('Maximum 20 sequences allowed for targeted practice');
   }
 
   return generateTypingContent({
@@ -155,4 +155,111 @@ export async function generateTargetedPractice(
     style: 'custom',
     topic: `practice typing these character combinations: ${sequences.join(', ')}`,
   });
+}
+
+/**
+ * Generate practice content specifically targeting typing mistakes
+ */
+export async function generateMistakePractice(
+  sequences: string[],
+  mistakeData: {
+    characterSubstitutions?: Array<{ expected: string; actual: string; count: number }>;
+    commonWords?: Array<{ target: string; typed: string; count: number }>;
+  },
+  options: Omit<GenerateContentOptions, 'focusSequences'> = {}
+): Promise<GenerateContentResult> {
+  if (sequences.length === 0) {
+    throw new Error('At least one sequence is required for mistake practice');
+  }
+
+  if (sequences.length > 20) {
+    throw new Error('Maximum 20 sequences allowed for mistake practice');
+  }
+
+  const {
+    model = 'gpt-4o-mini',
+    temperature = 0.7,
+    maxTokens = 500,
+    minWords = 150,
+  } = options;
+
+  const apiKey = process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+  }
+
+  const openai = new OpenAI({
+    apiKey,
+  });
+
+  // Build a detailed prompt for mistake-focused practice
+  let prompt = `Generate a typing test passage with at least ${minWords} words that will help the user practice correcting their typing mistakes. `;
+
+  // Add information about mistake sequences
+  prompt += `The user frequently makes mistakes with these character sequences: ${sequences.join(', ')}. `;
+  prompt += `Include these sequences frequently throughout the text in a natural way. `;
+
+  // Add character substitution info if available
+  if (mistakeData.characterSubstitutions && mistakeData.characterSubstitutions.length > 0) {
+    const substitutions = mistakeData.characterSubstitutions
+      .map(s => `"${s.expected}" (often typed as "${s.actual}")`)
+      .join(', ');
+    prompt += `The user also confuses these characters: ${substitutions}. Include words containing these characters. `;
+  }
+
+  // Add commonly mistyped words if available
+  if (mistakeData.commonWords && mistakeData.commonWords.length > 0) {
+    const words = mistakeData.commonWords.map(w => `"${w.target}"`).join(', ');
+    prompt += `The user frequently mistypes these words: ${words}. Include variations of these words. `;
+  }
+
+  // Final instructions
+  prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting. Return only the passage text, nothing else.`;
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a helpful assistant that generates typing test content focused on helping users correct their specific typing mistakes. Create natural, flowing text that strategically includes problematic sequences and characters.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature,
+      max_tokens: maxTokens,
+    });
+
+    const text = completion.choices[0]?.message?.content?.trim() || '';
+    const tokensUsed = completion.usage?.total_tokens || 0;
+
+    if (!text) {
+      throw new Error('No content generated from OpenAI');
+    }
+
+    // Clean up the text
+    let cleanedText = text;
+    if (
+      (cleanedText.startsWith('"') && cleanedText.endsWith('"')) ||
+      (cleanedText.startsWith("'") && cleanedText.endsWith("'"))
+    ) {
+      cleanedText = cleanedText.slice(1, -1);
+    }
+
+    return {
+      text: cleanedText,
+      model: completion.model,
+      tokensUsed,
+    };
+  } catch (error) {
+    console.error('OpenAI API error:', error);
+    throw new Error(
+      `Failed to generate mistake practice content: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
 }

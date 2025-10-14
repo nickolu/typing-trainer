@@ -12,6 +12,7 @@ interface SettingsState {
   // Test settings
   defaultDuration: TestDuration;
   autoSave: boolean;
+  noBackspaceMode: boolean;
 
   // Content settings
   defaultContentStyle: ContentStyle;
@@ -23,6 +24,7 @@ interface SettingsState {
   // Actions
   setDefaultDuration: (duration: TestDuration) => void;
   setAutoSave: (autoSave: boolean) => void;
+  setNoBackspaceMode: (enabled: boolean) => void;
   setDefaultContentStyle: (style: ContentStyle) => void;
   setLlmModel: (model: string) => void;
   setLlmTemperature: (temperature: number) => void;
@@ -39,6 +41,7 @@ export const isAIContentStyle = (style: ContentStyle): style is AIContentStyle =
 const defaultSettings = {
   defaultDuration: 30 as TestDuration,
   autoSave: true,
+  noBackspaceMode: false,
   defaultContentStyle: 'random' as ContentStyle,
   llmModel: 'gpt-4o-mini',
   llmTemperature: 0.7,
@@ -54,6 +57,8 @@ export const useSettingsStore = create<SettingsState>()(
       setDefaultDuration: (duration) => set({ defaultDuration: duration }),
 
       setAutoSave: (autoSave) => set({ autoSave }),
+
+      setNoBackspaceMode: (enabled) => set({ noBackspaceMode: enabled }),
 
       setDefaultContentStyle: (style) => set({ defaultContentStyle: style }),
 

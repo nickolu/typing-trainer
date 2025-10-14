@@ -12,7 +12,7 @@ interface TestTimerProps {
 export function TestTimer({ duration, startTime, onComplete }: TestTimerProps) {
   const [timeRemaining, setTimeRemaining] = useState(duration);
 
-  // Update timeRemaining when duration changes (before test starts)
+  // Update timeRemaining when duration changes (especially when test is idle)
   useEffect(() => {
     if (!startTime) {
       setTimeRemaining(duration);
