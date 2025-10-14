@@ -7,6 +7,7 @@ import { getAllTestResults } from '@/lib/db';
 import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';
 import { AccuracyChart } from '@/components/charts/AccuracyChart';
+import { AggregateAnalytics } from '@/components/analytics/AggregateAnalytics';
 
 export default function StatsPage() {
   const [results, setResults] = useState<TestResult[]>([]);
@@ -75,6 +76,9 @@ export default function StatsPage() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Aggregate Analytics */}
+            <AggregateAnalytics results={results} />
+
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <WPMChart results={results} />
