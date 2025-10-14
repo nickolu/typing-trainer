@@ -6,47 +6,43 @@ interface WordDisplayProps {
   word: string;
   typed: string;
   state: WordState;
-  practiceSequences?: string[];
+  highlightIndices?: Set<number>;
 }
 
-/**
- * Helper function to check if a character at a given position is part of a practice sequence
- */
-function isPracticeSequence(word: string, charIndex: number, sequences: string[]): boolean {
-  if (sequences.length === 0) return false;
-
-  for (const seq of sequences) {
-    // Check all possible positions where this sequence could start
-    for (let startPos = Math.max(0, charIndex - seq.length + 1); startPos <= charIndex; startPos++) {
-      const endPos = startPos + seq.length;
-      if (endPos <= word.length) {
-        const substring = word.substring(startPos, endPos);
-        // Check if this substring matches the sequence and includes our character
-        if (substring === seq && charIndex >= startPos && charIndex < endPos) {
-          return true;
-        }
-      }
+export function WordDisplay({ word, typed, state, highlightIndices = new Set() }: WordDisplayProps) {
+  // Helper to render a character with potential highlighting
+  const renderChar = (char: string, index: number, isTargeted: boolean) => {
+    // Special handling for spaces when highlighted
+    if (char === ' ' && isTargeted) {
+      return (
+        <span
+          key={index}
+          className="inline-block bg-purple-500/30 border border-purple-500/50 rounded px-1 mx-0.5"
+          style={{ minWidth: '0.5rem' }}
+        >
+          {' '}
+        </span>
+      );
     }
-  }
 
-  return false;
-}
+    // Regular character rendering
+    return (
+      <span
+        key={index}
+        className={isTargeted ? 'bg-purple-500/20 rounded' : ''}
+      >
+        {char}
+      </span>
+    );
+  };
 
-export function WordDisplay({ word, typed, state, practiceSequences = [] }: WordDisplayProps) {
   // Handle completed words
   if (state === 'completed-correct') {
     return (
-      <span className="test-word-correct inline-block px-1">
+      <span className="test-word-correct inline-block">
         {word.split('').map((char, index) => {
-          const isTargeted = isPracticeSequence(word, index, practiceSequences);
-          return (
-            <span
-              key={index}
-              className={isTargeted ? 'bg-purple-500/20 rounded px-0.5' : ''}
-            >
-              {char}
-            </span>
-          );
+          const isTargeted = highlightIndices.has(index);
+          return renderChar(char, index, isTargeted);
         })}
       </span>
     );
@@ -54,17 +50,10 @@ export function WordDisplay({ word, typed, state, practiceSequences = [] }: Word
 
   if (state === 'completed-incorrect') {
     return (
-      <span className="test-word-incorrect inline-block px-1">
+      <span className="test-word-incorrect inline-block">
         {word.split('').map((char, index) => {
-          const isTargeted = isPracticeSequence(word, index, practiceSequences);
-          return (
-            <span
-              key={index}
-              className={isTargeted ? 'bg-purple-500/20 rounded px-0.5' : ''}
-            >
-              {char}
-            </span>
-          );
+          const isTargeted = highlightIndices.has(index);
+          return renderChar(char, index, isTargeted);
         })}
       </span>
     );
@@ -73,17 +62,10 @@ export function WordDisplay({ word, typed, state, practiceSequences = [] }: Word
   // Handle pending words
   if (state === 'pending') {
     return (
-      <span className="test-word-pending inline-block px-1">
+      <span className="test-word-pending inline-block">
         {word.split('').map((char, index) => {
-          const isTargeted = isPracticeSequence(word, index, practiceSequences);
-          return (
-            <span
-              key={index}
-              className={isTargeted ? 'bg-purple-500/20 rounded px-0.5' : ''}
-            >
-              {char}
-            </span>
-          );
+          const isTargeted = highlightIndices.has(index);
+          return renderChar(char, index, isTargeted);
         })}
       </span>
     );
@@ -94,23 +76,35 @@ export function WordDisplay({ word, typed, state, practiceSequences = [] }: Word
     const comparison = compareWords(word, typed);
 
     return (
-      <span className="test-word-current inline-block px-1 relative">
+      <span className="test-word-current inline-block relative">
         {comparison.map((charComp, index) => {
-          const isTargeted = isPracticeSequence(word, index, practiceSequences);
+          const isTargeted = highlightIndices.has(index);
+          const isSpace = charComp.char === ' ';
 
-          const className = cn(
+          // Special styling for highlighted spaces
+          const baseClassName = cn(
             'relative inline-block',
             charComp.status === 'correct' && 'test-char-correct',
             charComp.status === 'incorrect' && 'test-char-incorrect',
-            charComp.status === 'pending' && 'test-char-pending',
-            isTargeted && 'bg-purple-500/20 rounded px-0.5'
+            charComp.status === 'pending' && 'test-char-pending'
           );
+
+          // Apply different highlight style for spaces
+          const className = isTargeted
+            ? isSpace
+              ? cn(baseClassName, 'bg-purple-500/30 border border-purple-500/50 rounded px-1 mx-0.5')
+              : cn(baseClassName, 'bg-purple-500/20 rounded')
+            : baseClassName;
 
           // Show cursor before this character if it's the first untyped character
           const showCursorBefore = index === typed.length;
 
           return (
-            <span key={index} className={className}>
+            <span
+              key={index}
+              className={className}
+              style={isTargeted && isSpace ? { minWidth: '0.5rem' } : undefined}
+            >
               {showCursorBefore && (
                 <span className="absolute -left-0.5 top-0 bottom-0 w-0.5 bg-editor-accent animate-pulse cursor-slide" />
               )}

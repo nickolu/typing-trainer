@@ -2,23 +2,26 @@
 
 import { useState } from 'react';
 import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settings-store';
-import { Clock, Save, BookOpen, ShieldOff } from 'lucide-react';
+import { Clock, Save, BookOpen, ShieldOff, Highlighter } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 
 interface SettingsToolbarProps {
   disabled?: boolean;
   onContentChange?: () => void; // Callback when content settings change
+  showHighlightToggle?: boolean; // Only show in targeted practice mode
 }
 
-export function SettingsToolbar({ disabled = false, onContentChange }: SettingsToolbarProps) {
+export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false }: SettingsToolbarProps) {
   const {
     defaultDuration,
     autoSave,
     noBackspaceMode,
+    showPracticeHighlights,
     defaultContentStyle,
     setDefaultDuration,
     setAutoSave,
     setNoBackspaceMode,
+    setShowPracticeHighlights,
   } = useSettingsStore();
 
   const [showContentOptions, setShowContentOptions] = useState(false);
@@ -60,11 +63,10 @@ export function SettingsToolbar({ disabled = false, onContentChange }: SettingsT
       <div className={`w-full bg-editor-bg/50 border border-editor-muted rounded-lg p-4 mb-6 transition-opacity ${
         disabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
       }`}>
-        <div className="flex items-center justify-between gap-6 flex-wrap">
+        <div className="flex items-center justify-between gap-4">
           {/* Duration Selection */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-editor-accent" />
-            <span className="text-sm font-medium text-editor-muted">Duration:</span>
             <div className="flex gap-2">
               {durationOptions.map((option) => (
                 <button
@@ -84,9 +86,8 @@ export function SettingsToolbar({ disabled = false, onContentChange }: SettingsT
           </div>
 
           {/* No Backspace Mode Toggle */}
-          <div className="flex items-center gap-3 group relative">
+          <div className="flex items-center gap-2 group relative">
             <ShieldOff className={`w-5 h-5 ${noBackspaceMode ? 'text-orange-400' : 'text-editor-muted'}`} />
-            <span className="text-sm font-medium text-editor-muted">No Corrections</span>
             <button
               onClick={() => !disabled && setNoBackspaceMode(!noBackspaceMode)}
               disabled={disabled}
@@ -109,12 +110,36 @@ export function SettingsToolbar({ disabled = false, onContentChange }: SettingsT
             </div>
           </div>
 
+          {/* Highlight Practice Sequences Toggle - Only in targeted practice mode */}
+          {showHighlightToggle && (
+            <div className="flex items-center gap-2 group relative">
+              <Highlighter className={`w-5 h-5 ${showPracticeHighlights ? 'text-purple-400' : 'text-editor-muted'}`} />
+              <button
+                onClick={() => !disabled && setShowPracticeHighlights(!showPracticeHighlights)}
+                disabled={disabled}
+                className={`relative w-11 h-6 rounded-full transition-colors ${
+                  showPracticeHighlights ? 'bg-purple-600' : 'bg-editor-muted/30'
+                }`}
+                aria-label="Toggle sequence highlights"
+              >
+                <div
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    showPracticeHighlights ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+              {/* Tooltip */}
+              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                {showPracticeHighlights
+                  ? 'Practice sequences are highlighted in purple to help you identify them as you type.'
+                  : 'Enable to highlight the targeted practice sequences in the test content.'}
+              </div>
+            </div>
+          )}
+
           {/* Save Results Toggle */}
-          <div className="flex items-center gap-3 group relative">
+          <div className="flex items-center gap-2 group relative">
             <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-editor-muted'}`} />
-            <span className="text-sm font-medium text-editor-muted">
-              Save Results
-            </span>
             <button
               onClick={() => !disabled && setAutoSave(!autoSave)}
               disabled={disabled}

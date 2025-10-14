@@ -17,6 +17,112 @@ export interface GenerateContentResult {
   tokensUsed: number;
 }
 
+function randomTopic(): string {
+  const topics = [
+    "Why do we dream of people we’ve never met?",
+    "Is free will real or an illusion?",
+    "The trolley problem, but with AI self-driving cars",
+    "The philosophy of “doing nothing”",
+    "Are humans the universe trying to understand itself?",
+    "What if gravity suddenly reversed for 30 seconds?",
+    "The ethics of resurrecting extinct species",
+    "How quantum entanglement could change communication",
+    "Why octopuses are probably aliens",
+    "The most ridiculous real scientific experiments ever conducted",
+    "If Van Gogh painted with neon",
+    "A symphony composed entirely by a plant",
+    "What your favorite color says about your inner chaos",
+    "Designing a haunted museum exhibit",
+    "Invent a new art form using sound, slime, and shadows",
+    "A love letter written entirely in emojis",
+    "Why we say 'bless you' after sneezing",
+    "Inventing slang from the year 2090",
+    "Miscommunications that changed history",
+    "The weirdest idioms from around the world",
+    "If Napoleon had a YouTube channel",
+    "Rewrite the moon landing as a medieval saga",
+    "A history of the world in five sandwiches",
+    "The alternate 1980s where dinosaurs never went extinct",
+    "What if the internet existed in ancient Rome?",
+    "First contact with an alien species obsessed with jazz",
+    "A black hole appears in your backyard",
+    "Time travelers who accidentally start TikTok",
+    "A dating app for cyborgs",
+    "Earth is revealed to be an alien zoo",
+    "The most awkward silence you’ve ever experienced",
+    "A time you lied and the universe punished you",
+    "Invent a phobia and describe it in detail",
+    "What your garbage says about you",
+    "If your reflection had its own opinions",
+    "The strangest job interview question you can imagine",
+    "A workplace where employees communicate only via dance",
+    "How AI will replace middle managers but not janitors",
+    "“Quiet quitting” in a medieval castle",
+    "The day coffee was outlawed in your office",
+    "If trees could talk once a year",
+    "The secret society of pigeons",
+    "Climate change as a horror short story",
+    "Write from the perspective of a mushroom",
+    "The ocean is sending us warnings",
+    "A murder mystery set at a clown college",
+    "A forgotten password that unlocks a conspiracy",
+    "Someone’s been stealing your thoughts",
+    "The map on your cereal box is real",
+    "The town where every street leads to the same house",
+    "A toaster that predicts your future",
+    "Design a vehicle powered by laughter",
+    "Invent a product with no actual use",
+    "Shoes that remember your emotions",
+    "A vending machine that gives life advice",
+    "The Bachelor but with wizards",
+    "How the Titanic would’ve sunk on Twitter",
+    "Rebooting Lord of the Rings as a cooking show",
+    "A crossover between SpongeBob and Blade Runner",
+    "The untold story of Yoda’s cousin",
+    "Your life as a pizza topping",
+    "Gourmet meals in post-apocalyptic bunkers",
+    "A world where bread is currency",
+    "A cocktail that erases one memory",
+    "Forbidden recipes passed down by whispers",
+    "The laundromat is a portal to another dimension",
+    "If your smartphone had opinions",
+    "A week without lying—even little white ones",
+    "Grocery store heist gone philosophical",
+    "The train that never stops",
+    "The stranger who saved your life (and never knew)",
+    "What your childhood friend is doing in a parallel universe",
+    "Falling in love with your customer service chatbot",
+    "A family reunion with clones",
+    "If you could swap lives with a sibling for a day",
+    "The shape of nostalgia",
+    "A society with no concept of time",
+    "A language with no nouns",
+    "A memoir written by silence",
+    "What it means to “feel blue” in 20 different ways",
+    "A bug’s 5-minute TED Talk",
+    "Your cat is plotting something big",
+    "A zoo escape, but the animals have Twitter accounts",
+    "The secret nightlife of garden snails",
+    "An emotional support dragon on a plane",
+    "A recurring dream finally finishes",
+    "The architecture of your mind palace",
+    "If dreams could be traded like currency",
+    "A lucid dream that turns on you",
+    "Falling into a story you once wrote",
+    "A Yelp review of the afterlife",
+    "Top 10 reasons the moon is avoiding you",
+    "An instruction manual for becoming invisible",
+    "Horoscope predictions for fictional characters",
+    "A spam email that turns out to be true",
+    "A story that knows it’s being read",
+    "A journal entry written by your future self",
+    "A character rebelling against their author",
+    "A writing prompt that becomes real",
+    "This list becomes sentient and writes back"
+  ];
+  return topics[Math.floor(Math.random() * topics.length)];
+}
+
 /**
  * Generate typing test content using OpenAI (server-side only)
  */
@@ -76,7 +182,8 @@ export async function generateTypingContent(
 
   // Add focus sequences if specified
   if (focusSequences.length > 0) {
-    prompt += `Include frequent use of these character sequences: ${focusSequences.join(', ')}. `;
+    const sequences = focusSequences.map(seq => `"${seq}"`);
+    prompt += `IMPORTANT: The user has opted to praces the following character sequences. Include these sequences as frequently as possible: ${sequences.join(', ')}. `;
   }
 
   // Add custom prompt if specified (additional instructions)
@@ -88,6 +195,7 @@ export async function generateTypingContent(
   prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting. Return only the passage text, nothing else.`;
 
   try {
+    console.log('Prompt:', prompt);
     const completion = await openai.chat.completions.create({
       model,
       messages: [
@@ -153,7 +261,7 @@ export async function generateTargetedPractice(
     ...options,
     focusSequences: sequences,
     style: 'custom',
-    topic: `practice typing these character combinations: ${sequences.join(', ')}`,
+    topic: randomTopic(),
   });
 }
 

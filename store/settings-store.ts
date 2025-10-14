@@ -13,6 +13,7 @@ interface SettingsState {
   defaultDuration: TestDuration;
   autoSave: boolean;
   noBackspaceMode: boolean;
+  showPracticeHighlights: boolean;
 
   // Content settings
   defaultContentStyle: ContentStyle;
@@ -25,6 +26,7 @@ interface SettingsState {
   setDefaultDuration: (duration: TestDuration) => void;
   setAutoSave: (autoSave: boolean) => void;
   setNoBackspaceMode: (enabled: boolean) => void;
+  setShowPracticeHighlights: (enabled: boolean) => void;
   setDefaultContentStyle: (style: ContentStyle) => void;
   setLlmModel: (model: string) => void;
   setLlmTemperature: (temperature: number) => void;
@@ -42,6 +44,7 @@ const defaultSettings = {
   defaultDuration: 30 as TestDuration,
   autoSave: true,
   noBackspaceMode: false,
+  showPracticeHighlights: true,
   defaultContentStyle: 'random' as ContentStyle,
   llmModel: 'gpt-4o-mini',
   llmTemperature: 0.7,
@@ -59,6 +62,8 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoSave: (autoSave) => set({ autoSave }),
 
       setNoBackspaceMode: (enabled) => set({ noBackspaceMode: enabled }),
+
+      setShowPracticeHighlights: (enabled) => set({ showPracticeHighlights: enabled }),
 
       setDefaultContentStyle: (style) => set({ defaultContentStyle: style }),
 

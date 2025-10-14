@@ -12,7 +12,7 @@ import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-c
 
 export function TypingTest() {
   const router = useRouter();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights } = useSettingsStore();
   const {
     status,
     duration,
@@ -363,6 +363,7 @@ export function TypingTest() {
         <SettingsToolbar
           disabled={status === 'active'}
           onContentChange={handleContentLoad}
+          showHighlightToggle={isPractice && practiceSequences.length > 0}
         />
         {generationError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
@@ -411,6 +412,7 @@ export function TypingTest() {
             currentInput={currentInput}
             currentWordIndex={currentWordIndex}
             practiceSequences={isPractice ? practiceSequences : []}
+            showHighlights={showPracticeHighlights}
           />
         </div>
       </div>

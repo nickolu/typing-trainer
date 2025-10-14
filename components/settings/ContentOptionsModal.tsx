@@ -217,19 +217,28 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                 </div>
               </div>
 
-              {/* Custom Prompt (only for ai-custom style) */}
-              {defaultContentStyle === 'ai-custom' && (
+              {/* Custom Prompt (for all AI styles except ai-sequences) */}
+              {defaultContentStyle !== 'ai-sequences' && (
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Custom Prompt
+                    {defaultContentStyle === 'ai-custom' ? 'Custom Prompt' : 'Additional Instructions (Optional)'}
                   </label>
                   <textarea
                     value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="Describe the content you want to generate..."
-                    rows={4}
+                    placeholder={
+                      defaultContentStyle === 'ai-custom'
+                        ? 'Describe the content you want to generate...'
+                        : 'Add optional instructions to customize the generated content...'
+                    }
+                    rows={3}
                     className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
                   />
+                  {defaultContentStyle !== 'ai-custom' && (
+                    <p className="text-xs text-editor-muted mt-1">
+                      e.g., "Include more technical terms" or "Focus on shorter sentences"
+                    </p>
+                  )}
                 </div>
               )}
 
