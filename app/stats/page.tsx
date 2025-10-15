@@ -7,7 +7,7 @@ import { getAllTestResults } from '@/lib/db';
 import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';
 import { AccuracyChart } from '@/components/charts/AccuracyChart';
-import { AggregateAnalytics } from '@/components/analytics/AggregateAnalytics';
+import { AggregateAnalytics } from '@/components/charts/AggregateAnalytics';
 
 export default function StatsPage() {
   const [results, setResults] = useState<TestResult[]>([]);
