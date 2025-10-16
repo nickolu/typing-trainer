@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Lock } from 'lucide-react';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
@@ -318,14 +319,19 @@ export function TypingTest() {
               </>
             ) : (
               <>
-                <button
-                  onClick={() => window.open('/login', '_blank')}
-                  className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors flex items-center gap-2"
-                  title="Sign up to access stats"
-                >
-                  <span className="text-lg">🔒</span>
-                  View Stats
-                </button>
+                <div className="relative group">
+                  <button
+                    disabled
+                    className="px-4 py-2 bg-editor-muted/30 text-editor-muted rounded-lg font-medium transition-colors flex items-center gap-2 cursor-not-allowed"
+                  >
+                    <Lock className="w-4 h-4" />
+                    View Stats
+                  </button>
+                  {/* Tooltip */}
+                  <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                    Create an account or log in to access stats
+                  </div>
+                </div>
                 <TestTimer
                   duration={duration}
                   startTime={startTime}

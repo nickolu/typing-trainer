@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
-import { X, BookOpen, Sparkles, Target } from 'lucide-react';
+import { X, BookOpen, Sparkles, Target, Lock } from 'lucide-react';
 
 interface ContentOptionsModalProps {
   isOpen: boolean;
@@ -160,29 +160,39 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
               {aiOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    if (!currentUserId) {
-                      window.open('/login', '_blank');
-                    } else {
-                      setDefaultContentStyle(option.value);
-                    }
-                  }}
-                  className={`p-3 rounded-lg border text-left transition-all relative ${
-                    defaultContentStyle === option.value
-                      ? 'border-purple-400 bg-purple-600/10'
-                      : 'border-editor-muted hover:border-purple-400/50'
-                  }`}
-                >
+                <div key={option.value} className="relative group">
+                  <button
+                    onClick={() => {
+                      if (currentUserId) {
+                        setDefaultContentStyle(option.value);
+                      }
+                    }}
+                    disabled={!currentUserId}
+                    className={`w-full p-3 rounded-lg border text-left transition-all relative ${
+                      defaultContentStyle === option.value
+                        ? 'border-purple-400 bg-purple-600/10'
+                        : currentUserId
+                        ? 'border-editor-muted hover:border-purple-400/50'
+                        : 'border-editor-muted/30 bg-editor-muted/10 cursor-not-allowed'
+                    }`}
+                  >
+                    {!currentUserId && (
+                      <Lock className="absolute top-2 right-2 w-4 h-4 text-editor-muted" />
+                    )}
+                    <div className={`font-medium text-sm ${!currentUserId ? 'text-editor-muted' : ''}`}>
+                      {option.label}
+                    </div>
+                    <div className="text-xs text-editor-muted mt-1">
+                      {option.description}
+                    </div>
+                  </button>
+                  {/* Tooltip for locked items */}
                   {!currentUserId && (
-                    <span className="absolute top-2 right-2 text-lg">🔒</span>
+                    <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                      Create an account or log in to use AI content
+                    </div>
                   )}
-                  <div className="font-medium text-sm">{option.label}</div>
-                  <div className="text-xs text-editor-muted mt-1">
-                    {option.description}
-                  </div>
-                </button>
+                </div>
               ))}
             </div>
           </div>
