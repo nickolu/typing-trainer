@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TestResult } from '@/lib/types';
-import { getTestResultsByUser } from '@/lib/db/firebase';
+import { getTestResultsByUser, deleteTestResult, restoreTestResult } from '@/lib/db/firebase';
 import { useUserStore } from '@/store/user-store';
 import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';
@@ -33,6 +33,32 @@ export default function StatsPage() {
       console.error('Failed to load test results:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteTest = async (testId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      // Call Firebase directly from client - Firestore security rules protect the data
+      await deleteTestResult(testId, currentUserId);
+      // Don't remove from UI - StatsTable handles the UI state
+    } catch (error) {
+      console.error('Failed to delete test:', error);
+      alert('Failed to delete test. Please try again.');
+    }
+  };
+
+  const handleRestoreTest = async (testId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      // Call Firebase directly from client - Firestore security rules protect the data
+      await restoreTestResult(testId, currentUserId);
+      // Test is restored, no need to update UI
+    } catch (error) {
+      console.error('Failed to restore test:', error);
+      alert('Failed to restore test. Please try again.');
     }
   };
 
@@ -94,7 +120,7 @@ export default function StatsPage() {
             </div>
 
             {/* Results Table */}
-            <StatsTable results={results} />
+            <StatsTable results={results} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
 
             {/* Aggregate Analytics */}
             <AggregateAnalytics results={results} />

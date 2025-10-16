@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
   deleteDoc,
   query,
   where,
@@ -245,11 +246,15 @@ export async function getTestResult(id: string): Promise<TestResult | undefined>
 
 /**
  * Get all test results for a specific user (sorted by date, newest first)
+ * Excludes DELETED tests by default
  */
 export async function getTestResultsByUser(userId: string): Promise<TestResult[]> {
   try {
     const db = getFirebaseDb();
     const resultsRef = collection(db, TEST_RESULTS_COLLECTION);
+    
+    // Query for all tests by user, then filter out DELETED tests in memory
+    // We can't use 'in' with null in Firestore, so we query all and filter
     const q = query(
       resultsRef,
       where('userId', '==', userId),
@@ -261,10 +266,16 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      results.push({
-        ...data,
-        createdAt: convertTimestampToDate(data.createdAt),
-      } as TestResult);
+      const status = data.status || 'COMPLETE'; // Default to COMPLETE for legacy tests
+      
+      // Only include tests that are not DELETED
+      if (status !== 'DELETED') {
+        results.push({
+          ...data,
+          createdAt: convertTimestampToDate(data.createdAt),
+          status,
+        } as TestResult);
+      }
     });
 
     return results;
@@ -275,7 +286,7 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
 }
 
 /**
- * Delete a test result (with user verification)
+ * Delete a test result by setting status to DELETED (with user verification)
  */
 export async function deleteTestResult(id: string, userId: string): Promise<void> {
   try {
@@ -293,9 +304,37 @@ export async function deleteTestResult(id: string, userId: string): Promise<void
       throw new Error('Unauthorized: You can only delete your own test results');
     }
 
-    await deleteDoc(resultRef);
+    // Update status to DELETED using updateDoc (more efficient than setDoc with merge)
+    await updateDoc(resultRef, { status: 'DELETED' });
   } catch (error) {
     console.error('Failed to delete test result:', error);
+    throw error;
+  }
+}
+
+/**
+ * Restore a deleted test result by setting status back to COMPLETE
+ */
+export async function restoreTestResult(id: string, userId: string): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, id);
+
+    // Verify ownership before restoring
+    const resultDoc = await getDoc(resultRef);
+    if (!resultDoc.exists()) {
+      throw new Error('Test result not found');
+    }
+
+    const data = resultDoc.data();
+    if (data.userId !== userId) {
+      throw new Error('Unauthorized: You can only restore your own test results');
+    }
+
+    // Update status to COMPLETE using updateDoc
+    await updateDoc(resultRef, { status: 'COMPLETE' });
+  } catch (error) {
+    console.error('Failed to restore test result:', error);
     throw error;
   }
 }

@@ -1,24 +1,27 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TestResult } from '@/lib/types';
 import { format } from 'date-fns';
-import { Calendar, Zap, Target, Clock, ArrowUpDown } from 'lucide-react';
+import { Calendar, Zap, Target, Clock, ArrowUpDown, Trash2, Undo2 } from 'lucide-react';
 
 interface StatsTableProps {
   results: TestResult[];
+  onDeleteTest?: (testId: string) => void;
+  onRestoreTest?: (testId: string) => void;
 }
 
 type SortField = 'date' | 'wpm' | 'accuracy' | 'duration';
 type SortDirection = 'asc' | 'desc';
 type TimeFilter = 'all' | '7days' | '30days' | '90days';
 
-export function StatsTable({ results }: StatsTableProps) {
+export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableProps) {
   const router = useRouter();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [deletedTests, setDeletedTests] = useState<Set<string>>(new Set());
 
   // Filter results by time range
   const filteredResults = useMemo(() => {
@@ -87,6 +90,30 @@ export function StatsTable({ results }: StatsTableProps) {
 
   const handleRowClick = (resultId: string) => {
     router.push(`/results/${resultId}`);
+  };
+
+  const handleDeleteClick = async (e: React.MouseEvent, testId: string) => {
+    e.stopPropagation();
+
+    // Mark as deleted in UI immediately
+    setDeletedTests((prev) => new Set(prev).add(testId));
+
+    // Call the delete API
+    await onDeleteTest?.(testId);
+  };
+
+  const handleUndoClick = async (e: React.MouseEvent, testId: string) => {
+    e.stopPropagation();
+
+    // Remove from deleted set
+    setDeletedTests((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(testId);
+      return newSet;
+    });
+
+    // Call the restore API
+    await onRestoreTest?.(testId);
   };
 
   const SortButton = ({
@@ -162,6 +189,7 @@ export function StatsTable({ results }: StatsTableProps) {
                 <SortButton field="duration" label="Duration" />
               </th>
               <th className="text-left p-4">Words</th>
+              <th className="text-left p-4 w-20">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -223,6 +251,27 @@ export function StatsTable({ results }: StatsTableProps) {
                       {result.incorrectWordCount} incorrect
                     </div>
                   </div>
+                </td>
+                <td className="p-4">
+                  {deletedTests.has(result.id) ? (
+                    <button
+                      onClick={(e) => handleUndoClick(e, result.id)}
+                      className="flex items-center gap-1 px-3 py-1 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded transition-colors text-sm font-medium"
+                      title="Undo delete"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                      Undo
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => handleDeleteClick(e, result.id)}
+                      className="flex items-center gap-1 px-3 py-1 bg-editor-error/10 hover:bg-editor-error/20 text-editor-error rounded transition-colors text-sm font-medium"
+                      title="Delete test"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
