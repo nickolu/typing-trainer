@@ -255,15 +255,6 @@ export default function SeedDataPage() {
               </div>
             )}
           </div>
-
-          <div className="mt-6 text-center">
-            <a
-              href="/"
-              className="text-blue-400 hover:text-blue-300 underline"
-            >
-              ← Back to Home
-            </a>
-          </div>
         </div>
       </div>
     </AuthGuard>
