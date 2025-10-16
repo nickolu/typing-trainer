@@ -162,13 +162,22 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
               {aiOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setDefaultContentStyle(option.value)}
-                  className={`p-3 rounded-lg border text-left transition-all ${
+                  onClick={() => {
+                    if (!currentUserId) {
+                      window.open('/login', '_blank');
+                    } else {
+                      setDefaultContentStyle(option.value);
+                    }
+                  }}
+                  className={`p-3 rounded-lg border text-left transition-all relative ${
                     defaultContentStyle === option.value
                       ? 'border-purple-400 bg-purple-600/10'
                       : 'border-editor-muted hover:border-purple-400/50'
                   }`}
                 >
+                  {!currentUserId && (
+                    <span className="absolute top-2 right-2 text-lg">🔒</span>
+                  )}
                   <div className="font-medium text-sm">{option.label}</div>
                   <div className="text-xs text-editor-muted mt-1">
                     {option.description}

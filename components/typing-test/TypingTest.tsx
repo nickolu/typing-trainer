@@ -14,8 +14,8 @@ import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-c
 
 export function TypingTest() {
   const router = useRouter();
-  const { currentUserId } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights } = useSettingsStore();
+  const { currentUserId, isAuthenticated } = useUserStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, setAutoSave } = useSettingsStore();
   const {
     status,
     duration,
@@ -37,6 +37,13 @@ export function TypingTest() {
   } = useTestStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // Ensure autoSave is disabled for anonymous users
+  useEffect(() => {
+    if (!isAuthenticated && autoSave) {
+      setAutoSave(false);
+    }
+  }, [isAuthenticated, autoSave, setAutoSave]);
 
   // Initialize test on mount
   useEffect(() => {
@@ -294,18 +301,44 @@ export function TypingTest() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-3xl font-bold">Typing Test</h1>
           <div className="flex items-center gap-4">
-            <Link
-              href="/stats"
-              className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
-            >
-              View Stats
-            </Link>
-            <TestTimer
-              duration={duration}
-              startTime={startTime}
-              onComplete={handleComplete}
-            />
-            <LogoutButton />
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/stats"
+                  className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
+                >
+                  View Stats
+                </Link>
+                <TestTimer
+                  duration={duration}
+                  startTime={startTime}
+                  onComplete={handleComplete}
+                />
+                <LogoutButton />
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => window.open('/login', '_blank')}
+                  className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors flex items-center gap-2"
+                  title="Sign up to access stats"
+                >
+                  <span className="text-lg">🔒</span>
+                  View Stats
+                </button>
+                <TestTimer
+                  duration={duration}
+                  startTime={startTime}
+                  onComplete={handleComplete}
+                />
+                <Link
+                  href="/login"
+                  className="px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
+                >
+                  Sign In
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
