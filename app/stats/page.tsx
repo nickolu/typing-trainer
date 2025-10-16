@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { TestResult } from '@/lib/types';
 import { getTestResultsByUser, deleteTestResult, restoreTestResult } from '@/lib/db/firebase';
@@ -11,9 +11,12 @@ import { AccuracyChart } from '@/components/charts/AccuracyChart';
 import { AggregateAnalytics } from '@/components/charts/AggregateAnalytics';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 
+type TimeFilter = 'all' | '7days' | '30days' | '90days';
+
 export default function StatsPage() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const { currentUserId } = useUserStore();
 
   useEffect(() => {
@@ -61,6 +64,31 @@ export default function StatsPage() {
       alert('Failed to restore test. Please try again.');
     }
   };
+
+  // Filter results by time range
+  const filteredResults = useMemo(() => {
+    if (timeFilter === 'all') return results;
+
+    const now = new Date();
+    const cutoffDate = new Date();
+
+    switch (timeFilter) {
+      case '7days':
+        cutoffDate.setDate(now.getDate() - 7);
+        break;
+      case '30days':
+        cutoffDate.setDate(now.getDate() - 30);
+        break;
+      case '90days':
+        cutoffDate.setDate(now.getDate() - 90);
+        break;
+    }
+
+    return results.filter((result) => {
+      const resultDate = new Date(result.createdAt);
+      return resultDate >= cutoffDate;
+    });
+  }, [results, timeFilter]);
 
   if (loading) {
     return (
@@ -113,17 +141,47 @@ export default function StatsPage() {
           </div>
         ) : (
           <div className="space-y-8">
+            {/* Date Range Filter */}
+            <div className="bg-editor-bg border border-editor-muted rounded-lg p-4">
+              <div className="flex items-center gap-4">
+                <span className="text-editor-muted font-medium">Time Range:</span>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'all', label: 'All Time' },
+                    { value: '7days', label: 'Last 7 Days' },
+                    { value: '30days', label: 'Last 30 Days' },
+                    { value: '90days', label: 'Last 90 Days' },
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      onClick={() => setTimeFilter(filter.value as TimeFilter)}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                        timeFilter === filter.value
+                          ? 'bg-editor-accent text-white'
+                          : 'bg-editor-muted/30 text-editor-muted hover:bg-editor-muted/50'
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="ml-auto text-editor-muted">
+                  {filteredResults.length} {filteredResults.length === 1 ? 'test' : 'tests'}
+                </div>
+              </div>
+            </div>
+
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <WPMChart results={results} />
-              <AccuracyChart results={results} />
+              <WPMChart results={filteredResults} />
+              <AccuracyChart results={filteredResults} />
             </div>
 
             {/* Results Table */}
-            <StatsTable results={results} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
+            <StatsTable results={filteredResults} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
 
             {/* Aggregate Analytics */}
-            <AggregateAnalytics results={results} />
+            <AggregateAnalytics results={filteredResults} />
           </div>
         )}
       </div>

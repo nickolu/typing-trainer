@@ -14,43 +14,16 @@ interface StatsTableProps {
 
 type SortField = 'date' | 'wpm' | 'accuracy' | 'duration';
 type SortDirection = 'asc' | 'desc';
-type TimeFilter = 'all' | '7days' | '30days' | '90days';
 
 export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableProps) {
   const router = useRouter();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [deletedTests, setDeletedTests] = useState<Set<string>>(new Set());
-
-  // Filter results by time range
-  const filteredResults = useMemo(() => {
-    if (timeFilter === 'all') return results;
-
-    const now = new Date();
-    const cutoffDate = new Date();
-
-    switch (timeFilter) {
-      case '7days':
-        cutoffDate.setDate(now.getDate() - 7);
-        break;
-      case '30days':
-        cutoffDate.setDate(now.getDate() - 30);
-        break;
-      case '90days':
-        cutoffDate.setDate(now.getDate() - 90);
-        break;
-    }
-
-    return results.filter((result) => {
-      const resultDate = new Date(result.createdAt);
-      return resultDate >= cutoffDate;
-    });
-  }, [results, timeFilter]);
 
   // Sort results
   const sortedResults = useMemo(() => {
-    const sorted = [...filteredResults];
+    const sorted = [...results];
 
     sorted.sort((a, b) => {
       let comparison = 0;
@@ -75,7 +48,7 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
     });
 
     return sorted;
-  }, [filteredResults, sortField, sortDirection]);
+  }, [results, sortField, sortDirection]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -141,36 +114,6 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
 
   return (
     <div className="bg-editor-bg border border-editor-muted rounded-lg overflow-hidden">
-      {/* Filters */}
-      <div className="p-4 border-b border-editor-muted bg-editor-bg/50">
-        <div className="flex items-center gap-4">
-          <span className="text-editor-muted font-medium">Time Range:</span>
-          <div className="flex gap-2">
-            {[
-              { value: 'all', label: 'All Time' },
-              { value: '7days', label: 'Last 7 Days' },
-              { value: '30days', label: 'Last 30 Days' },
-              { value: '90days', label: 'Last 90 Days' },
-            ].map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setTimeFilter(filter.value as TimeFilter)}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  timeFilter === filter.value
-                    ? 'bg-editor-accent text-white'
-                    : 'bg-editor-muted/30 text-editor-muted hover:bg-editor-muted/50'
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-          <div className="ml-auto text-editor-muted">
-            {sortedResults.length} {sortedResults.length === 1 ? 'test' : 'tests'}
-          </div>
-        </div>
-      </div>
-
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full">
