@@ -31,8 +31,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
       return;
     }
 
-    // Allow access to login page without authentication
-    if (pathname === '/login') {
+    // Public paths that don't require authentication
+    const publicPaths = ['/login', '/'];
+    if (publicPaths.includes(pathname)) {
       return;
     }
 
@@ -54,8 +55,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
     );
   }
 
-  // If on login page, always show it
-  if (pathname === '/login') {
+  // Public paths that don't require authentication
+  const publicPaths = ['/login', '/'];
+  if (publicPaths.includes(pathname)) {
     return <>{children}</>;
   }
 

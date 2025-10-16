@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useUserStore } from './user-store';
 
 export type TestDuration = 15 | 30 | 60 | 120;
 // Static content from library
@@ -59,7 +60,14 @@ export const useSettingsStore = create<SettingsState>()(
 
       setDefaultDuration: (duration) => set({ defaultDuration: duration }),
 
-      setAutoSave: (autoSave) => set({ autoSave }),
+      setAutoSave: (autoSave) => {
+        // Only allow enabling autoSave if user is authenticated
+        const { isAuthenticated } = useUserStore.getState();
+        if (autoSave && !isAuthenticated) {
+          return; // Silently ignore attempts to enable autoSave when not authenticated
+        }
+        set({ autoSave });
+      },
 
       setNoBackspaceMode: (enabled) => set({ noBackspaceMode: enabled }),
 
