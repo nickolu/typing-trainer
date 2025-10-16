@@ -413,7 +413,7 @@ export function TypingTest() {
             <p className="text-editor-muted">Generating new content...</p>
           </div>
         )}
-        <div className="h-48 overflow-y-auto p-8 scroll-smooth">
+        <div className="h-48 overflow-y-auto p-8">
           <TestDisplay
             targetWords={targetWords}
             completedWords={completedWords}
