@@ -10,6 +10,9 @@
   body {
     @apply bg-editor-bg text-editor-fg font-sans;
   }
+  input {
+    @apply bg-zinc-900 border border-zinc-800 rounded-lg;
+  }
 }
 
 @layer utilities {

@@ -88,8 +88,8 @@ export default function LoginPage() {
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   placeholder="Enter your name"
-                  className="w-full px-4 py-3 bg-editor-bg-alt border border-editor-muted rounded-lg
-                           text-editor-fg placeholder-editor-muted/60
+                  className="w-full px-4 py-3 bg-zinc-900 border border-zinc-800 rounded-lg
+                           placeholder-editor-muted/60
                            focus:outline-none focus:ring-2 focus:ring-editor-accent focus:border-transparent
                            transition-all"
                   disabled={isLoading || isSubmitting}
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="w-full px-4 py-3 bg-editor-bg-alt border border-editor-muted rounded-lg
-                         text-editor-fg placeholder-editor-muted/60
+                         placeholder-editor-muted/60
                          focus:outline-none focus:ring-2 focus:ring-editor-accent focus:border-transparent
                          transition-all"
                 disabled={isLoading || isSubmitting}
@@ -130,7 +130,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={mode === 'signup' ? 'At least 6 characters' : 'Enter your password'}
                 className="w-full px-4 py-3 bg-editor-bg-alt border border-editor-muted rounded-lg
-                         text-editor-fg placeholder-editor-muted/60
+                         placeholder-editor-muted/60
                          focus:outline-none focus:ring-2 focus:ring-editor-accent focus:border-transparent
                          transition-all"
                 disabled={isLoading || isSubmitting}
