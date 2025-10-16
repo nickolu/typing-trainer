@@ -251,7 +251,7 @@ export function TypingTest() {
       }
 
       // Prevent default for keys we're handling
-      if (e.key === 'Tab' || e.key === 'Backspace') {
+      if (e.key === 'Tab' || e.key === 'Backspace' || e.key === ' ') {
         e.preventDefault();
       }
 
