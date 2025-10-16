@@ -80,11 +80,25 @@ export function TestDisplay({
 
   // Auto-scroll to keep current word in view
   useEffect(() => {
-    if (currentWordRef.current) {
-      currentWordRef.current.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
+    if (currentWordRef.current && textContainerRef.current) {
+      const wordElement = currentWordRef.current;
+      const container = textContainerRef.current.parentElement;
+
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        const wordRect = wordElement.getBoundingClientRect();
+
+        // Only scroll if the word is near the bottom of the visible area
+        // This prevents unnecessary scrolling on every keystroke
+        const bottomThreshold = containerRect.bottom - 60; // 60px from bottom
+
+        if (wordRect.bottom > bottomThreshold) {
+          wordElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        }
+      }
     }
   }, [currentWordIndex]);
 
