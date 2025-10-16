@@ -59,15 +59,18 @@ export function TypingTest() {
   useEffect(() => {
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
       // Reinitialize the test with new duration but same words
+      // Preserve practice mode and sequences
       initializeTest(
         {
           duration: defaultDuration,
           testContentId: 'regenerated',
+          isPractice,
+          practiceSequences,
         },
         targetWords
       );
     }
-  }, [defaultDuration, status, targetWords, duration, initializeTest]);
+  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences]);
 
   // Cleanup: Reset test when component unmounts (e.g., navigating away)
   useEffect(() => {
