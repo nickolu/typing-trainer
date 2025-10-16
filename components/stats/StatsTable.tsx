@@ -9,19 +9,19 @@ import { Calendar, Zap, Target, Clock, ArrowUpDown, Trash2, Undo2 } from 'lucide
 interface StatsTableProps {
   results: TestResult[];
   onDeleteTest?: (testId: string) => void;
+  onRestoreTest?: (testId: string) => void;
 }
 
 type SortField = 'date' | 'wpm' | 'accuracy' | 'duration';
 type SortDirection = 'asc' | 'desc';
 type TimeFilter = 'all' | '7days' | '30days' | '90days';
 
-export function StatsTable({ results, onDeleteTest }: StatsTableProps) {
+export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableProps) {
   const router = useRouter();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
-  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [deletedTests, setDeletedTests] = useState<Set<string>>(new Set());
 
   // Filter results by time range
   const filteredResults = useMemo(() => {
@@ -92,37 +92,29 @@ export function StatsTable({ results, onDeleteTest }: StatsTableProps) {
     router.push(`/results/${resultId}`);
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, testId: string) => {
-    e.stopPropagation();
-    setPendingDelete(testId);
-
-    // Set a timeout to actually delete after 3 seconds
-    deleteTimeoutRef.current = setTimeout(() => {
-      onDeleteTest?.(testId);
-      setPendingDelete(null);
-    }, 3000);
-  };
-
-  const handleUndoClick = (e: React.MouseEvent) => {
+  const handleDeleteClick = async (e: React.MouseEvent, testId: string) => {
     e.stopPropagation();
 
-    // Clear the timeout to prevent deletion
-    if (deleteTimeoutRef.current) {
-      clearTimeout(deleteTimeoutRef.current);
-      deleteTimeoutRef.current = null;
-    }
+    // Mark as deleted in UI immediately
+    setDeletedTests((prev) => new Set(prev).add(testId));
 
-    setPendingDelete(null);
+    // Call the delete API
+    await onDeleteTest?.(testId);
   };
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (deleteTimeoutRef.current) {
-        clearTimeout(deleteTimeoutRef.current);
-      }
-    };
-  }, []);
+  const handleUndoClick = async (e: React.MouseEvent, testId: string) => {
+    e.stopPropagation();
+
+    // Remove from deleted set
+    setDeletedTests((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(testId);
+      return newSet;
+    });
+
+    // Call the restore API
+    await onRestoreTest?.(testId);
+  };
 
   const SortButton = ({
     field,
@@ -261,9 +253,9 @@ export function StatsTable({ results, onDeleteTest }: StatsTableProps) {
                   </div>
                 </td>
                 <td className="p-4">
-                  {pendingDelete === result.id ? (
+                  {deletedTests.has(result.id) ? (
                     <button
-                      onClick={(e) => handleUndoClick(e)}
+                      onClick={(e) => handleUndoClick(e, result.id)}
                       className="flex items-center gap-1 px-3 py-1 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded transition-colors text-sm font-medium"
                       title="Undo delete"
                     >

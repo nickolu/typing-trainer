@@ -245,6 +245,7 @@ export async function getTestResult(id: string): Promise<TestResult | undefined>
 
 /**
  * Get all test results for a specific user (sorted by date, newest first)
+ * Excludes DELETED tests by default
  */
 export async function getTestResultsByUser(userId: string): Promise<TestResult[]> {
   try {
@@ -253,6 +254,7 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
     const q = query(
       resultsRef,
       where('userId', '==', userId),
+      where('status', 'in', ['COMPLETE', null]), // Include COMPLETE and legacy tests without status
       orderBy('createdAt', 'desc')
     );
 
@@ -264,6 +266,7 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
       results.push({
         ...data,
         createdAt: convertTimestampToDate(data.createdAt),
+        status: data.status || 'COMPLETE', // Default to COMPLETE for legacy tests
       } as TestResult);
     });
 
@@ -275,7 +278,7 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
 }
 
 /**
- * Delete a test result (with user verification)
+ * Delete a test result by setting status to DELETED (with user verification)
  */
 export async function deleteTestResult(id: string, userId: string): Promise<void> {
   try {
@@ -293,9 +296,37 @@ export async function deleteTestResult(id: string, userId: string): Promise<void
       throw new Error('Unauthorized: You can only delete your own test results');
     }
 
-    await deleteDoc(resultRef);
+    // Update status to DELETED instead of deleting the document
+    await setDoc(resultRef, { status: 'DELETED' }, { merge: true });
   } catch (error) {
     console.error('Failed to delete test result:', error);
+    throw error;
+  }
+}
+
+/**
+ * Restore a deleted test result by setting status back to COMPLETE
+ */
+export async function restoreTestResult(id: string, userId: string): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, id);
+
+    // Verify ownership before restoring
+    const resultDoc = await getDoc(resultRef);
+    if (!resultDoc.exists()) {
+      throw new Error('Test result not found');
+    }
+
+    const data = resultDoc.data();
+    if (data.userId !== userId) {
+      throw new Error('Unauthorized: You can only restore your own test results');
+    }
+
+    // Update status to COMPLETE
+    await setDoc(resultRef, { status: 'COMPLETE' }, { merge: true });
+  } catch (error) {
+    console.error('Failed to restore test result:', error);
     throw error;
   }
 }

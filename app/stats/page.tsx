@@ -52,11 +52,33 @@ export default function StatsPage() {
         throw new Error(error.error || 'Failed to delete test');
       }
 
-      // Remove from local state
-      setResults((prev) => prev.filter((r) => r.id !== testId));
+      // Don't remove from UI - StatsTable handles the UI state
     } catch (error) {
       console.error('Failed to delete test:', error);
       alert('Failed to delete test. Please try again.');
+    }
+  };
+
+  const handleRestoreTest = async (testId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      const response = await fetch(
+        `/api/test-result?id=${testId}&userId=${currentUserId}`,
+        {
+          method: 'PATCH',
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to restore test');
+      }
+
+      // Test is restored, no need to update UI
+    } catch (error) {
+      console.error('Failed to restore test:', error);
+      alert('Failed to restore test. Please try again.');
     }
   };
 
@@ -121,7 +143,7 @@ export default function StatsPage() {
             </div>
 
             {/* Results Table */}
-            <StatsTable results={results} onDeleteTest={handleDeleteTest} />
+            <StatsTable results={results} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
           </div>
         )}
       </div>

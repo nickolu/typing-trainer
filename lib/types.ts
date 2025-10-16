@@ -9,12 +9,16 @@ export interface KeystrokeEvent {
   isBackspace: boolean; // Was this a correction
 }
 
+// Test result status
+export type TestResultStatus = 'COMPLETE' | 'DELETED';
+
 // Test result stored in IndexedDB
 export interface TestResult {
   id: string; // UUID
   userId?: string; // Future: for multi-user
   createdAt: Date;
   duration: number; // Test duration in seconds (30)
+  status?: TestResultStatus; // Status of the test (defaults to COMPLETE if not set)
 
   // Content
   testContentId: string; // Reference to static test
