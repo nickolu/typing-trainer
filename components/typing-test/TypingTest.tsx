@@ -40,10 +40,14 @@ export function TypingTest() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isCompletingTest, setIsCompletingTest] = useState(false);
 
-  // Ensure autoSave is disabled for anonymous users
+  // Manage autoSave based on authentication status
   useEffect(() => {
     if (!isAuthenticated && autoSave) {
+      // Disable autoSave for anonymous users
       setAutoSave(false);
+    } else if (isAuthenticated && !autoSave) {
+      // Enable autoSave by default for logged-in users
+      setAutoSave(true);
     }
   }, [isAuthenticated, autoSave, setAutoSave]);
 
