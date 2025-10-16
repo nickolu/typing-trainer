@@ -76,7 +76,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       id: userDoc.id,
       email: data.email,
       displayName: data.displayName,
-      createdAt: data.createdAt.toDate(),
+      createdAt: convertTimestampToDate(data.createdAt),
     };
   } catch (error) {
     console.error('Failed to get user profile:', error);
@@ -117,6 +117,45 @@ function removeUndefinedFields(obj: any): any {
 
   // Return primitives as-is
   return obj;
+}
+
+/**
+ * Helper function to safely convert Firestore Timestamp to Date
+ * Handles different formats: Timestamp object, plain object with seconds/nanoseconds, Date, or string
+ */
+function convertTimestampToDate(timestamp: any): Date {
+  if (!timestamp) {
+    return new Date();
+  }
+
+  // Already a Date object
+  if (timestamp instanceof Date) {
+    return timestamp;
+  }
+
+  // Firestore Timestamp object with toDate() method
+  if (timestamp.toDate && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+
+  // Plain object with seconds (Firestore Timestamp serialized)
+  if (timestamp.seconds !== undefined) {
+    return new Date(timestamp.seconds * 1000);
+  }
+
+  // String timestamp
+  if (typeof timestamp === 'string') {
+    return new Date(timestamp);
+  }
+
+  // Number timestamp (milliseconds)
+  if (typeof timestamp === 'number') {
+    return new Date(timestamp);
+  }
+
+  // Fallback
+  console.warn('Unknown timestamp format:', timestamp);
+  return new Date();
 }
 
 /**
@@ -196,7 +235,7 @@ export async function getTestResult(id: string): Promise<TestResult | undefined>
     const data = resultDoc.data();
     return {
       ...data,
-      createdAt: data.createdAt.toDate(),
+      createdAt: convertTimestampToDate(data.createdAt),
     } as TestResult;
   } catch (error) {
     console.error('Failed to get test result:', error);
@@ -224,7 +263,7 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
       const data = doc.data();
       results.push({
         ...data,
-        createdAt: data.createdAt.toDate(),
+        createdAt: convertTimestampToDate(data.createdAt),
       } as TestResult);
     });
 
