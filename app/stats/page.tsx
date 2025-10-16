@@ -16,7 +16,7 @@ type TimeFilter = 'all' | '7days' | '30days' | '90days';
 export default function StatsPage() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('7days');
   const { currentUserId } = useUserStore();
 
   useEffect(() => {
