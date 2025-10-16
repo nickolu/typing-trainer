@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TestResult } from '@/lib/types';
-import { getTestResultsByUser } from '@/lib/db/firebase';
+import { getTestResultsByUser, deleteTestResult, restoreTestResult } from '@/lib/db/firebase';
 import { useUserStore } from '@/store/user-store';
 import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';
@@ -40,18 +40,8 @@ export default function StatsPage() {
     if (!currentUserId) return;
 
     try {
-      const response = await fetch(
-        `/api/test-result?id=${testId}&userId=${currentUserId}`,
-        {
-          method: 'DELETE',
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete test');
-      }
-
+      // Call Firebase directly from client - Firestore security rules protect the data
+      await deleteTestResult(testId, currentUserId);
       // Don't remove from UI - StatsTable handles the UI state
     } catch (error) {
       console.error('Failed to delete test:', error);
@@ -63,18 +53,8 @@ export default function StatsPage() {
     if (!currentUserId) return;
 
     try {
-      const response = await fetch(
-        `/api/test-result?id=${testId}&userId=${currentUserId}`,
-        {
-          method: 'PATCH',
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to restore test');
-      }
-
+      // Call Firebase directly from client - Firestore security rules protect the data
+      await restoreTestResult(testId, currentUserId);
       // Test is restored, no need to update UI
     } catch (error) {
       console.error('Failed to restore test:', error);

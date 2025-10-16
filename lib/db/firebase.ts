@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  updateDoc,
   deleteDoc,
   query,
   where,
@@ -251,10 +252,12 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
   try {
     const db = getFirebaseDb();
     const resultsRef = collection(db, TEST_RESULTS_COLLECTION);
+    
+    // Query for all tests by user, then filter out DELETED tests in memory
+    // We can't use 'in' with null in Firestore, so we query all and filter
     const q = query(
       resultsRef,
       where('userId', '==', userId),
-      where('status', 'in', ['COMPLETE', null]), // Include COMPLETE and legacy tests without status
       orderBy('createdAt', 'desc')
     );
 
@@ -263,11 +266,16 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
 
     snapshot.forEach((doc) => {
       const data = doc.data();
-      results.push({
-        ...data,
-        createdAt: convertTimestampToDate(data.createdAt),
-        status: data.status || 'COMPLETE', // Default to COMPLETE for legacy tests
-      } as TestResult);
+      const status = data.status || 'COMPLETE'; // Default to COMPLETE for legacy tests
+      
+      // Only include tests that are not DELETED
+      if (status !== 'DELETED') {
+        results.push({
+          ...data,
+          createdAt: convertTimestampToDate(data.createdAt),
+          status,
+        } as TestResult);
+      }
     });
 
     return results;
@@ -296,8 +304,8 @@ export async function deleteTestResult(id: string, userId: string): Promise<void
       throw new Error('Unauthorized: You can only delete your own test results');
     }
 
-    // Update status to DELETED instead of deleting the document
-    await setDoc(resultRef, { status: 'DELETED' }, { merge: true });
+    // Update status to DELETED using updateDoc (more efficient than setDoc with merge)
+    await updateDoc(resultRef, { status: 'DELETED' });
   } catch (error) {
     console.error('Failed to delete test result:', error);
     throw error;
@@ -323,8 +331,8 @@ export async function restoreTestResult(id: string, userId: string): Promise<voi
       throw new Error('Unauthorized: You can only restore your own test results');
     }
 
-    // Update status to COMPLETE
-    await setDoc(resultRef, { status: 'COMPLETE' }, { merge: true });
+    // Update status to COMPLETE using updateDoc
+    await updateDoc(resultRef, { status: 'COMPLETE' });
   } catch (error) {
     console.error('Failed to restore test result:', error);
     throw error;
