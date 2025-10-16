@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "tsx scripts/seed-fake-data.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -35,6 +36,7 @@
     "eslint-config-next": "^15.0.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.6.0"
   }
 }

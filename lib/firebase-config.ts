@@ -17,6 +17,7 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let db: Firestore;
 let auth: Auth;
+let persistenceEnabled = false;
 
 export const initializeFirebase = () => {
   // Check if Firebase is already initialized
@@ -27,18 +28,28 @@ export const initializeFirebase = () => {
   }
 
   // Initialize Firestore
-  db = getFirestore(app);
+  if (!db) {
+    db = getFirestore(app);
+  }
 
   // Initialize Auth
-  auth = getAuth(app);
+  if (!auth) {
+    auth = getAuth(app);
+  }
 
   // Enable offline persistence (uses IndexedDB under the hood)
-  if (typeof window !== 'undefined') {
+  // Only try once per session and only in browser environment
+  if (typeof window !== 'undefined' && !persistenceEnabled) {
+    persistenceEnabled = true; // Mark as attempted to prevent retries
     enableIndexedDbPersistence(db).catch((err) => {
       if (err.code === 'failed-precondition') {
         console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
       } else if (err.code === 'unimplemented') {
         console.warn('Browser does not support offline persistence.');
+      } else {
+        // This can happen if Firestore was already initialized (e.g., during hot reload or API calls)
+        // It's safe to ignore as persistence may already be enabled from a previous initialization
+        console.warn('Persistence could not be enabled:', err.code);
       }
     });
   }
