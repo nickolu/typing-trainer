@@ -38,6 +38,7 @@ export function TypingTest() {
   } = useTestStore();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [isCompletingTest, setIsCompletingTest] = useState(false);
 
   // Ensure autoSave is disabled for anonymous users
   useEffect(() => {
@@ -223,16 +224,21 @@ export function TypingTest() {
 
   // Handle test completion
   const handleComplete = useCallback(async () => {
+    setIsCompletingTest(true);
     try {
       const result = await completeTest(autoSave);
       // Navigate to results page only if we got a valid result AND it was saved
       if (result && autoSave) {
         router.push(`/results/${result.id}`);
+      } else {
+        // If practice mode, show results inline
+        setIsCompletingTest(false);
       }
       // If practice mode (autoSave is false), result is stored in test store
       // and will be displayed inline - no navigation needed
     } catch (error) {
       console.error('Failed to complete test:', error);
+      setIsCompletingTest(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completeTest, router, autoSave]);
@@ -290,6 +296,18 @@ export function TypingTest() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <p className="text-editor-muted">Loading test...</p>
+      </div>
+    );
+  }
+
+  // Show loading state when completing test and navigating
+  if (isCompletingTest && autoSave) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-editor-accent/30 border-t-editor-accent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-editor-muted">Loading results...</p>
+        </div>
       </div>
     );
   }

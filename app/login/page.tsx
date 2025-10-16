@@ -17,10 +17,10 @@ export default function LoginPage() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !isLoading) {
       router.push('/');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +54,18 @@ export default function LoginPage() {
     setMode(mode === 'login' ? 'signup' : 'login');
     clearError();
   };
+
+  // Show loading state during redirect after successful authentication
+  if (isAuthenticated && !isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-editor-bg">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-editor-accent/30 border-t-editor-accent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-editor-muted">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-editor-bg">
