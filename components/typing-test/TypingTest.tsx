@@ -434,6 +434,18 @@ export function TypingTest() {
           <p>Press Tab to skip to the next word</p>
         )}
       </div>
+
+      {/* Attribution */}
+      <div className="w-full max-w-4xl mt-6 text-xs text-editor-muted/60 text-center">
+        <a
+          href="https://cunningjams.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hover:text-editor-muted transition-colors"
+        >
+          By Nickolus Cunningham
+        </a>
+      </div>
     </div>
   );
 }
