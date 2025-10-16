@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TestResult } from '@/lib/types';
 import { format } from 'date-fns';
@@ -21,6 +21,7 @@ export function StatsTable({ results, onDeleteTest }: StatsTableProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
+  const deleteTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Filter results by time range
   const filteredResults = useMemo(() => {
@@ -94,18 +95,34 @@ export function StatsTable({ results, onDeleteTest }: StatsTableProps) {
   const handleDeleteClick = (e: React.MouseEvent, testId: string) => {
     e.stopPropagation();
     setPendingDelete(testId);
+
+    // Set a timeout to actually delete after 3 seconds
+    deleteTimeoutRef.current = setTimeout(() => {
+      onDeleteTest?.(testId);
+      setPendingDelete(null);
+    }, 3000);
   };
 
   const handleUndoClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Clear the timeout to prevent deletion
+    if (deleteTimeoutRef.current) {
+      clearTimeout(deleteTimeoutRef.current);
+      deleteTimeoutRef.current = null;
+    }
+
     setPendingDelete(null);
   };
 
-  const handleConfirmDelete = (e: React.MouseEvent, testId: string) => {
-    e.stopPropagation();
-    onDeleteTest?.(testId);
-    setPendingDelete(null);
-  };
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const SortButton = ({
     field,
