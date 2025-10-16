@@ -12,8 +12,9 @@ import {
   normalizeTypedWords,
 } from '@/lib/test-engine/calculations';
 import { analyzeMistakes } from '@/lib/test-engine/mistake-analysis';
-import { saveTestResult } from '@/lib/db';
+import { saveTestResult } from '@/lib/db/firebase';
 import { useSettingsStore } from './settings-store';
+import { useUserStore } from './user-store';
 
 export const useTestStore = create<TestState>((set, get) => ({
   // Initial state
@@ -276,9 +277,17 @@ export const useTestStore = create<TestState>((set, get) => ({
       characterSubstitutions: Object.keys(characterSubstitutions).length > 0 ? characterSubstitutions : undefined,
     };
 
-    // Save to IndexedDB only if shouldSave is true
+    // Save to Firebase only if shouldSave is true
     if (shouldSave) {
-      await saveTestResult(result);
+      // Get current userId from user store
+      const currentUserId = useUserStore.getState().currentUserId;
+
+      if (!currentUserId) {
+        console.error('Cannot save test result: no user logged in');
+        throw new Error('User not authenticated');
+      }
+
+      await saveTestResult(result, currentUserId);
     }
 
     // Update state

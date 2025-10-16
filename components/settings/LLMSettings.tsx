@@ -26,12 +26,12 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
   ];
 
   const styleOptions: { value: ContentStyle; label: string; description: string }[] = [
-    { value: 'prose', label: 'Prose', description: 'Literary fiction style' },
-    { value: 'quote', label: 'Quote', description: 'Inspirational quotes' },
-    { value: 'technical', label: 'Technical', description: 'Programming docs' },
-    { value: 'common', label: 'Common', description: 'Everyday phrases' },
-    { value: 'sequences', label: 'Slowest Sequences', description: 'Practice weaknesses' },
-    { value: 'custom', label: 'Custom', description: 'Custom prompts' },
+    { value: 'ai-prose', label: 'Prose', description: 'Literary fiction style' },
+    { value: 'ai-quote', label: 'Quote', description: 'Inspirational quotes' },
+    { value: 'ai-technical', label: 'Technical', description: 'Programming docs' },
+    { value: 'ai-common', label: 'Common', description: 'Everyday phrases' },
+    { value: 'ai-sequences', label: 'Slowest Sequences', description: 'Practice weaknesses' },
+    { value: 'ai-custom', label: 'Custom', description: 'Custom prompts' },
   ];
 
   if (!isOpen) return null;

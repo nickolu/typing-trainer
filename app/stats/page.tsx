@@ -3,23 +3,31 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TestResult } from '@/lib/types';
-import { getAllTestResults } from '@/lib/db';
+import { getTestResultsByUser } from '@/lib/db/firebase';
+import { useUserStore } from '@/store/user-store';
 import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';
 import { AccuracyChart } from '@/components/charts/AccuracyChart';
 import { AggregateAnalytics } from '@/components/charts/AggregateAnalytics';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 
 export default function StatsPage() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const { currentUserId } = useUserStore();
 
   useEffect(() => {
-    loadResults();
-  }, []);
+    if (currentUserId) {
+      loadResults();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUserId]);
 
   const loadResults = async () => {
+    if (!currentUserId) return;
+
     try {
-      const allResults = await getAllTestResults();
+      const allResults = await getTestResultsByUser(currentUserId);
       setResults(allResults);
     } catch (error) {
       console.error('Failed to load test results:', error);
@@ -46,12 +54,15 @@ export default function StatsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-4xl font-bold">Your Stats</h1>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
-            >
-              Back to Home
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/"
+                className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
+              >
+                Back to Home
+              </Link>
+              <LogoutButton />
+            </div>
           </div>
           <p className="text-editor-muted">
             View all your past typing tests and track your progress over time.

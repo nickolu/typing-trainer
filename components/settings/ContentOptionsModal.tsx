@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
+import { useUserStore } from '@/store/user-store';
 import { X, BookOpen, Sparkles, Target } from 'lucide-react';
 
 interface ContentOptionsModalProps {
@@ -11,6 +12,7 @@ interface ContentOptionsModalProps {
 }
 
 export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsModalProps) {
+  const { currentUserId } = useUserStore();
   const {
     defaultContentStyle,
     customPrompt,
@@ -66,11 +68,16 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
   };
 
   const handleUseSlowestSequences = async () => {
+    if (!currentUserId) {
+      setSequenceError('User not authenticated');
+      return;
+    }
+
     setIsLoadingSequences(true);
     setSequenceError(null);
     try {
-      const { getAggregateSlowSequences } = await import('@/lib/db');
-      const slowSequences = await getAggregateSlowSequences(5);
+      const { getAggregateSlowSequences } = await import('@/lib/db/firebase');
+      const slowSequences = await getAggregateSlowSequences(currentUserId, 5);
       if (slowSequences.length > 0) {
         setCustomSequences(slowSequences);
       } else {
@@ -236,7 +243,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                   />
                   {defaultContentStyle !== 'ai-custom' && (
                     <p className="text-xs text-editor-muted mt-1">
-                      e.g., "Include more technical terms" or "Focus on shorter sentences"
+                      e.g., &quot;Include more technical terms&quot; or &quot;Focus on shorter sentences&quot;
                     </p>
                   )}
                 </div>
@@ -318,7 +325,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                     </div>
                   ) : (
                     <p className="text-xs text-editor-muted">
-                      Add character sequences you want to practice, or click "Use Slowest Sequences" to auto-fill based on your history.
+                      Add character sequences you want to practice, or click &quot;Use Slowest Sequences&quot; to auto-fill based on your history.
                     </p>
                   )}
                 </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { Target, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { AggregateSequence } from '@/lib/db';
+import { AggregateSequence } from '@/lib/db/firebase';
 
 interface AggregateSequenceChartProps {
   twoCharSequences: AggregateSequence[];

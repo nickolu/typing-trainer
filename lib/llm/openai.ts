@@ -5,7 +5,7 @@ export interface GenerateContentOptions {
   temperature?: number;
   maxTokens?: number;
   topic?: string;
-  style?: 'quote' | 'prose' | 'technical' | 'common' | 'custom';
+  style?: 'quote' | 'prose' | 'technical' | 'common' | 'custom' | 'sequences';
   customPrompt?: string;
   focusSequences?: string[];
   minWords?: number;
@@ -170,20 +170,23 @@ export async function generateTypingContent(
     case 'common':
       prompt += 'Write using common English phrases and everyday language. ';
       break;
+    case 'sequences':
+
+      break;
     case 'custom':
       prompt += topic ? `Write about: ${topic}. ` : '';
       break;
   }
 
   // Add topic if specified
-  if (topic && style !== 'custom') {
+  if (topic && style !== 'custom' && style !== 'sequences') {
     prompt += `The topic should be: ${topic}. `;
   }
 
   // Add focus sequences if specified
   if (focusSequences.length > 0) {
     const sequences = focusSequences.map(seq => `"${seq}"`);
-    prompt += `IMPORTANT: The user has opted to praces the following character sequences. Include these sequences as frequently as possible: ${sequences.join(', ')}. `;
+    prompt += `The user wishes to practice the following characters, words, or sequences: ${sequences.join(', ')}. The content does not need to be coherent or grammatically correct, but you can be creative if you want. Aim for 90% of the content to be represented by the characters, words, or sequences the user provided.`;
   }
 
   // Add custom prompt if specified (additional instructions)
@@ -192,7 +195,7 @@ export async function generateTypingContent(
   }
 
   // Final instructions
-  prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting. Return only the passage text, nothing else.`;
+  prompt += `Return only the passage text, nothing else.`;
 
   try {
     console.log('Prompt:', prompt);
@@ -260,7 +263,7 @@ export async function generateTargetedPractice(
   return generateTypingContent({
     ...options,
     focusSequences: sequences,
-    style: 'custom',
+    style: 'sequences',
     topic: randomTopic(),
   });
 }

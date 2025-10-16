@@ -312,7 +312,7 @@ export function getTestsByCategory(
 // Helper function to calculate required words for a given duration
 // Assumes average typing speed of 50 WPM
 export function calculateRequiredWords(durationSeconds: number): number {
-  const ASSUMED_WPM = 50;
+  const ASSUMED_WPM = 120;
   const durationMinutes = durationSeconds / 60;
   const requiredWords = Math.ceil(ASSUMED_WPM * durationMinutes);
 

@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore, isAIContentStyle } from '@/store/settings-store';
+import { useUserStore } from '@/store/user-store';
 import { TestDisplay } from './TestDisplay';
 import { TestTimer } from './TestTimer';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
 
 export function TypingTest() {
   const router = useRouter();
+  const { currentUserId } = useUserStore();
   const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights } = useSettingsStore();
   const {
     status,
@@ -98,8 +101,10 @@ export function TypingTest() {
             sequencesToUse = customSequences;
           } else {
             // Fallback: Import and get historical slow sequences
-            const { getAggregateSlowSequences } = await import('@/lib/db');
-            sequencesToUse = await getAggregateSlowSequences(5);
+            if (currentUserId) {
+              const { getAggregateSlowSequences } = await import('@/lib/db/firebase');
+              sequencesToUse = await getAggregateSlowSequences(currentUserId, 5);
+            }
           }
 
           if (sequencesToUse.length === 0) {
@@ -205,6 +210,7 @@ export function TypingTest() {
         words
       );
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
 
   // Handle test completion
@@ -220,6 +226,7 @@ export function TypingTest() {
     } catch (error) {
       console.error('Failed to complete test:', error);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completeTest, router, autoSave]);
 
   // Handle keyboard events
@@ -298,6 +305,7 @@ export function TypingTest() {
               startTime={startTime}
               onComplete={handleComplete}
             />
+            <LogoutButton />
           </div>
         </div>
       </div>

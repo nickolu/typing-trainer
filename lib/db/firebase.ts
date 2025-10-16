@@ -1,10 +1,141 @@
-import { db } from './schema';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  Timestamp,
+} from 'firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebase-config';
 import { TestResult } from '@/lib/types';
 
-// Save a test result
-export async function saveTestResult(result: TestResult): Promise<string> {
+// Collection names
+const USERS_COLLECTION = 'users';
+const TEST_RESULTS_COLLECTION = 'testResults';
+
+// User profile type (stored in Firestore)
+export interface UserProfile {
+  id: string;
+  email: string;
+  displayName: string;
+  createdAt: Date;
+}
+
+/**
+ * Create a new user profile in Firestore
+ * Called after Firebase Auth user is created
+ */
+export async function createUserProfile(
+  userId: string,
+  email: string,
+  displayName: string
+): Promise<UserProfile> {
   try {
-    await db.testResults.add(result);
+    const db = getFirebaseDb();
+    const userRef = doc(db, USERS_COLLECTION, userId);
+
+    const userProfile: UserProfile = {
+      id: userId,
+      email,
+      displayName,
+      createdAt: new Date(),
+    };
+
+    await setDoc(userRef, {
+      email,
+      displayName,
+      createdAt: Timestamp.now(),
+    });
+
+    return userProfile;
+  } catch (error) {
+    console.error('Failed to create user profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get user profile by ID
+ */
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  try {
+    const db = getFirebaseDb();
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      return null;
+    }
+
+    const data = userDoc.data();
+    return {
+      id: userDoc.id,
+      email: data.email,
+      displayName: data.displayName,
+      createdAt: data.createdAt.toDate(),
+    };
+  } catch (error) {
+    console.error('Failed to get user profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Helper function to recursively remove undefined values from an object
+ * Firestore doesn't accept undefined values, even in nested objects/arrays
+ */
+function removeUndefinedFields(obj: any): any {
+  if (obj === null || obj === undefined) {
+    return null;
+  }
+
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    return obj.map(item => removeUndefinedFields(item));
+  }
+
+  // Handle objects (including Date, Timestamp, etc.)
+  if (typeof obj === 'object') {
+    // Don't process Date or Timestamp objects
+    if (obj instanceof Date || obj.constructor?.name === 'Timestamp') {
+      return obj;
+    }
+
+    const cleaned: any = {};
+    for (const key in obj) {
+      const value = obj[key];
+      if (value !== undefined) {
+        cleaned[key] = removeUndefinedFields(value);
+      }
+    }
+    return cleaned;
+  }
+
+  // Return primitives as-is
+  return obj;
+}
+
+/**
+ * Save a test result
+ */
+export async function saveTestResult(result: TestResult, userId: string): Promise<string> {
+  try {
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, result.id);
+
+    // Convert TestResult to Firestore-compatible format
+    // Remove undefined fields as Firestore doesn't accept them
+    const firestoreData = removeUndefinedFields({
+      ...result,
+      userId, // Always include userId
+      createdAt: Timestamp.fromDate(result.createdAt),
+    });
+
+    await setDoc(resultRef, firestoreData);
     return result.id;
   } catch (error) {
     console.error('Failed to save test result:', error);
@@ -12,64 +143,93 @@ export async function saveTestResult(result: TestResult): Promise<string> {
   }
 }
 
-// Get a test result by ID
+/**
+ * Get a test result by ID
+ */
 export async function getTestResult(id: string): Promise<TestResult | undefined> {
   try {
-    return await db.testResults.get(id);
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, id);
+    const resultDoc = await getDoc(resultRef);
+
+    if (!resultDoc.exists()) {
+      return undefined;
+    }
+
+    const data = resultDoc.data();
+    return {
+      ...data,
+      createdAt: data.createdAt.toDate(),
+    } as TestResult;
   } catch (error) {
     console.error('Failed to get test result:', error);
     throw error;
   }
 }
 
-// Get all test results, sorted by date (newest first)
-export async function getAllTestResults(): Promise<TestResult[]> {
-  try {
-    return await db.testResults.orderBy('createdAt').reverse().toArray();
-  } catch (error) {
-    console.error('Failed to get all test results:', error);
-    throw error;
-  }
-}
-
-// Get test results for a specific user (for future multi-user support)
+/**
+ * Get all test results for a specific user (sorted by date, newest first)
+ */
 export async function getTestResultsByUser(userId: string): Promise<TestResult[]> {
   try {
-    return await db.testResults
-      .where('userId')
-      .equals(userId)
-      .reverse()
-      .sortBy('createdAt');
+    const db = getFirebaseDb();
+    const resultsRef = collection(db, TEST_RESULTS_COLLECTION);
+    const q = query(
+      resultsRef,
+      where('userId', '==', userId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+    const results: TestResult[] = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      results.push({
+        ...data,
+        createdAt: data.createdAt.toDate(),
+      } as TestResult);
+    });
+
+    return results;
   } catch (error) {
     console.error('Failed to get test results by user:', error);
     throw error;
   }
 }
 
-// Delete a test result
-export async function deleteTestResult(id: string): Promise<void> {
+/**
+ * Delete a test result (with user verification)
+ */
+export async function deleteTestResult(id: string, userId: string): Promise<void> {
   try {
-    await db.testResults.delete(id);
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, id);
+
+    // Verify ownership before deleting
+    const resultDoc = await getDoc(resultRef);
+    if (!resultDoc.exists()) {
+      throw new Error('Test result not found');
+    }
+
+    const data = resultDoc.data();
+    if (data.userId !== userId) {
+      throw new Error('Unauthorized: You can only delete your own test results');
+    }
+
+    await deleteDoc(resultRef);
   } catch (error) {
     console.error('Failed to delete test result:', error);
     throw error;
   }
 }
 
-// Clear all test results
-export async function clearAllTestResults(): Promise<void> {
+/**
+ * Get aggregate slowest sequences across all test history for a user
+ */
+export async function getAggregateSlowSequences(userId: string, limit: number = 5): Promise<string[]> {
   try {
-    await db.testResults.clear();
-  } catch (error) {
-    console.error('Failed to clear test results:', error);
-    throw error;
-  }
-}
-
-// Get aggregate slowest sequences across all test history
-export async function getAggregateSlowSequences(limit: number = 5): Promise<string[]> {
-  try {
-    const results = await getAllTestResults();
+    const results = await getTestResultsByUser(userId);
 
     if (results.length === 0) {
       return [];
@@ -138,12 +298,13 @@ export interface AggregateSequence {
  * Get aggregate sequence timings across all tests with trend analysis
  */
 export async function getAggregateSequenceTimings(
+  userId: string,
   sequenceLength: number = 2,
   topN: number = 10,
   dateFilter?: { days?: number }
 ): Promise<AggregateSequence[]> {
   try {
-    let results = await getAllTestResults();
+    let results = await getTestResultsByUser(userId);
 
     // Apply date filter if provided
     if (dateFilter?.days) {
@@ -258,10 +419,11 @@ export interface AggregateMistakeData {
  * Get aggregate mistake patterns across all tests with trend analysis
  */
 export async function getAggregateMistakes(
+  userId: string,
   dateFilter?: { days?: number }
 ): Promise<AggregateMistakeData> {
   try {
-    let results = await getAllTestResults();
+    let results = await getTestResultsByUser(userId);
 
     // Apply date filter if provided
     if (dateFilter?.days) {
@@ -417,6 +579,3 @@ export async function getAggregateMistakes(
     };
   }
 }
-
-// Export the db instance
-export { db };

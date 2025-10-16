@@ -7,7 +7,8 @@ import {
   getAggregateMistakes,
   AggregateSequence,
   AggregateMistakeData,
-} from '@/lib/db';
+} from '@/lib/db/firebase';
+import { useUserStore } from '@/store/user-store';
 import { AggregateSequenceChart } from './AggregateSequenceChart';
 import { AggregateMistakeChart } from './AggregateMistakeChart';
 import { Loader2 } from 'lucide-react';
@@ -17,6 +18,7 @@ interface AggregateAnalyticsProps {
 }
 
 export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
+  const { currentUserId } = useUserStore();
   const [isLoading, setIsLoading] = useState(true);
   const [twoCharSequences, setTwoCharSequences] = useState<AggregateSequence[]>([]);
   const [threeCharSequences, setThreeCharSequences] = useState<AggregateSequence[]>([]);
@@ -28,7 +30,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
   // Load aggregate data when results change
   useEffect(() => {
     const loadAggregateData = async () => {
-      if (results.length === 0) {
+      if (results.length === 0 || !currentUserId) {
         setIsLoading(false);
         return;
       }
@@ -38,9 +40,9 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
       try {
         // Load aggregate sequence timings in parallel
         const [twoChar, threeChar, mistakes] = await Promise.all([
-          getAggregateSequenceTimings(2, 10),
-          getAggregateSequenceTimings(3, 10),
-          getAggregateMistakes(),
+          getAggregateSequenceTimings(currentUserId, 2, 10),
+          getAggregateSequenceTimings(currentUserId, 3, 10),
+          getAggregateMistakes(currentUserId),
         ]);
 
         setTwoCharSequences(twoChar);
@@ -54,7 +56,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
     };
 
     loadAggregateData();
-  }, [results]);
+  }, [results, currentUserId]);
 
   // Don't show anything if no results
   if (results.length === 0) {
