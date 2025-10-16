@@ -133,9 +133,6 @@ export default function StatsPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Aggregate Analytics */}
-            <AggregateAnalytics results={results} />
-
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <WPMChart results={results} />
@@ -144,6 +141,9 @@ export default function StatsPage() {
 
             {/* Results Table */}
             <StatsTable results={results} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
+
+            {/* Aggregate Analytics */}
+            <AggregateAnalytics results={results} />
           </div>
         )}
       </div>
