@@ -4,21 +4,23 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { TestResult } from '@/lib/types';
 import { format } from 'date-fns';
-import { Calendar, Zap, Target, Clock, ArrowUpDown } from 'lucide-react';
+import { Calendar, Zap, Target, Clock, ArrowUpDown, Trash2, Undo2 } from 'lucide-react';
 
 interface StatsTableProps {
   results: TestResult[];
+  onDeleteTest?: (testId: string) => void;
 }
 
 type SortField = 'date' | 'wpm' | 'accuracy' | 'duration';
 type SortDirection = 'asc' | 'desc';
 type TimeFilter = 'all' | '7days' | '30days' | '90days';
 
-export function StatsTable({ results }: StatsTableProps) {
+export function StatsTable({ results, onDeleteTest }: StatsTableProps) {
   const router = useRouter();
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   // Filter results by time range
   const filteredResults = useMemo(() => {
@@ -87,6 +89,22 @@ export function StatsTable({ results }: StatsTableProps) {
 
   const handleRowClick = (resultId: string) => {
     router.push(`/results/${resultId}`);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, testId: string) => {
+    e.stopPropagation();
+    setPendingDelete(testId);
+  };
+
+  const handleUndoClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPendingDelete(null);
+  };
+
+  const handleConfirmDelete = (e: React.MouseEvent, testId: string) => {
+    e.stopPropagation();
+    onDeleteTest?.(testId);
+    setPendingDelete(null);
   };
 
   const SortButton = ({
@@ -162,6 +180,7 @@ export function StatsTable({ results }: StatsTableProps) {
                 <SortButton field="duration" label="Duration" />
               </th>
               <th className="text-left p-4">Words</th>
+              <th className="text-left p-4 w-20">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -223,6 +242,27 @@ export function StatsTable({ results }: StatsTableProps) {
                       {result.incorrectWordCount} incorrect
                     </div>
                   </div>
+                </td>
+                <td className="p-4">
+                  {pendingDelete === result.id ? (
+                    <button
+                      onClick={(e) => handleUndoClick(e)}
+                      className="flex items-center gap-1 px-3 py-1 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded transition-colors text-sm font-medium"
+                      title="Undo delete"
+                    >
+                      <Undo2 className="w-4 h-4" />
+                      Undo
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => handleDeleteClick(e, result.id)}
+                      className="flex items-center gap-1 px-3 py-1 bg-editor-error/10 hover:bg-editor-error/20 text-editor-error rounded transition-colors text-sm font-medium"
+                      title="Delete test"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

@@ -36,6 +36,30 @@ export default function StatsPage() {
     }
   };
 
+  const handleDeleteTest = async (testId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      const response = await fetch(
+        `/api/test-result?id=${testId}&userId=${currentUserId}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete test');
+      }
+
+      // Remove from local state
+      setResults((prev) => prev.filter((r) => r.id !== testId));
+    } catch (error) {
+      console.error('Failed to delete test:', error);
+      alert('Failed to delete test. Please try again.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -97,7 +121,7 @@ export default function StatsPage() {
             </div>
 
             {/* Results Table */}
-            <StatsTable results={results} />
+            <StatsTable results={results} onDeleteTest={handleDeleteTest} />
           </div>
         )}
       </div>
