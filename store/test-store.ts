@@ -280,7 +280,15 @@ export const useTestStore = create<TestState>((set, get) => ({
     // Save to Firebase only if shouldSave is true
     if (shouldSave) {
       // Get current userId from user store
-      const currentUserId = useUserStore.getState().currentUserId;
+      const userState = useUserStore.getState();
+      const currentUserId = userState.currentUserId;
+
+      console.log('[TestStore] Attempting to save test result:', {
+        userId: currentUserId,
+        isAuthenticated: userState.isAuthenticated,
+        email: userState.email,
+        testId: result.id,
+      });
 
       if (!currentUserId) {
         console.error('Cannot save test result: no user logged in');

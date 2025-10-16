@@ -124,6 +124,32 @@ function removeUndefinedFields(obj: any): any {
  */
 export async function saveTestResult(result: TestResult, userId: string): Promise<string> {
   try {
+    // Check Firebase Auth state
+    const { getFirebaseAuth } = await import('@/lib/firebase-config');
+    const auth = getFirebaseAuth();
+    const currentUser = auth.currentUser;
+
+    console.log('[Firebase] Current Auth State:', {
+      authUserId: currentUser?.uid,
+      authEmail: currentUser?.email,
+      passedUserId: userId,
+      idsMatch: currentUser?.uid === userId,
+      isAuthenticated: !!currentUser,
+    });
+
+    if (!currentUser) {
+      console.error('[Firebase] No authenticated user found!');
+      throw new Error('Not authenticated - please log in again');
+    }
+
+    if (currentUser.uid !== userId) {
+      console.error('[Firebase] User ID mismatch!', {
+        authUid: currentUser.uid,
+        passedUserId: userId,
+      });
+      throw new Error('User ID mismatch - please log out and log in again');
+    }
+
     const db = getFirebaseDb();
     const resultRef = doc(db, TEST_RESULTS_COLLECTION, result.id);
 
@@ -135,10 +161,21 @@ export async function saveTestResult(result: TestResult, userId: string): Promis
       createdAt: Timestamp.fromDate(result.createdAt),
     });
 
+    // Debug logging
+    console.log('[Firebase] Attempting to save test result:', {
+      id: result.id,
+      userId,
+      hasKeystrokeTimings: !!result.keystrokeTimings,
+      keystrokeCount: result.keystrokeTimings?.length || 0,
+    });
+
     await setDoc(resultRef, firestoreData);
+
+    console.log('[Firebase] Successfully saved test result:', result.id);
     return result.id;
   } catch (error) {
-    console.error('Failed to save test result:', error);
+    console.error('[Firebase] Failed to save test result:', error);
+    console.error('[Firebase] UserID being used:', userId);
     throw error;
   }
 }
