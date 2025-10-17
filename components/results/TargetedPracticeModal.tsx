@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { X, Target } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { X, Target, Zap, AlertTriangle, Repeat, TrendingUp } from 'lucide-react';
 import { TestResult } from '@/lib/types';
 import { calculateSequenceTimings } from '@/lib/test-engine/calculations';
 import { analyzeMistakes } from '@/lib/test-engine/mistake-analysis';
@@ -26,6 +26,7 @@ export function TargetedPracticeModal({
   onGeneratePractice,
 }: TargetedPracticeModalProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
 
   // Calculate all available options
   const options = useMemo(() => {
@@ -113,6 +114,33 @@ export function TargetedPracticeModal({
     };
   }, [options]);
 
+  // Auto-select recommended options on first load
+  useEffect(() => {
+    if (!hasInitializedSelection && options.length > 0 && isOpen) {
+      const recommended = new Set<string>();
+
+      // Select top 2-3 from each category (up to 15 total)
+      const categories = [
+        groupedOptions['slow-2char'].slice(0, 3),
+        groupedOptions['mistake-seq'].slice(0, 3),
+        groupedOptions['char-confusion'].slice(0, 3),
+        groupedOptions['mistyped-word'].slice(0, 3),
+        groupedOptions['slow-3char'].slice(0, 3),
+      ];
+
+      categories.forEach(categoryOpts => {
+        categoryOpts.forEach(opt => {
+          if (recommended.size < 15) {
+            recommended.add(opt.id);
+          }
+        });
+      });
+
+      setSelectedIds(recommended);
+      setHasInitializedSelection(true);
+    }
+  }, [options, groupedOptions, hasInitializedSelection, isOpen]);
+
   const handleToggle = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -177,6 +205,37 @@ export function TargetedPracticeModal({
     });
   };
 
+  const getCategoryInfo = (category: keyof typeof groupedOptions) => {
+    const configs = {
+      'slow-2char': {
+        icon: Zap,
+        description: 'Speed up by drilling letter pairs you type slowly',
+        color: 'text-yellow-400'
+      },
+      'slow-3char': {
+        icon: Zap,
+        description: 'Master longer sequences to boost fluency',
+        color: 'text-yellow-400'
+      },
+      'mistake-seq': {
+        icon: AlertTriangle,
+        description: 'Fix accuracy issues on sequences you often mistype',
+        color: 'text-red-400'
+      },
+      'char-confusion': {
+        icon: Repeat,
+        description: 'Stop mixing up similar keys with targeted drills',
+        color: 'text-orange-400'
+      },
+      'mistyped-word': {
+        icon: TrendingUp,
+        description: 'Perfect whole words to increase confidence and speed',
+        color: 'text-green-400'
+      },
+    };
+    return configs[category];
+  };
+
   const renderCategory = (
     title: string,
     category: keyof typeof groupedOptions,
@@ -186,38 +245,45 @@ export function TargetedPracticeModal({
     if (categoryOptions.length === 0) return null;
 
     const allSelected = categoryOptions.every(opt => selectedIds.has(opt.id));
-    const someSelected = categoryOptions.some(opt => selectedIds.has(opt.id));
+    const categoryInfo = getCategoryInfo(category);
+    const Icon = categoryInfo.icon;
 
     return (
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-editor-fg">{title}</h3>
+      <div className="mb-5">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex items-start gap-2 flex-1">
+            <Icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${categoryInfo.color}`} />
+            <div className="flex-1">
+              <h3 className="font-semibold text-editor-fg text-sm">{title}</h3>
+              <p className="text-xs text-editor-muted mt-0.5">{categoryInfo.description}</p>
+            </div>
+          </div>
           <button
             onClick={() => handleSelectCategory(category)}
-            className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+            className="text-xs text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap ml-2"
           >
-            {allSelected ? 'Deselect All' : 'Select All'}
+            {allSelected ? 'Deselect' : 'Select All'}
           </button>
         </div>
-        <div className="space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {categoryOptions.map(option => (
             <label
               key={option.id}
-              className="flex items-center gap-3 p-3 bg-editor-bg/50 hover:bg-editor-bg/70 border border-editor-muted/30 rounded cursor-pointer transition-colors"
+              className="flex items-center gap-2 p-2 bg-editor-bg/50 hover:bg-editor-bg/70 border border-editor-muted/30 rounded cursor-pointer transition-colors"
             >
               <input
                 type="checkbox"
                 checked={selectedIds.has(option.id)}
                 onChange={() => handleToggle(option.id)}
                 disabled={!selectedIds.has(option.id) && selectedIds.size >= 20}
-                className="w-4 h-4 text-purple-600 bg-editor-bg border-editor-muted rounded focus:ring-purple-500 focus:ring-2"
+                className="w-3.5 h-3.5 text-purple-600 bg-editor-bg border-editor-muted rounded focus:ring-purple-500 focus:ring-1 flex-shrink-0"
               />
-              <div className="flex-1">
-                <div className="font-mono font-bold text-editor-fg">
+              <div className="flex-1 min-w-0">
+                <div className="font-mono font-bold text-sm text-editor-fg truncate">
                   {renderSequence(option.label)}
                 </div>
                 {option.subLabel && (
-                  <div className="text-xs text-editor-muted">{option.subLabel}</div>
+                  <div className="text-xs text-editor-muted truncate">{option.subLabel}</div>
                 )}
               </div>
             </label>
@@ -231,15 +297,15 @@ export function TargetedPracticeModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-editor-bg border border-editor-muted rounded-lg max-w-3xl w-full max-h-[80vh] flex flex-col">
+      <div className="bg-editor-bg border border-editor-muted rounded-lg max-w-4xl w-full max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-editor-muted">
+        <div className="flex items-center justify-between p-5 border-b border-editor-muted">
           <div className="flex items-center gap-3">
             <Target className="w-6 h-6 text-purple-400" />
             <div>
               <h2 className="text-xl font-bold">Generate Targeted Practice</h2>
               <p className="text-sm text-editor-muted">
-                Select up to 20 sequences or words to practice
+                Practice these patterns to increase your speed and accuracy
               </p>
             </div>
           </div>
@@ -252,7 +318,15 @@ export function TargetedPracticeModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-5">
+          {options.length > 0 && selectedIds.size > 0 && (
+            <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <p className="text-sm text-editor-fg">
+                <span className="font-semibold text-purple-400">✓ Recommended selections ready!</span> These patterns are holding back your performance. Drill them to see faster, more accurate typing.
+              </p>
+            </div>
+          )}
+
           {renderCategory('Slow 2-Character Sequences', 'slow-2char', 'No slow 2-character sequences found')}
           {renderCategory('Slow 3-Character Sequences', 'slow-3char', 'No slow 3-character sequences found')}
           {renderCategory('Problem Sequences (Mistakes)', 'mistake-seq', 'No mistake sequences found')}
