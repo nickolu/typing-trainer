@@ -399,7 +399,7 @@ export function TypingTest() {
       </div>
 
       {/* No Corrections Mode Banner */}
-      {noBackspaceMode && status === 'active' && (
+      {noBackspaceMode  && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
@@ -512,8 +512,17 @@ export function TypingTest() {
           />
         </div>
       </div>
-
+      {/* Footer hints */}
+      <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
+        {status === 'idle' && !isGenerating && (
+          <p>Start typing to begin the test...</p>
+        )}
+        {status === 'active' && (
+          <p>Press Tab or Space to skip to the next word.{noBackspaceMode ? ' Backspace is disabled' : ''}</p>
+        )}
+      </div>
       {/* Live WPM Speedometer - Only show when test is active */}
+      <div style={{minHeight: '180px'}}>
       <AnimatePresence>
         {status === 'active' && (
           <motion.div
@@ -527,16 +536,9 @@ export function TypingTest() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Footer hints */}
-      <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
-        {status === 'idle' && !isGenerating && (
-          <p>Start typing to begin the test...</p>
-        )}
-        {status === 'active' && (
-          <p>Press Tab to skip to the next word</p>
-        )}
       </div>
+
+
 
       {/* Attribution */}
       <div className="w-full max-w-4xl mt-6 text-xs text-editor-muted/60 text-center">
