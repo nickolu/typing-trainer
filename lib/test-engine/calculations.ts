@@ -212,3 +212,57 @@ export function normalizeTypedWords(
 
   return result;
 }
+
+/**
+ * Calculate live WPM during an active test
+ * Uses elapsed time and correctly typed words so far
+ */
+export function calculateLiveWPM(
+  targetWords: string[],
+  completedWords: string[],
+  currentInput: string,
+  currentWordIndex: number,
+  startTime: number
+): number {
+  const elapsedSeconds = (performance.now() - startTime) / 1000;
+
+  // Avoid division by zero
+  if (elapsedSeconds < 0.1) return 0;
+
+  // Count correct characters from completed words
+  let correctChars = 0;
+
+  for (let i = 0; i < completedWords.length; i++) {
+    const targetWord = targetWords[i] || '';
+    const typedWord = completedWords[i] || '';
+
+    if (targetWord === typedWord) {
+      correctChars += targetWord.length;
+      // Add space between words
+      if (i < completedWords.length - 1 || currentInput.length > 0) {
+        correctChars += 1;
+      }
+    }
+  }
+
+  // Add correct characters from current input
+  if (currentInput.length > 0 && currentWordIndex < targetWords.length) {
+    const currentTarget = targetWords[currentWordIndex];
+    for (let i = 0; i < Math.min(currentInput.length, currentTarget.length); i++) {
+      if (currentInput[i] === currentTarget[i]) {
+        correctChars++;
+      }
+    }
+  }
+
+  // Convert to "words" (5 chars = 1 word)
+  const words = correctChars / 5;
+
+  // Convert to minutes
+  const minutes = elapsedSeconds / 60;
+
+  // Calculate WPM
+  const wpm = minutes > 0 ? words / minutes : 0;
+
+  return Math.max(0, wpm); // Ensure non-negative
+}

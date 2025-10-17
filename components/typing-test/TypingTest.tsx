@@ -4,14 +4,17 @@ import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Lock } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { TestDisplay } from './TestDisplay';
 import { TestTimer } from './TestTimer';
+import { WPMSpeedometer } from './WPMSpeedometer';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
+import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
   const router = useRouter();
@@ -39,6 +42,7 @@ export function TypingTest() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isCompletingTest, setIsCompletingTest] = useState(false);
+  const [liveWPM, setLiveWPM] = useState(0);
 
   // Manage autoSave based on authentication status
   useEffect(() => {
@@ -249,6 +253,26 @@ export function TypingTest() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completeTest, router, autoSave]);
+
+  // Update live WPM during active test
+  useEffect(() => {
+    if (status === 'active' && startTime) {
+      const interval = setInterval(() => {
+        const wpm = calculateLiveWPM(
+          targetWords,
+          completedWords,
+          currentInput,
+          currentWordIndex,
+          startTime
+        );
+        setLiveWPM(wpm);
+      }, 100); // Update every 100ms for smooth animation
+
+      return () => clearInterval(interval);
+    } else {
+      setLiveWPM(0);
+    }
+  }, [status, startTime, targetWords, completedWords, currentInput, currentWordIndex]);
 
   // Handle keyboard events
   useEffect(() => {
@@ -488,6 +512,21 @@ export function TypingTest() {
           />
         </div>
       </div>
+
+      {/* Live WPM Speedometer - Only show when test is active */}
+      <AnimatePresence>
+        {status === 'active' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="w-full max-w-4xl mt-6 flex justify-center"
+          >
+            <WPMSpeedometer wpm={liveWPM} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Footer hints */}
       <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
