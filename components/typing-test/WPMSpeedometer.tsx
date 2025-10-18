@@ -17,7 +17,6 @@ export function WPMSpeedometer({ wpm, maxWPM = 120 }: WPMSpeedometerProps) {
         <svg
           viewBox="0 0 200 100"
           className="w-full h-full"
-          style={{ transform: 'scaleY(1.2)' }}
         >
           {/* Background arc */}
           <path
