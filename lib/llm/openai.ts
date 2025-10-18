@@ -13,6 +13,7 @@ export interface GenerateContentOptions {
 
 export interface GenerateContentResult {
   text: string;
+  title: string;
   model: string;
   tokensUsed: number;
 }
@@ -195,7 +196,7 @@ export async function generateTypingContent(
   }
 
   // Final instructions
-  prompt += `Return only the passage text, nothing else.`;
+  prompt += `Return the response in JSON format with two fields: "title" (a short 2-5 word descriptive title for the content) and "text" (the passage text). Example: {"title": "The Future of AI", "text": "Your passage here..."}.`;
 
   try {
     console.log('Prompt:', prompt);
@@ -205,7 +206,7 @@ export async function generateTypingContent(
         {
           role: 'system',
           content:
-            'You are a helpful assistant that generates typing test content. Generate natural, flowing text suitable for typing practice.',
+            'You are a helpful assistant that generates typing test content. Generate natural, flowing text suitable for typing practice. Always respond in JSON format with "title" and "text" fields.',
         },
         {
           role: 'user',
@@ -214,26 +215,34 @@ export async function generateTypingContent(
       ],
       temperature,
       max_tokens: maxTokens,
+      response_format: { type: "json_object" },
     });
 
-    const text = completion.choices[0]?.message?.content?.trim() || '';
+    const responseText = completion.choices[0]?.message?.content?.trim() || '';
     const tokensUsed = completion.usage?.total_tokens || 0;
 
-    if (!text) {
+    if (!responseText) {
       throw new Error('No content generated from OpenAI');
     }
 
-    // Clean up the text - remove quotes if they wrap the entire text
-    let cleanedText = text;
-    if (
-      (cleanedText.startsWith('"') && cleanedText.endsWith('"')) ||
-      (cleanedText.startsWith("'") && cleanedText.endsWith("'"))
-    ) {
-      cleanedText = cleanedText.slice(1, -1);
+    // Parse JSON response
+    let parsed: { title?: string; text?: string };
+    try {
+      parsed = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error('Failed to parse JSON response from OpenAI');
     }
 
+    if (!parsed.text) {
+      throw new Error('No text content in response');
+    }
+
+    // Use generated title or fallback
+    const title = parsed.title || 'Generated Content';
+
     return {
-      text: cleanedText,
+      text: parsed.text,
+      title,
       model: completion.model,
       tokensUsed,
     };
@@ -333,7 +342,7 @@ export async function generateMistakePractice(
   }
 
   // Final instructions
-  prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting. Return only the passage text, nothing else.`;
+  prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting. Return the response in JSON format with two fields: "title" (a short 2-5 word descriptive title for the content) and "text" (the passage text).`;
 
   try {
     const completion = await openai.chat.completions.create({
@@ -342,7 +351,7 @@ export async function generateMistakePractice(
         {
           role: 'system',
           content:
-            'You are a helpful assistant that generates typing test content focused on helping users correct their specific typing mistakes. Create natural, flowing text that strategically includes problematic sequences and characters.',
+            'You are a helpful assistant that generates typing test content focused on helping users correct their specific typing mistakes. Create natural, flowing text that strategically includes problematic sequences and characters. Always respond in JSON format with "title" and "text" fields.',
         },
         {
           role: 'user',
@@ -351,26 +360,34 @@ export async function generateMistakePractice(
       ],
       temperature,
       max_tokens: maxTokens,
+      response_format: { type: "json_object" },
     });
 
-    const text = completion.choices[0]?.message?.content?.trim() || '';
+    const responseText = completion.choices[0]?.message?.content?.trim() || '';
     const tokensUsed = completion.usage?.total_tokens || 0;
 
-    if (!text) {
+    if (!responseText) {
       throw new Error('No content generated from OpenAI');
     }
 
-    // Clean up the text
-    let cleanedText = text;
-    if (
-      (cleanedText.startsWith('"') && cleanedText.endsWith('"')) ||
-      (cleanedText.startsWith("'") && cleanedText.endsWith("'"))
-    ) {
-      cleanedText = cleanedText.slice(1, -1);
+    // Parse JSON response
+    let parsed: { title?: string; text?: string };
+    try {
+      parsed = JSON.parse(responseText);
+    } catch (e) {
+      throw new Error('Failed to parse JSON response from OpenAI');
     }
 
+    if (!parsed.text) {
+      throw new Error('No text content in response');
+    }
+
+    // Use generated title or fallback
+    const title = parsed.title || 'Practice Content';
+
     return {
-      text: cleanedText,
+      text: parsed.text,
+      title,
       model: completion.model,
       tokensUsed,
     };

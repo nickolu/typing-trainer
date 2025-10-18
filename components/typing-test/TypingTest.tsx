@@ -19,7 +19,7 @@ import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 export function TypingTest() {
   const router = useRouter();
   const { currentUserId, isAuthenticated } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, setAutoSave } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, setAutoSave, setDefaultContentStyle } = useSettingsStore();
   const {
     status,
     duration,
@@ -43,6 +43,7 @@ export function TypingTest() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isCompletingTest, setIsCompletingTest] = useState(false);
   const [liveWPM, setLiveWPM] = useState(0);
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
 
   // Manage autoSave based on authentication status
   useEffect(() => {
@@ -62,15 +63,20 @@ export function TypingTest() {
       const requiredWords = calculateRequiredWords(defaultDuration);
       const words = textToWords(testContent.text, requiredWords);
 
+      // Update settings to reflect the actual content loaded (sync settings with reality)
+      setDefaultContentStyle(testContent.category);
+
       initializeTest(
         {
           duration: defaultDuration,
           testContentId: testContent.id,
+          testContentTitle: testContent.title,
+          testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
         },
         words
       );
     }
-  }, [status, targetWords, initializeTest, defaultDuration]);
+  }, [status, targetWords, initializeTest, defaultDuration, setDefaultContentStyle]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -103,6 +109,11 @@ export function TypingTest() {
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
     setGenerationError(null);
+    setIsLoadingContent(true);
+
+    // Reset test to clear previous content from button
+    resetTest();
+
     const isAI = isAIContentStyle(defaultContentStyle);
 
     if (isAI) {
@@ -163,6 +174,8 @@ export function TypingTest() {
             {
               duration: defaultDuration,
               testContentId: 'ai-sequences',
+              testContentTitle: result.title || 'Character Sequence Practice',
+              testContentCategory: 'AI Character Sequence',
               isPractice: true,
               practiceSequences: sequencesToUse,
             },
@@ -203,6 +216,8 @@ export function TypingTest() {
             {
               duration: defaultDuration,
               testContentId: `ai-${apiStyle}`,
+              testContentTitle: result.title || 'Generated Content',
+              testContentCategory: `AI ${apiStyle.charAt(0).toUpperCase() + apiStyle.slice(1)}`,
             },
             words
           );
@@ -214,6 +229,7 @@ export function TypingTest() {
         );
       } finally {
         setIsGenerating(false);
+        setIsLoadingContent(false);
       }
     } else {
       // Load static content
@@ -221,14 +237,21 @@ export function TypingTest() {
       const requiredWords = calculateRequiredWords(defaultDuration);
       const words = textToWords(testContent.text, requiredWords);
 
-      resetTest();
+      // If random was selected, update settings to show what was actually loaded
+      if (defaultContentStyle === 'random') {
+        setDefaultContentStyle(testContent.category);
+      }
+
       initializeTest(
         {
           duration: defaultDuration,
           testContentId: testContent.id,
+          testContentTitle: testContent.title,
+          testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
         },
         words
       );
+      setIsLoadingContent(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
@@ -460,6 +483,7 @@ export function TypingTest() {
           disabled={status === 'active'}
           onContentChange={handleContentLoad}
           showHighlightToggle={isPractice && practiceSequences.length > 0}
+          isLoadingContent={isLoadingContent}
         />
         {generationError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">

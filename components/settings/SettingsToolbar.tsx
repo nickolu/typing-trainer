@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
+import { useTestStore } from '@/store/test-store';
 import { Clock, Save, BookOpen, ShieldOff, Highlighter } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 
@@ -10,9 +11,10 @@ interface SettingsToolbarProps {
   disabled?: boolean;
   onContentChange?: () => void; // Callback when content settings change
   showHighlightToggle?: boolean; // Only show in targeted practice mode
+  isLoadingContent?: boolean; // Whether content is currently loading
 }
 
-export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false }: SettingsToolbarProps) {
+export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false }: SettingsToolbarProps) {
   const { isAuthenticated } = useUserStore();
   const {
     defaultDuration,
@@ -25,6 +27,8 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
     setNoBackspaceMode,
     setShowPracticeHighlights,
   } = useSettingsStore();
+
+  const { testContentTitle, testContentCategory } = useTestStore();
 
   const [showContentOptions, setShowContentOptions] = useState(false);
 
@@ -41,24 +45,32 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
     }
   };
 
-  // Get content label based on current style
-  const getContentLabel = () => {
-    const isAI = isAIContentStyle(defaultContentStyle);
-    const styleMap: Record<string, string> = {
-      'random': 'Random',
-      'quote': 'Quotes',
-      'prose': 'Prose',
-      'technical': 'Technical',
-      'common': 'Common',
-      'ai-prose': 'AI Prose',
-      'ai-quote': 'AI Quotes',
-      'ai-technical': 'AI Technical',
-      'ai-common': 'AI Common',
-      'ai-sequences': 'AI Character Sequences',
-      'ai-custom': 'AI Custom',
+  // Get content label and display text based on current test
+  const getContentDisplay = () => {
+    // Show loading state if content is being loaded/generated
+    if (isLoadingContent) {
+      return {
+        category: 'Loading',
+        title: 'Generating content...',
+      };
+    }
+
+    // If we have actual test content loaded, use it
+    if (testContentCategory && testContentTitle) {
+      return {
+        category: testContentCategory,
+        title: testContentTitle,
+      };
+    }
+
+    // Show loading if no content loaded yet
+    return {
+      category: 'Loading',
+      title: 'Loading content...',
     };
-    return styleMap[defaultContentStyle] || '';
   };
+
+  const contentDisplay = getContentDisplay();
 
   return (
     <>
@@ -167,18 +179,25 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
             </div>
           </div>
 
-          {/* Content Selection Button - More Prominent */}
-          <button
-            onClick={() => !disabled && setShowContentOptions(true)}
-            disabled={disabled}
-            className="ml-auto flex items-center gap-3 px-6 py-2.5 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-all shadow-lg"
-          >
-            <BookOpen className="w-5 h-5" />
-            <div className="text-left">
-              <div className="text-xs opacity-75">Content</div>
-              <div className="text-sm font-bold">{getContentLabel()}</div>
+          {/* Content Selection Button - More Prominent with Tooltip */}
+          <div className="ml-auto relative group">
+            <button
+              onClick={() => !disabled && setShowContentOptions(true)}
+              disabled={disabled}
+              className="flex items-center gap-3 px-6 py-2.5 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-all shadow-lg"
+            >
+              <BookOpen className="w-5 h-5 flex-shrink-0" />
+              <div className="text-left min-w-0">
+                <div className="text-xs opacity-75">{contentDisplay.category}</div>
+                <div className="text-sm font-bold truncate max-w-[200px]">{contentDisplay.title}</div>
+              </div>
+            </button>
+            {/* Tooltip showing full test information */}
+            <div className="absolute right-0 top-full mt-2 w-80 p-3 bg-gray-900 text-white text-sm rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
+              <div className="font-bold mb-1">{contentDisplay.category}</div>
+              <div className="text-xs opacity-90">{contentDisplay.title}</div>
             </div>
-          </button>
+          </div>
         </div>
       </div>
 

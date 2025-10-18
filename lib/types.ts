@@ -52,6 +52,7 @@ export interface TestResult {
 export interface TestContent {
   id: string;
   category: 'quote' | 'prose' | 'technical' | 'common';
+  title: string; // Display name for the test content
   text: string;
   source?: string; // Attribution
 }
@@ -77,6 +78,8 @@ export interface CharacterMatch {
 export interface TestConfig {
   duration: number; // seconds
   testContentId: string;
+  testContentTitle?: string; // Title of the test content
+  testContentCategory?: string; // Category of the test content
   isPractice?: boolean; // Is this a targeted practice session
   practiceSequences?: string[]; // Character sequences and/or full words being practiced
 }
@@ -97,6 +100,8 @@ export interface TestState {
   duration: number;
   targetWords: string[];
   testContentId: string | null;
+  testContentTitle: string | null; // Title of the current test content
+  testContentCategory: string | null; // Category of the current test content
   isPractice: boolean; // Is this a targeted practice session
   practiceSequences: string[]; // Character sequences and/or full words being practiced
 
