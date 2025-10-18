@@ -26,6 +26,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   testContentCategory: null,
   isPractice: false,
   practiceSequences: [], // Can include both character sequences and full words
+  userLabels: [],
   status: 'idle',
   startTime: null,
   endTime: null,
@@ -48,6 +49,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       testContentCategory: config.testContentCategory || null,
       isPractice: config.isPractice || false,
       practiceSequences: config.practiceSequences || [],
+      userLabels: config.userLabels || [],
       status: 'idle',
       startTime: null,
       endTime: null,
@@ -271,6 +273,29 @@ export const useTestStore = create<TestState>((set, get) => ({
       characterSubstitutions[sub.expected].push(sub.actual);
     }
 
+    // Generate auto-labels from test configuration
+    const autoLabels: string[] = [];
+
+    // Duration label
+    autoLabels.push(`time-${state.duration}s`);
+
+    // No-corrections mode label
+    const noBackspaceMode = useSettingsStore.getState().noBackspaceMode;
+    autoLabels.push(noBackspaceMode ? 'no-corrections-on' : 'no-corrections-off');
+
+    // Content category label (if available)
+    if (state.testContentCategory) {
+      autoLabels.push(state.testContentCategory.toLowerCase());
+    }
+
+    // Practice mode label
+    if (state.isPractice) {
+      autoLabels.push('practice-mode');
+    }
+
+    // Combine user labels and auto labels
+    const allLabels = [...state.userLabels, ...autoLabels];
+
     // Create result object
     const result: TestResult = {
       id: state.testId,
@@ -291,6 +316,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       mistakeCount: mistakeAnalysis.totalMistakes,
       correctionCount: mistakeAnalysis.totalCorrections,
       characterSubstitutions: Object.keys(characterSubstitutions).length > 0 ? characterSubstitutions : undefined,
+      labels: allLabels.length > 0 ? allLabels : undefined,
     };
 
     // Save to Firebase only if shouldSave is true
@@ -335,6 +361,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       testContentCategory: null,
       isPractice: false,
       practiceSequences: [],
+      userLabels: [],
       status: 'idle',
       startTime: null,
       endTime: null,
@@ -345,6 +372,11 @@ export const useTestStore = create<TestState>((set, get) => ({
       result: null,
       // Preserve lastTestConfig so "try again" works
     });
+  },
+
+  // Set user labels for the current test
+  setUserLabels: (labels: string[]) => {
+    set({ userLabels: labels });
   },
 
   // Retry the last test with the same configuration
