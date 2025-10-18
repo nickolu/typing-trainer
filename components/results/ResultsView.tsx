@@ -22,7 +22,7 @@ interface ResultsViewProps {
 export function ResultsView({ result }: ResultsViewProps) {
   const router = useRouter();
   const { defaultDuration, llmModel, llmTemperature } = useSettingsStore();
-  const { initializeTest, resetTest } = useTestStore();
+  const { initializeTest, resetTest, retryLastTest } = useTestStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
   const [practiceError, setPracticeError] = useState<string | null>(null);
@@ -39,8 +39,8 @@ export function ResultsView({ result }: ResultsViewProps) {
   );
 
   const handleTryAgain = () => {
-    // Reset the store and go back to home
-    resetTest();
+    // Retry the same test configuration and go back to home
+    retryLastTest();
     router.push('/');
   };
 

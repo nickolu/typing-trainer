@@ -32,6 +32,8 @@ export const useTestStore = create<TestState>((set, get) => ({
   completedWords: [],
   keystrokes: [],
   result: null,
+  // Store last test configuration for "try again" functionality
+  lastTestConfig: null,
 
   // Initialize a new test
   initializeTest: (config: TestConfig, words: string[]) => {
@@ -50,6 +52,14 @@ export const useTestStore = create<TestState>((set, get) => ({
       completedWords: [],
       keystrokes: [],
       result: null,
+      // Store configuration for "try again"
+      lastTestConfig: {
+        duration: config.duration,
+        testContentId: config.testContentId,
+        targetWords: words,
+        isPractice: config.isPractice || false,
+        practiceSequences: config.practiceSequences || [],
+      },
     });
   },
 
@@ -325,6 +335,37 @@ export const useTestStore = create<TestState>((set, get) => ({
       completedWords: [],
       keystrokes: [],
       result: null,
+      // Preserve lastTestConfig so "try again" works
+    });
+  },
+
+  // Retry the last test with the same configuration
+  retryLastTest: () => {
+    const state = get();
+    if (!state.lastTestConfig) {
+      console.warn('No previous test configuration found');
+      return;
+    }
+
+    const { duration, testContentId, targetWords, isPractice, practiceSequences } = state.lastTestConfig;
+
+    set({
+      testId: uuidv4(),
+      duration,
+      targetWords,
+      testContentId,
+      isPractice,
+      practiceSequences,
+      status: 'idle',
+      startTime: null,
+      endTime: null,
+      currentWordIndex: 0,
+      currentInput: '',
+      completedWords: [],
+      keystrokes: [],
+      result: null,
+      // Keep the same lastTestConfig
+      lastTestConfig: state.lastTestConfig,
     });
   },
 }));

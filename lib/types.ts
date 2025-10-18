@@ -81,6 +81,15 @@ export interface TestConfig {
   practiceSequences?: string[]; // Character sequences and/or full words being practiced
 }
 
+// Stored test configuration for "try again"
+export interface StoredTestConfig {
+  duration: number;
+  testContentId: string;
+  targetWords: string[];
+  isPractice: boolean;
+  practiceSequences: string[];
+}
+
 // In-memory test state (used by Zustand)
 export interface TestState {
   // Config
@@ -107,6 +116,9 @@ export interface TestState {
   // Computed result (set when test completes)
   result: TestResult | null;
 
+  // Store last test configuration for "try again" functionality
+  lastTestConfig: StoredTestConfig | null;
+
   // Actions
   initializeTest: (config: TestConfig, words: string[]) => void;
   startTest: () => void;
@@ -115,4 +127,5 @@ export interface TestState {
   handleTab: () => void;
   completeTest: (shouldSave?: boolean) => Promise<TestResult | null>;
   resetTest: () => void;
+  retryLastTest: () => void;
 }
