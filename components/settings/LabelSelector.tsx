@@ -36,8 +36,14 @@ export function LabelSelector({ selectedLabels, onLabelsChange, disabled = false
     try {
       const labels = await getUserLabels(currentUserId);
       setAvailableLabels(labels);
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error('Failed to load labels:', error);
+      // Only show permission errors to authenticated users
+      if (error?.code === 'permission-denied') {
+        setError('Permission denied. Please check Firestore rules.');
+      }
+      setAvailableLabels([]);
     } finally {
       setIsLoading(false);
     }
@@ -181,6 +187,13 @@ export function LabelSelector({ selectedLabels, onLabelsChange, disabled = false
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Error Display */}
+              {error && (
+                <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+                  {error}
                 </div>
               )}
 
