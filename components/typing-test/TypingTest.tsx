@@ -78,23 +78,6 @@ export function TypingTest() {
     }
   }, [status, targetWords, initializeTest, defaultDuration, setDefaultContentStyle]);
 
-  // Update test duration when defaultDuration changes (and test is idle)
-  useEffect(() => {
-    if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
-      // Reinitialize the test with new duration but same words
-      // Preserve practice mode and sequences
-      initializeTest(
-        {
-          duration: defaultDuration,
-          testContentId: 'regenerated',
-          isPractice,
-          practiceSequences,
-        },
-        targetWords
-      );
-    }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences]);
-
   // Cleanup: Reset test when component unmounts (e.g., navigating away)
   useEffect(() => {
     return () => {
@@ -255,6 +238,28 @@ export function TypingTest() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
+
+  // Update test duration when defaultDuration changes (and test is idle)
+  useEffect(() => {
+    if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
+      // If using AI content, regenerate with new duration
+      if (isAIContentStyle(defaultContentStyle)) {
+        handleContentLoad();
+      } else {
+        // For static content, reinitialize the test with new duration but same words
+        // Preserve practice mode and sequences
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId: 'regenerated',
+            isPractice,
+            practiceSequences,
+          },
+          targetWords
+        );
+      }
+    }
+  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, defaultContentStyle, handleContentLoad]);
 
   // Handle test completion
   const handleComplete = useCallback(async () => {
