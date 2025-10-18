@@ -122,7 +122,7 @@ export function LabelSelector({ selectedLabels, onLabelsChange, disabled = false
         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
           selectedLabels.length > 0
             ? 'bg-blue-600 text-white hover:bg-blue-700'
-            : 'bg-editor-muted/30 text-editor-muted hover:bg-editor-muted/50'
+            : 'bg-gray-700 text-gray-200 hover:bg-gray-600'
         } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <Tag className="w-4 h-4" />
@@ -256,7 +256,10 @@ export function LabelSelector({ selectedLabels, onLabelsChange, disabled = false
                         setError(null);
                       }}
                       onKeyDown={(e) => {
+                        // Stop event propagation to prevent typing test from starting
+                        e.stopPropagation();
                         if (e.key === 'Enter') {
+                          e.preventDefault();
                           handleAddLabel();
                         }
                       }}

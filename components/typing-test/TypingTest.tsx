@@ -81,14 +81,18 @@ export function TypingTest() {
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
+      // Get current user labels from the store
+      const currentUserLabels = useTestStore.getState().userLabels;
+
       // Reinitialize the test with new duration but same words
-      // Preserve practice mode and sequences
+      // Preserve practice mode, sequences, and user labels
       initializeTest(
         {
           duration: defaultDuration,
           testContentId: 'regenerated',
           isPractice,
           practiceSequences,
+          userLabels: currentUserLabels,
         },
         targetWords
       );
