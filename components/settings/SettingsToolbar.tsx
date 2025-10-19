@@ -6,6 +6,7 @@ import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
 import { Clock, Save, BookOpen, ShieldOff, Highlighter } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
+import { LabelSelector } from './LabelSelector';
 
 interface SettingsToolbarProps {
   disabled?: boolean;
@@ -28,7 +29,7 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
     setShowPracticeHighlights,
   } = useSettingsStore();
 
-  const { testContentTitle, testContentCategory } = useTestStore();
+  const { testContentTitle, testContentCategory, userLabels, setUserLabels } = useTestStore();
 
   const [showContentOptions, setShowContentOptions] = useState(false);
 
@@ -178,6 +179,13 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
                 : 'Test results will NOT be saved. Use this for casual practice without affecting your stats.'}
             </div>
           </div>
+
+          {/* Label Selector */}
+          <LabelSelector
+            selectedLabels={userLabels}
+            onLabelsChange={setUserLabels}
+            disabled={disabled}
+          />
 
           {/* Content Selection Button - More Prominent with Tooltip */}
           <div className="ml-auto relative group">
