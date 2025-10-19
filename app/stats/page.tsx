@@ -10,6 +10,7 @@ import { WPMChart } from '@/components/charts/WPMChart';
 import { AccuracyChart } from '@/components/charts/AccuracyChart';
 import { AggregateAnalytics } from '@/components/charts/AggregateAnalytics';
 import { LogoutButton } from '@/components/auth/LogoutButton';
+import { Tag, X } from 'lucide-react';
 
 type TimeFilter = 'all' | '7days' | '30days' | '90days';
 
@@ -17,6 +18,7 @@ export default function StatsPage() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('7days');
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const { currentUserId } = useUserStore();
 
   useEffect(() => {
@@ -65,30 +67,69 @@ export default function StatsPage() {
     }
   };
 
-  // Filter results by time range
+  // Get all unique labels from results
+  const availableLabels = useMemo(() => {
+    const labelSet = new Set<string>();
+    results.forEach((result) => {
+      if (result.labels && Array.isArray(result.labels)) {
+        result.labels.forEach((label) => labelSet.add(label));
+      }
+    });
+    return Array.from(labelSet).sort();
+  }, [results]);
+
+  // Filter results by time range and labels
   const filteredResults = useMemo(() => {
-    if (timeFilter === 'all') return results;
+    let filtered = results;
 
-    const now = new Date();
-    const cutoffDate = new Date();
+    // Apply time filter
+    if (timeFilter !== 'all') {
+      const now = new Date();
+      const cutoffDate = new Date();
 
-    switch (timeFilter) {
-      case '7days':
-        cutoffDate.setDate(now.getDate() - 7);
-        break;
-      case '30days':
-        cutoffDate.setDate(now.getDate() - 30);
-        break;
-      case '90days':
-        cutoffDate.setDate(now.getDate() - 90);
-        break;
+      switch (timeFilter) {
+        case '7days':
+          cutoffDate.setDate(now.getDate() - 7);
+          break;
+        case '30days':
+          cutoffDate.setDate(now.getDate() - 30);
+          break;
+        case '90days':
+          cutoffDate.setDate(now.getDate() - 90);
+          break;
+      }
+
+      filtered = filtered.filter((result) => {
+        const resultDate = new Date(result.createdAt);
+        return resultDate >= cutoffDate;
+      });
     }
 
-    return results.filter((result) => {
-      const resultDate = new Date(result.createdAt);
-      return resultDate >= cutoffDate;
-    });
-  }, [results, timeFilter]);
+    // Apply label filter - only if labels are selected
+    if (selectedLabels.length > 0) {
+      filtered = filtered.filter((result) => {
+        // If result has no labels, it doesn't match
+        if (!result.labels || result.labels.length === 0) return false;
+
+        // Check if result has at least one of the selected labels
+        return result.labels.some((label) => selectedLabels.includes(label));
+      });
+    }
+
+    return filtered;
+  }, [results, timeFilter, selectedLabels]);
+
+  const toggleLabel = (label: string) => {
+    setSelectedLabels((prev) =>
+      prev.includes(label)
+        ? prev.filter((l) => l !== label)
+        : [...prev, label]
+    );
+  };
+
+  const clearAllLabels = () => {
+    setSelectedLabels([]);
+  };
 
   if (loading) {
     return (
@@ -141,8 +182,9 @@ export default function StatsPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Date Range Filter */}
-            <div className="bg-editor-bg border border-editor-muted rounded-lg p-4">
+            {/* Filters */}
+            <div className="bg-editor-bg border border-editor-muted rounded-lg p-4 space-y-4">
+              {/* Date Range Filter */}
               <div className="flex items-center gap-4">
                 <span className="text-editor-muted font-medium">Time Range:</span>
                 <div className="flex gap-2">
@@ -169,6 +211,45 @@ export default function StatsPage() {
                   {filteredResults.length} {filteredResults.length === 1 ? 'test' : 'tests'}
                 </div>
               </div>
+
+              {/* Label Filter */}
+              {availableLabels.length > 0 && (
+                <div className="border-t border-editor-muted/30 pt-4">
+                  <div className="flex items-start gap-4">
+                    <div className="flex items-center gap-2 text-editor-muted font-medium pt-1">
+                      <Tag className="w-4 h-4" />
+                      <span>Labels:</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex flex-wrap gap-2">
+                        {availableLabels.map((label) => (
+                          <button
+                            key={label}
+                            onClick={() => toggleLabel(label)}
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                              selectedLabels.includes(label)
+                                ? 'bg-editor-accent text-white'
+                                : 'bg-editor-muted/30 text-editor-fg hover:bg-editor-muted/50'
+                            }`}
+                          >
+                            <Tag className="w-3 h-3" />
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                      {selectedLabels.length > 0 && (
+                        <button
+                          onClick={clearAllLabels}
+                          className="mt-2 text-sm text-editor-muted hover:text-editor-fg transition-colors flex items-center gap-1"
+                        >
+                          <X className="w-3 h-3" />
+                          Clear all labels
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Charts */}

@@ -46,6 +46,9 @@ export interface TestResult {
   mistakeCount?: number; // Total incorrect keystrokes
   correctionCount?: number; // Total backspaces used
   characterSubstitutions?: Record<string, string[]>; // Map of expected → actual chars
+
+  // Labels
+  labels?: string[]; // User-selected and auto-generated labels for filtering
 }
 
 // Static test content
@@ -82,6 +85,7 @@ export interface TestConfig {
   testContentCategory?: string; // Category of the test content
   isPractice?: boolean; // Is this a targeted practice session
   practiceSequences?: string[]; // Character sequences and/or full words being practiced
+  userLabels?: string[]; // User-selected labels for this test
 }
 
 // Stored test configuration for "try again"
@@ -104,6 +108,7 @@ export interface TestState {
   testContentCategory: string | null; // Category of the current test content
   isPractice: boolean; // Is this a targeted practice session
   practiceSequences: string[]; // Character sequences and/or full words being practiced
+  userLabels: string[]; // User-selected labels for this test
 
   // Runtime state
   status: TestStatus;
@@ -133,4 +138,5 @@ export interface TestState {
   completeTest: (shouldSave?: boolean) => Promise<TestResult | null>;
   resetTest: () => void;
   retryLastTest: () => void;
+  setUserLabels: (labels: string[]) => void;
 }
