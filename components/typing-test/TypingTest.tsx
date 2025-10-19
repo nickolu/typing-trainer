@@ -14,6 +14,7 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
+import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
@@ -45,38 +46,62 @@ export function TypingTest() {
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
 
-  // Manage autoSave based on authentication status
+  // Check if we're in benchmark mode
+  const isBenchmarkMode = defaultContentStyle === 'benchmark';
+
+  // Manage autoSave based on authentication status and benchmark mode
   useEffect(() => {
     if (!isAuthenticated && autoSave) {
       // Disable autoSave for anonymous users
       setAutoSave(false);
-    } else if (isAuthenticated && !autoSave) {
+    } else if (isAuthenticated && !autoSave && isBenchmarkMode) {
+      // Enable autoSave by default for benchmark tests if user is logged in
+      setAutoSave(true);
+    } else if (isAuthenticated && !autoSave && !isBenchmarkMode) {
       // Enable autoSave by default for logged-in users
       setAutoSave(true);
     }
-  }, [isAuthenticated, autoSave, setAutoSave]);
+  }, [isAuthenticated, autoSave, isBenchmarkMode, setAutoSave]);
 
   // Initialize test on mount
   useEffect(() => {
     if (status === 'idle' && targetWords.length === 0) {
-      const testContent = getRandomTest();
-      const requiredWords = calculateRequiredWords(defaultDuration);
-      const words = textToWords(testContent.text, requiredWords);
+      // Check if benchmark mode is selected
+      if (defaultContentStyle === 'benchmark') {
+        const benchmarkContent = getRandomBenchmarkContent();
+        const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
+        const words = textToWords(benchmarkContent.text, requiredWords);
 
-      // Update settings to reflect the actual content loaded (sync settings with reality)
-      setDefaultContentStyle(testContent.category);
+        initializeTest(
+          {
+            duration: BENCHMARK_CONFIG.duration,
+            testContentId: benchmarkContent.id,
+            testContentTitle: benchmarkContent.title,
+            testContentCategory: 'Benchmark',
+            userLabels: [BENCHMARK_CONFIG.label],
+          },
+          words
+        );
+      } else {
+        const testContent = getRandomTest();
+        const requiredWords = calculateRequiredWords(defaultDuration);
+        const words = textToWords(testContent.text, requiredWords);
 
-      initializeTest(
-        {
-          duration: defaultDuration,
-          testContentId: testContent.id,
-          testContentTitle: testContent.title,
-          testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
-        },
-        words
-      );
+        // Update settings to reflect the actual content loaded (sync settings with reality)
+        setDefaultContentStyle(testContent.category);
+
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId: testContent.id,
+            testContentTitle: testContent.title,
+            testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+          },
+          words
+        );
+      }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, setDefaultContentStyle]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -235,6 +260,26 @@ export function TypingTest() {
         setIsGenerating(false);
         setIsLoadingContent(false);
       }
+    } else if (defaultContentStyle === 'benchmark') {
+      // Load benchmark content with special constraints
+      const benchmarkContent = getRandomBenchmarkContent();
+      const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
+      const words = textToWords(benchmarkContent.text, requiredWords);
+
+      // Get current user labels
+      const currentUserLabels = useTestStore.getState().userLabels;
+
+      initializeTest(
+        {
+          duration: BENCHMARK_CONFIG.duration,
+          testContentId: benchmarkContent.id,
+          testContentTitle: benchmarkContent.title,
+          testContentCategory: 'Benchmark',
+          userLabels: [...currentUserLabels, BENCHMARK_CONFIG.label],
+        },
+        words
+      );
+      setIsLoadingContent(false);
     } else {
       // Load static content
       const testContent = getRandomTest(defaultContentStyle === 'random' ? undefined : defaultContentStyle);
@@ -448,7 +493,7 @@ export function TypingTest() {
       </div>
 
       {/* No Corrections Mode Banner */}
-      {noBackspaceMode  && (
+      {(noBackspaceMode || isBenchmarkMode) && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
@@ -459,7 +504,11 @@ export function TypingTest() {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-orange-400 text-sm">No Corrections Mode Active</h3>
-                <p className="text-xs text-editor-muted">Backspace is disabled - focus on accuracy!</p>
+                <p className="text-xs text-editor-muted">
+                  {isBenchmarkMode
+                    ? 'Backspace is disabled for all benchmark tests - focus on accuracy!'
+                    : 'Backspace is disabled - focus on accuracy!'}
+                </p>
               </div>
             </div>
           </div>
@@ -568,7 +617,7 @@ export function TypingTest() {
           <p>Start typing to begin the test...</p>
         )}
         {status === 'active' && (
-          <p>Press Tab or Space to skip to the next word.{noBackspaceMode ? ' Backspace is disabled' : ''}</p>
+          <p>Press Tab or Space to skip to the next word.{(noBackspaceMode || isBenchmarkMode) ? ' Backspace is disabled' : ''}</p>
         )}
       </div>
       {/* Live WPM Speedometer - Only show when test is active */}
