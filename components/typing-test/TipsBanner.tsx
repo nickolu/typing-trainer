@@ -5,9 +5,13 @@ import { X } from 'lucide-react';
 
 const TIPS = [
   'Use labels to flag tests taken on different keyboards or devices',
-  'Generate a test based on your weakest key strokes to improve your speed and accuracy',
+  'Use AI Character Sequence from the content menu to generate a test based on your weakest key strokes to improve your speed and accuracy',
   "Typing without looking is essential to typing quickly. Tape a piece of paper to your keyboard to cover your hands while you type if you struggle to break this habit.",
   'You can see your progress and weakest key sequences in the stats page',
+  "Check out the stats page to see your accuracy and WPM over time",
+  "You can also generate a practice test based on your weakest key strokes to improve your speed and accuracy",
+  "Benchmark tests are available in the content menu to test your typing speed and accuracy against other users",
+  "Use the AI Custom option in the content menu to generate tests for the areas you want to improve on most"
 ];
 
 export function TipsBanner() {
@@ -27,12 +31,12 @@ export function TipsBanner() {
   return (
     <div className="w-full max-w-4xl mt-4">
       <div className="bg-editor-muted/20 border border-editor-muted/30 rounded-lg p-3">
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div className="flex-shrink-0 mt-0.5">
             <span className="text-base opacity-60">💡</span>
           </div>
           <div className="flex-1">
-            <p className="text-xs text-editor-muted">{currentTip}</p>
+            <p className="text-xs text-editor-muted"><strong>Tip:</strong> {currentTip}</p>
           </div>
           <button
             onClick={() => setIsDismissed(true)}
