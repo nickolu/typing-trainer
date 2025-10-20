@@ -45,7 +45,6 @@ export function TypingTest() {
   const [isCompletingTest, setIsCompletingTest] = useState(false);
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
-
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
@@ -312,8 +311,8 @@ export function TypingTest() {
           {
             duration: defaultDuration,
             testContentId: currentState.testContentId || 'regenerated',
-            testContentTitle: currentState.testContentTitle,
-            testContentCategory: currentState.testContentCategory,
+            testContentTitle: currentState.testContentTitle || undefined,
+            testContentCategory: currentState.testContentCategory || undefined,
             isPractice,
             practiceSequences,
             userLabels: currentState.userLabels,
@@ -604,7 +603,7 @@ export function TypingTest() {
             <p className="text-editor-muted">Generating new content...</p>
           </div>
         )}
-        <div className="h-48 overflow-y-auto p-8">
+        <div className="h-48 p-8">
           <TestDisplay
             targetWords={targetWords}
             completedWords={completedWords}
