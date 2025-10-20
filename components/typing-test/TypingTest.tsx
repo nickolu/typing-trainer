@@ -66,8 +66,10 @@ export function TypingTest() {
   // Initialize test on mount
   useEffect(() => {
     if (status === 'idle' && targetWords.length === 0) {
+      console.log('[TypingTest] Initializing test on mount, defaultContentStyle:', defaultContentStyle);
       // Check if benchmark mode is selected
       if (defaultContentStyle === 'benchmark') {
+        console.log('[TypingTest] Loading benchmark content on mount');
         const benchmarkContent = getRandomBenchmarkContent();
         const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
         const words = textToWords(benchmarkContent.text, requiredWords);
@@ -82,6 +84,7 @@ export function TypingTest() {
           },
           words
         );
+        console.log('[TypingTest] Benchmark test initialized on mount');
       } else {
         const testContent = getRandomTest();
         const requiredWords = calculateRequiredWords(defaultDuration);
