@@ -49,95 +49,6 @@ export function TypingTest() {
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
-  // Manage autoSave based on authentication status and benchmark mode
-  useEffect(() => {
-    if (!isAuthenticated && autoSave) {
-      // Disable autoSave for anonymous users
-      setAutoSave(false);
-    } else if (isAuthenticated && !autoSave && isBenchmarkMode) {
-      // Enable autoSave by default for benchmark tests if user is logged in
-      setAutoSave(true);
-    } else if (isAuthenticated && !autoSave && !isBenchmarkMode) {
-      // Enable autoSave by default for logged-in users
-      setAutoSave(true);
-    }
-  }, [isAuthenticated, autoSave, isBenchmarkMode, setAutoSave]);
-
-  // Initialize test on mount
-  useEffect(() => {
-    if (status === 'idle' && targetWords.length === 0) {
-      console.log('[TypingTest] Initializing test on mount, defaultContentStyle:', defaultContentStyle);
-      // Check if benchmark mode is selected
-      if (defaultContentStyle === 'benchmark') {
-        console.log('[TypingTest] Loading benchmark content on mount');
-        const benchmarkContent = getRandomBenchmarkContent();
-        const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
-        const words = textToWords(benchmarkContent.text, requiredWords);
-
-        initializeTest(
-          {
-            duration: BENCHMARK_CONFIG.duration,
-            testContentId: benchmarkContent.id,
-            testContentTitle: benchmarkContent.title,
-            testContentCategory: 'Benchmark',
-            userLabels: [BENCHMARK_CONFIG.label],
-          },
-          words
-        );
-        console.log('[TypingTest] Benchmark test initialized on mount');
-      } else {
-        const testContent = getRandomTest();
-        const requiredWords = calculateRequiredWords(defaultDuration);
-        const words = textToWords(testContent.text, requiredWords);
-
-        // Update settings to reflect the actual content loaded (sync settings with reality)
-        setDefaultContentStyle(testContent.category);
-
-        initializeTest(
-          {
-            duration: defaultDuration,
-            testContentId: testContent.id,
-            testContentTitle: testContent.title,
-            testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
-          },
-          words
-        );
-      }
-    }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle]);
-
-  // Update test duration when defaultDuration changes (and test is idle)
-  useEffect(() => {
-    if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
-      // Get current user labels from the store
-      const currentUserLabels = useTestStore.getState().userLabels;
-
-      // Reinitialize the test with new duration but same words
-      // Preserve practice mode, sequences, and user labels
-      initializeTest(
-        {
-          duration: defaultDuration,
-          testContentId: 'regenerated',
-          isPractice,
-          practiceSequences,
-          userLabels: currentUserLabels,
-        },
-        targetWords
-      );
-    }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences]);
-
-  // Cleanup: Reset test when component unmounts (e.g., navigating away)
-  useEffect(() => {
-    return () => {
-      // Get the latest state when unmounting
-      const currentStatus = useTestStore.getState().status;
-      if (currentStatus === 'active') {
-        resetTest();
-      }
-    };
-  }, [resetTest]);
-
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
     // Get the current content style from the store to ensure we have the latest value
@@ -289,6 +200,11 @@ export function TypingTest() {
           words
         );
         console.log('[TypingTest] Benchmark test initialized');
+      } catch (error) {
+        console.error('Benchmark content loading error:', error);
+        setGenerationError(
+          error instanceof Error ? error.message : 'Failed to load benchmark content'
+        );
       } finally {
         console.log('[TypingTest] Setting isLoadingContent to false');
         setIsLoadingContent(false);
@@ -314,6 +230,11 @@ export function TypingTest() {
           },
           words
         );
+      } catch (error) {
+        console.error('Static content loading error:', error);
+        setGenerationError(
+          error instanceof Error ? error.message : 'Failed to load static content'
+        );
       } finally {
         setIsLoadingContent(false);
       }
@@ -321,27 +242,102 @@ export function TypingTest() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
 
+  // Manage autoSave based on authentication status and benchmark mode
+  useEffect(() => {
+    if (!isAuthenticated && autoSave) {
+      // Disable autoSave for anonymous users
+      setAutoSave(false);
+    } else if (isAuthenticated && !autoSave && isBenchmarkMode) {
+      // Enable autoSave by default for benchmark tests if user is logged in
+      setAutoSave(true);
+    } else if (isAuthenticated && !autoSave && !isBenchmarkMode) {
+      // Enable autoSave by default for logged-in users
+      setAutoSave(true);
+    }
+  }, [isAuthenticated, autoSave, isBenchmarkMode, setAutoSave]);
+
+  // Initialize test on mount
+  useEffect(() => {
+    if (status === 'idle' && targetWords.length === 0) {
+      console.log('[TypingTest] Initializing test on mount, defaultContentStyle:', defaultContentStyle);
+      // Check if benchmark mode is selected
+      if (defaultContentStyle === 'benchmark') {
+        console.log('[TypingTest] Loading benchmark content on mount');
+        const benchmarkContent = getRandomBenchmarkContent();
+        const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
+        const words = textToWords(benchmarkContent.text, requiredWords);
+
+        initializeTest(
+          {
+            duration: BENCHMARK_CONFIG.duration,
+            testContentId: benchmarkContent.id,
+            testContentTitle: benchmarkContent.title,
+            testContentCategory: 'Benchmark',
+            userLabels: [BENCHMARK_CONFIG.label],
+          },
+          words
+        );
+        console.log('[TypingTest] Benchmark test initialized on mount');
+      } else {
+        const testContent = getRandomTest();
+        const requiredWords = calculateRequiredWords(defaultDuration);
+        const words = textToWords(testContent.text, requiredWords);
+
+        // Update settings to reflect the actual content loaded (sync settings with reality)
+        setDefaultContentStyle(testContent.category);
+
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId: testContent.id,
+            testContentTitle: testContent.title,
+            testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+          },
+          words
+        );
+      }
+    }
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle]);
+
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
+    // Skip duration updates for benchmark mode (it has a fixed duration)
+    if (isBenchmarkMode) return;
+    
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
       // If using AI content, regenerate with new duration
       if (isAIContentStyle(defaultContentStyle)) {
         handleContentLoad();
       } else {
-        // For static content, reinitialize the test with new duration but same words
-        // Preserve practice mode and sequences
+        // For static content, reinitialize the test with new duration but preserve all metadata
+        const currentState = useTestStore.getState();
+
         initializeTest(
           {
             duration: defaultDuration,
-            testContentId: 'regenerated',
+            testContentId: currentState.testContentId || 'regenerated',
+            testContentTitle: currentState.testContentTitle,
+            testContentCategory: currentState.testContentCategory,
             isPractice,
             practiceSequences,
+            userLabels: currentState.userLabels,
           },
           targetWords
         );
       }
     }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, defaultContentStyle, handleContentLoad]);
+  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, defaultContentStyle, handleContentLoad]);
+
+  // Cleanup: Reset test when component unmounts (e.g., navigating away)
+  useEffect(() => {
+    return () => {
+      // Get the latest state when unmounting
+      const currentStatus = useTestStore.getState().status;
+      if (currentStatus === 'active') {
+        resetTest();
+      }
+    };
+  }, [resetTest]);
 
   // Handle test completion
   const handleComplete = useCallback(async () => {
