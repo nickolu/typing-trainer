@@ -137,14 +137,16 @@ export function TypingTest() {
 
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
-    console.log('[TypingTest] handleContentLoad called, defaultContentStyle:', defaultContentStyle);
+    // Get the current content style from the store to ensure we have the latest value
+    const currentContentStyle = useSettingsStore.getState().defaultContentStyle;
+    console.log('[TypingTest] handleContentLoad called, currentContentStyle:', currentContentStyle);
     setGenerationError(null);
     setIsLoadingContent(true);
 
     // Reset test to clear previous content from button
     resetTest();
 
-    const isAI = isAIContentStyle(defaultContentStyle);
+    const isAI = isAIContentStyle(currentContentStyle);
 
     if (isAI) {
       // Generate AI content
@@ -154,7 +156,7 @@ export function TypingTest() {
         const requiredWords = calculateRequiredWords(defaultDuration);
 
         // Check if the style is "ai-sequences" - use targeted practice mode
-        if (defaultContentStyle === 'ai-sequences') {
+        if (currentContentStyle === 'ai-sequences') {
           // Use custom sequences if available, otherwise fallback to historical data
           let sequencesToUse: string[] = [];
 
@@ -214,7 +216,7 @@ export function TypingTest() {
         } else {
           // Regular AI content generation
           // Map AI style to API style
-          const apiStyle = defaultContentStyle.replace('ai-', '') as 'prose' | 'quote' | 'technical' | 'common' | 'custom';
+          const apiStyle = currentContentStyle.replace('ai-', '') as 'prose' | 'quote' | 'technical' | 'common' | 'custom';
 
           const response = await fetch('/api/generate-content', {
             method: 'POST',
@@ -261,7 +263,7 @@ export function TypingTest() {
         setIsGenerating(false);
         setIsLoadingContent(false);
       }
-    } else if (defaultContentStyle === 'benchmark') {
+    } else if (currentContentStyle === 'benchmark') {
       // Load benchmark content with special constraints
       console.log('[TypingTest] Loading benchmark content');
       try {
@@ -291,12 +293,12 @@ export function TypingTest() {
     } else {
       // Load static content
       try {
-        const testContent = getRandomTest(defaultContentStyle === 'random' ? undefined : defaultContentStyle);
+        const testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
         const requiredWords = calculateRequiredWords(defaultDuration);
         const words = textToWords(testContent.text, requiredWords);
 
         // If random was selected, update settings to show what was actually loaded
-        if (defaultContentStyle === 'random') {
+        if (currentContentStyle === 'random') {
           setDefaultContentStyle(testContent.category);
         }
 
@@ -314,7 +316,7 @@ export function TypingTest() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
+  }, [llmModel, llmTemperature, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
