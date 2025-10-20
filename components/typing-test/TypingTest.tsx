@@ -242,19 +242,15 @@ export function TypingTest() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
 
-  // Manage autoSave based on authentication status and benchmark mode
+  // Manage autoSave based on authentication status
   useEffect(() => {
     if (!isAuthenticated && autoSave) {
-      // Disable autoSave for anonymous users
+      // Disable autoSave for anonymous users (they can't save results anyway)
       setAutoSave(false);
-    } else if (isAuthenticated && !autoSave && isBenchmarkMode) {
-      // Enable autoSave by default for benchmark tests if user is logged in
-      setAutoSave(true);
-    } else if (isAuthenticated && !autoSave && !isBenchmarkMode) {
-      // Enable autoSave by default for logged-in users
-      setAutoSave(true);
     }
-  }, [isAuthenticated, autoSave, isBenchmarkMode, setAutoSave]);
+    // Note: We don't force autoSave to be enabled for authenticated users
+    // to respect their preference. They can toggle it manually.
+  }, [isAuthenticated, autoSave, setAutoSave]);
 
   // Initialize test on mount
   useEffect(() => {
