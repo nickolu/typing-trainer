@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 const TIPS = [
   'Use labels to flag tests taken on different keyboards or devices',
@@ -11,6 +12,7 @@ const TIPS = [
 
 export function TipsBanner() {
   const [currentTip, setCurrentTip] = useState('');
+  const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
     // Select a random tip when component mounts
@@ -18,23 +20,27 @@ export function TipsBanner() {
     setCurrentTip(TIPS[randomIndex]);
   }, []);
 
-  if (!currentTip) {
+  if (!currentTip || isDismissed) {
     return null;
   }
 
   return (
     <div className="w-full max-w-4xl mt-4">
-      <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4">
+      <div className="bg-editor-muted/20 border border-editor-muted/30 rounded-lg p-3">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 mt-0.5">
-            <div className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">
-              <span className="text-xl">💡</span>
-            </div>
+            <span className="text-base opacity-60">💡</span>
           </div>
           <div className="flex-1">
-            <h3 className="font-bold text-blue-400 mb-1">Tip</h3>
-            <p className="text-sm text-editor-fg">{currentTip}</p>
+            <p className="text-xs text-editor-muted">{currentTip}</p>
           </div>
+          <button
+            onClick={() => setIsDismissed(true)}
+            className="flex-shrink-0 text-editor-muted hover:text-editor-fg transition-colors"
+            aria-label="Dismiss tip"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
