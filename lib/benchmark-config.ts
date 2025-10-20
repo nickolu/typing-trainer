@@ -1,7 +1,6 @@
 // Benchmark test configuration
 export const BENCHMARK_CONFIG = {
-  duration: 60, // Fixed at 60 seconds for all benchmark tests
-  noCorrectionsMode: true, // No backspace allowed
+  duration: 120, // Fixed at 120 seconds (2 minutes) for all benchmark tests
   label: 'benchmark', // Auto-label for all benchmark tests
 };
 

@@ -147,11 +147,10 @@ export const useTestStore = create<TestState>((set, get) => ({
   handleBackspace: () => {
     const state = get();
 
-    // Check if no-backspace mode is enabled or if this is a benchmark test
+    // Check if no-backspace mode is enabled
     const noBackspaceMode = useSettingsStore.getState().noBackspaceMode;
-    const isBenchmarkMode = useSettingsStore.getState().defaultContentStyle === 'benchmark';
-    if (noBackspaceMode || isBenchmarkMode) {
-      // Do nothing if no-backspace mode is enabled or in benchmark mode
+    if (noBackspaceMode) {
+      // Do nothing if no-backspace mode is enabled
       return;
     }
 

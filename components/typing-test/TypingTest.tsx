@@ -493,7 +493,7 @@ export function TypingTest() {
       </div>
 
       {/* No Corrections Mode Banner */}
-      {(noBackspaceMode || isBenchmarkMode) && (
+      {noBackspaceMode && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
@@ -504,11 +504,7 @@ export function TypingTest() {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-orange-400 text-sm">No Corrections Mode Active</h3>
-                <p className="text-xs text-editor-muted">
-                  {isBenchmarkMode
-                    ? 'Backspace is disabled for all benchmark tests - focus on accuracy!'
-                    : 'Backspace is disabled - focus on accuracy!'}
-                </p>
+                <p className="text-xs text-editor-muted">Backspace is disabled - focus on accuracy!</p>
               </div>
             </div>
           </div>
@@ -617,7 +613,7 @@ export function TypingTest() {
           <p>Start typing to begin the test...</p>
         )}
         {status === 'active' && (
-          <p>Press Tab or Space to skip to the next word.{(noBackspaceMode || isBenchmarkMode) ? ' Backspace is disabled' : ''}</p>
+          <p>Press Tab or Space to skip to the next word.{noBackspaceMode ? ' Backspace is disabled' : ''}</p>
         )}
       </div>
       {/* Live WPM Speedometer - Only show when test is active */}
