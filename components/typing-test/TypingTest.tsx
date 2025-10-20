@@ -48,6 +48,12 @@ export function TypingTest() {
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
+  // Check if we're in content-length mode
+  const isContentLengthMode = duration === 'content-length';
+  const remainingWords = isContentLengthMode
+    ? targetWords.length - currentWordIndex
+    : undefined;
+
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
     // Get the current content style from the store to ensure we have the latest value
@@ -66,7 +72,10 @@ export function TypingTest() {
       setIsGenerating(true);
 
       try {
-        const requiredWords = calculateRequiredWords(defaultDuration);
+        // For content-length mode, use a default word count for generation (e.g., 100 words)
+        const requiredWords = defaultDuration === 'content-length'
+          ? 100
+          : calculateRequiredWords(defaultDuration);
 
         // Check if the style is "ai-sequences" - use targeted practice mode
         if (currentContentStyle === 'ai-sequences') {
@@ -212,7 +221,9 @@ export function TypingTest() {
       // Load static content
       try {
         const testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
-        const requiredWords = calculateRequiredWords(defaultDuration);
+        const requiredWords = defaultDuration === 'content-length'
+          ? 100
+          : calculateRequiredWords(defaultDuration);
         const words = textToWords(testContent.text, requiredWords);
 
         // If random was selected, update settings to show what was actually loaded
@@ -275,7 +286,9 @@ export function TypingTest() {
         console.log('[TypingTest] Benchmark test initialized on mount');
       } else {
         const testContent = getRandomTest();
-        const requiredWords = calculateRequiredWords(defaultDuration);
+        const requiredWords = defaultDuration === 'content-length'
+          ? 100
+          : calculateRequiredWords(defaultDuration);
         const words = textToWords(testContent.text, requiredWords);
 
         // Update settings to reflect the actual content loaded (sync settings with reality)
@@ -354,6 +367,13 @@ export function TypingTest() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completeTest, router, autoSave]);
+
+  // Auto-complete test when all words are typed in content-length mode
+  useEffect(() => {
+    if (isContentLengthMode && status === 'active' && currentWordIndex >= targetWords.length) {
+      handleComplete();
+    }
+  }, [isContentLengthMode, status, currentWordIndex, targetWords.length, handleComplete]);
 
   // Update live WPM during active test
   useEffect(() => {
@@ -464,6 +484,8 @@ export function TypingTest() {
                   duration={duration}
                   startTime={startTime}
                   onComplete={handleComplete}
+                  totalWords={targetWords.length}
+                  remainingWords={remainingWords}
                 />
                 <LogoutButton />
               </>
@@ -486,6 +508,8 @@ export function TypingTest() {
                   duration={duration}
                   startTime={startTime}
                   onComplete={handleComplete}
+                  totalWords={targetWords.length}
+                  remainingWords={remainingWords}
                 />
                 <Link
                   href="/login"

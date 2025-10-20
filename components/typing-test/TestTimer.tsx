@@ -1,26 +1,30 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Timer } from 'lucide-react';
+import { Timer, FileText } from 'lucide-react';
+import { TestDuration } from '@/store/settings-store';
 
 interface TestTimerProps {
-  duration: number; // Total duration in seconds
+  duration: number | 'content-length'; // Total duration in seconds or 'content-length'
   startTime: number | null; // performance.now() when test started
   onComplete: () => void;
+  // For content-length mode
+  totalWords?: number;
+  remainingWords?: number;
 }
 
-export function TestTimer({ duration, startTime, onComplete }: TestTimerProps) {
-  const [timeRemaining, setTimeRemaining] = useState(duration);
+export function TestTimer({ duration, startTime, onComplete, totalWords, remainingWords }: TestTimerProps) {
+  const [timeRemaining, setTimeRemaining] = useState(typeof duration === 'number' ? duration : 0);
 
   // Update timeRemaining when duration changes (especially when test is idle)
   useEffect(() => {
-    if (!startTime) {
+    if (!startTime && typeof duration === 'number') {
       setTimeRemaining(duration);
     }
   }, [duration, startTime]);
 
   useEffect(() => {
-    if (!startTime) {
+    if (!startTime || duration === 'content-length') {
       return;
     }
 
@@ -38,6 +42,18 @@ export function TestTimer({ duration, startTime, onComplete }: TestTimerProps) {
 
     return () => clearInterval(interval);
   }, [startTime, duration, onComplete]);
+
+  // For content-length mode, display remaining words
+  if (duration === 'content-length') {
+    return (
+      <div className="flex items-center gap-2 text-editor-fg">
+        <FileText className="w-5 h-5" />
+        <span className="text-2xl font-bold font-mono tabular-nums">
+          {remainingWords ?? totalWords ?? 0} words
+        </span>
+      </div>
+    );
+  }
 
   // Format time display
   const formattedTime = timeRemaining.toString();
