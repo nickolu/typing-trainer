@@ -137,6 +137,7 @@ export function TypingTest() {
 
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
+    console.log('[TypingTest] handleContentLoad called, defaultContentStyle:', defaultContentStyle);
     setGenerationError(null);
     setIsLoadingContent(true);
 
@@ -262,8 +263,10 @@ export function TypingTest() {
       }
     } else if (defaultContentStyle === 'benchmark') {
       // Load benchmark content with special constraints
+      console.log('[TypingTest] Loading benchmark content');
       try {
         const benchmarkContent = getRandomBenchmarkContent();
+        console.log('[TypingTest] Got benchmark content:', benchmarkContent.title);
         const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
         const words = textToWords(benchmarkContent.text, requiredWords);
 
@@ -280,7 +283,9 @@ export function TypingTest() {
           },
           words
         );
+        console.log('[TypingTest] Benchmark test initialized');
       } finally {
+        console.log('[TypingTest] Setting isLoadingContent to false');
         setIsLoadingContent(false);
       }
     } else {

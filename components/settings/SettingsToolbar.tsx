@@ -51,6 +51,8 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
   // Get content label and display text based on current test
   const getContentDisplay = () => {
+    console.log('[SettingsToolbar] getContentDisplay - isLoadingContent:', isLoadingContent, 'testContentCategory:', testContentCategory, 'testContentTitle:', testContentTitle);
+
     // Show loading state if content is being loaded/generated
     if (isLoadingContent) {
       return {
