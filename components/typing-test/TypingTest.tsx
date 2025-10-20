@@ -262,45 +262,51 @@ export function TypingTest() {
       }
     } else if (defaultContentStyle === 'benchmark') {
       // Load benchmark content with special constraints
-      const benchmarkContent = getRandomBenchmarkContent();
-      const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
-      const words = textToWords(benchmarkContent.text, requiredWords);
+      try {
+        const benchmarkContent = getRandomBenchmarkContent();
+        const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
+        const words = textToWords(benchmarkContent.text, requiredWords);
 
-      // Get current user labels
-      const currentUserLabels = useTestStore.getState().userLabels;
+        // Get current user labels
+        const currentUserLabels = useTestStore.getState().userLabels;
 
-      initializeTest(
-        {
-          duration: BENCHMARK_CONFIG.duration,
-          testContentId: benchmarkContent.id,
-          testContentTitle: benchmarkContent.title,
-          testContentCategory: 'Benchmark',
-          userLabels: [...currentUserLabels, BENCHMARK_CONFIG.label],
-        },
-        words
-      );
-      setIsLoadingContent(false);
+        initializeTest(
+          {
+            duration: BENCHMARK_CONFIG.duration,
+            testContentId: benchmarkContent.id,
+            testContentTitle: benchmarkContent.title,
+            testContentCategory: 'Benchmark',
+            userLabels: [...currentUserLabels, BENCHMARK_CONFIG.label],
+          },
+          words
+        );
+      } finally {
+        setIsLoadingContent(false);
+      }
     } else {
       // Load static content
-      const testContent = getRandomTest(defaultContentStyle === 'random' ? undefined : defaultContentStyle);
-      const requiredWords = calculateRequiredWords(defaultDuration);
-      const words = textToWords(testContent.text, requiredWords);
+      try {
+        const testContent = getRandomTest(defaultContentStyle === 'random' ? undefined : defaultContentStyle);
+        const requiredWords = calculateRequiredWords(defaultDuration);
+        const words = textToWords(testContent.text, requiredWords);
 
-      // If random was selected, update settings to show what was actually loaded
-      if (defaultContentStyle === 'random') {
-        setDefaultContentStyle(testContent.category);
+        // If random was selected, update settings to show what was actually loaded
+        if (defaultContentStyle === 'random') {
+          setDefaultContentStyle(testContent.category);
+        }
+
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId: testContent.id,
+            testContentTitle: testContent.title,
+            testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+          },
+          words
+        );
+      } finally {
+        setIsLoadingContent(false);
       }
-
-      initializeTest(
-        {
-          duration: defaultDuration,
-          testContentId: testContent.id,
-          testContentTitle: testContent.title,
-          testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
-        },
-        words
-      );
-      setIsLoadingContent(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
