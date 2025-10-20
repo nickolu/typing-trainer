@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
-import { X, BookOpen, Sparkles, Target, Lock } from 'lucide-react';
+import { X, BookOpen, Sparkles, Target, Lock, Award } from 'lucide-react';
 
 interface ContentOptionsModalProps {
   isOpen: boolean;
@@ -32,6 +32,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     { value: 'prose', label: 'Prose', description: 'Literary passages' },
     { value: 'technical', label: 'Technical', description: 'Programming text' },
     { value: 'common', label: 'Common', description: 'Everyday phrases' },
+    { value: 'benchmark', label: 'Benchmark', description: 'Standardized test' },
   ];
 
   const aiOptions: { value: ContentStyle; label: string; description: string }[] = [

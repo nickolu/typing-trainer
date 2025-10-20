@@ -4,7 +4,7 @@ import { useUserStore } from './user-store';
 
 export type TestDuration = 15 | 30 | 60 | 120;
 // Static content from library
-export type StaticContentStyle = 'random' | 'quote' | 'prose' | 'technical' | 'common';
+export type StaticContentStyle = 'random' | 'quote' | 'prose' | 'technical' | 'common' | 'benchmark';
 // AI-generated content styles
 export type AIContentStyle = 'ai-prose' | 'ai-quote' | 'ai-technical' | 'ai-common' | 'ai-sequences' | 'ai-custom';
 export type ContentStyle = StaticContentStyle | AIContentStyle;

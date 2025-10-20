@@ -40,6 +40,10 @@ export const useTestStore = create<TestState>((set, get) => ({
 
   // Initialize a new test
   initializeTest: (config: TestConfig, words: string[]) => {
+    console.log('[TestStore] initializeTest called with:', {
+      testContentTitle: config.testContentTitle,
+      testContentCategory: config.testContentCategory,
+    });
     set({
       testId: uuidv4(),
       duration: config.duration,

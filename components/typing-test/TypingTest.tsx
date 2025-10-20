@@ -14,6 +14,7 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
+import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
@@ -45,80 +46,21 @@ export function TypingTest() {
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
 
-  // Manage autoSave based on authentication status
-  useEffect(() => {
-    if (!isAuthenticated && autoSave) {
-      // Disable autoSave for anonymous users
-      setAutoSave(false);
-    } else if (isAuthenticated && !autoSave) {
-      // Enable autoSave by default for logged-in users
-      setAutoSave(true);
-    }
-  }, [isAuthenticated, autoSave, setAutoSave]);
-
-  // Initialize test on mount
-  useEffect(() => {
-    if (status === 'idle' && targetWords.length === 0) {
-      const testContent = getRandomTest();
-      const requiredWords = calculateRequiredWords(defaultDuration);
-      const words = textToWords(testContent.text, requiredWords);
-
-      // Update settings to reflect the actual content loaded (sync settings with reality)
-      setDefaultContentStyle(testContent.category);
-
-      initializeTest(
-        {
-          duration: defaultDuration,
-          testContentId: testContent.id,
-          testContentTitle: testContent.title,
-          testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
-        },
-        words
-      );
-    }
-  }, [status, targetWords, initializeTest, defaultDuration, setDefaultContentStyle]);
-
-  // Update test duration when defaultDuration changes (and test is idle)
-  useEffect(() => {
-    if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
-      // Get current user labels from the store
-      const currentUserLabels = useTestStore.getState().userLabels;
-
-      // Reinitialize the test with new duration but same words
-      // Preserve practice mode, sequences, and user labels
-      initializeTest(
-        {
-          duration: defaultDuration,
-          testContentId: 'regenerated',
-          isPractice,
-          practiceSequences,
-          userLabels: currentUserLabels,
-        },
-        targetWords
-      );
-    }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences]);
-
-  // Cleanup: Reset test when component unmounts (e.g., navigating away)
-  useEffect(() => {
-    return () => {
-      // Get the latest state when unmounting
-      const currentStatus = useTestStore.getState().status;
-      if (currentStatus === 'active') {
-        resetTest();
-      }
-    };
-  }, [resetTest]);
+  // Check if we're in benchmark mode
+  const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
+    // Get the current content style from the store to ensure we have the latest value
+    const currentContentStyle = useSettingsStore.getState().defaultContentStyle;
+    console.log('[TypingTest] handleContentLoad called, currentContentStyle:', currentContentStyle);
     setGenerationError(null);
     setIsLoadingContent(true);
 
     // Reset test to clear previous content from button
     resetTest();
 
-    const isAI = isAIContentStyle(defaultContentStyle);
+    const isAI = isAIContentStyle(currentContentStyle);
 
     if (isAI) {
       // Generate AI content
@@ -128,7 +70,7 @@ export function TypingTest() {
         const requiredWords = calculateRequiredWords(defaultDuration);
 
         // Check if the style is "ai-sequences" - use targeted practice mode
-        if (defaultContentStyle === 'ai-sequences') {
+        if (currentContentStyle === 'ai-sequences') {
           // Use custom sequences if available, otherwise fallback to historical data
           let sequencesToUse: string[] = [];
 
@@ -188,7 +130,7 @@ export function TypingTest() {
         } else {
           // Regular AI content generation
           // Map AI style to API style
-          const apiStyle = defaultContentStyle.replace('ai-', '') as 'prose' | 'quote' | 'technical' | 'common' | 'custom';
+          const apiStyle = currentContentStyle.replace('ai-', '') as 'prose' | 'quote' | 'technical' | 'common' | 'custom';
 
           const response = await fetch('/api/generate-content', {
             method: 'POST',
@@ -235,52 +177,167 @@ export function TypingTest() {
         setIsGenerating(false);
         setIsLoadingContent(false);
       }
+    } else if (currentContentStyle === 'benchmark') {
+      // Load benchmark content with special constraints
+      console.log('[TypingTest] Loading benchmark content');
+      try {
+        const benchmarkContent = getRandomBenchmarkContent();
+        console.log('[TypingTest] Got benchmark content:', benchmarkContent.title);
+        const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
+        const words = textToWords(benchmarkContent.text, requiredWords);
+
+        // Get current user labels
+        const currentUserLabels = useTestStore.getState().userLabels;
+
+        initializeTest(
+          {
+            duration: BENCHMARK_CONFIG.duration,
+            testContentId: benchmarkContent.id,
+            testContentTitle: benchmarkContent.title,
+            testContentCategory: 'Benchmark',
+            userLabels: [...currentUserLabels, BENCHMARK_CONFIG.label],
+          },
+          words
+        );
+        console.log('[TypingTest] Benchmark test initialized');
+      } catch (error) {
+        console.error('Benchmark content loading error:', error);
+        setGenerationError(
+          error instanceof Error ? error.message : 'Failed to load benchmark content'
+        );
+      } finally {
+        console.log('[TypingTest] Setting isLoadingContent to false');
+        setIsLoadingContent(false);
+      }
     } else {
       // Load static content
-      const testContent = getRandomTest(defaultContentStyle === 'random' ? undefined : defaultContentStyle);
-      const requiredWords = calculateRequiredWords(defaultDuration);
-      const words = textToWords(testContent.text, requiredWords);
+      try {
+        const testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
+        const requiredWords = calculateRequiredWords(defaultDuration);
+        const words = textToWords(testContent.text, requiredWords);
 
-      // If random was selected, update settings to show what was actually loaded
-      if (defaultContentStyle === 'random') {
-        setDefaultContentStyle(testContent.category);
+        // If random was selected, update settings to show what was actually loaded
+        if (currentContentStyle === 'random') {
+          setDefaultContentStyle(testContent.category);
+        }
+
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId: testContent.id,
+            testContentTitle: testContent.title,
+            testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+          },
+          words
+        );
+      } catch (error) {
+        console.error('Static content loading error:', error);
+        setGenerationError(
+          error instanceof Error ? error.message : 'Failed to load static content'
+        );
+      } finally {
+        setIsLoadingContent(false);
       }
-
-      initializeTest(
-        {
-          duration: defaultDuration,
-          testContentId: testContent.id,
-          testContentTitle: testContent.title,
-          testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
-        },
-        words
-      );
-      setIsLoadingContent(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
+  }, [llmModel, llmTemperature, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
+
+  // Manage autoSave based on authentication status and benchmark mode
+  useEffect(() => {
+    if (!isAuthenticated && autoSave) {
+      // Disable autoSave for anonymous users
+      setAutoSave(false);
+    } else if (isAuthenticated && !autoSave && isBenchmarkMode) {
+      // Enable autoSave by default for benchmark tests if user is logged in
+      setAutoSave(true);
+    } else if (isAuthenticated && !autoSave && !isBenchmarkMode) {
+      // Enable autoSave by default for logged-in users
+      setAutoSave(true);
+    }
+  }, [isAuthenticated, autoSave, isBenchmarkMode, setAutoSave]);
+
+  // Initialize test on mount
+  useEffect(() => {
+    if (status === 'idle' && targetWords.length === 0) {
+      console.log('[TypingTest] Initializing test on mount, defaultContentStyle:', defaultContentStyle);
+      // Check if benchmark mode is selected
+      if (defaultContentStyle === 'benchmark') {
+        console.log('[TypingTest] Loading benchmark content on mount');
+        const benchmarkContent = getRandomBenchmarkContent();
+        const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
+        const words = textToWords(benchmarkContent.text, requiredWords);
+
+        initializeTest(
+          {
+            duration: BENCHMARK_CONFIG.duration,
+            testContentId: benchmarkContent.id,
+            testContentTitle: benchmarkContent.title,
+            testContentCategory: 'Benchmark',
+            userLabels: [BENCHMARK_CONFIG.label],
+          },
+          words
+        );
+        console.log('[TypingTest] Benchmark test initialized on mount');
+      } else {
+        const testContent = getRandomTest();
+        const requiredWords = calculateRequiredWords(defaultDuration);
+        const words = textToWords(testContent.text, requiredWords);
+
+        // Update settings to reflect the actual content loaded (sync settings with reality)
+        setDefaultContentStyle(testContent.category);
+
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId: testContent.id,
+            testContentTitle: testContent.title,
+            testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+          },
+          words
+        );
+      }
+    }
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
+    // Skip duration updates for benchmark mode (it has a fixed duration)
+    if (isBenchmarkMode) return;
+    
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
       // If using AI content, regenerate with new duration
       if (isAIContentStyle(defaultContentStyle)) {
         handleContentLoad();
       } else {
-        // For static content, reinitialize the test with new duration but same words
-        // Preserve practice mode and sequences
+        // For static content, reinitialize the test with new duration but preserve all metadata
+        const currentState = useTestStore.getState();
+
         initializeTest(
           {
             duration: defaultDuration,
-            testContentId: 'regenerated',
+            testContentId: currentState.testContentId || 'regenerated',
+            testContentTitle: currentState.testContentTitle,
+            testContentCategory: currentState.testContentCategory,
             isPractice,
             practiceSequences,
+            userLabels: currentState.userLabels,
           },
           targetWords
         );
       }
     }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, defaultContentStyle, handleContentLoad]);
+  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, defaultContentStyle, handleContentLoad]);
+
+  // Cleanup: Reset test when component unmounts (e.g., navigating away)
+  useEffect(() => {
+    return () => {
+      // Get the latest state when unmounting
+      const currentStatus = useTestStore.getState().status;
+      if (currentStatus === 'active') {
+        resetTest();
+      }
+    };
+  }, [resetTest]);
 
   // Handle test completion
   const handleComplete = useCallback(async () => {
@@ -448,7 +505,7 @@ export function TypingTest() {
       </div>
 
       {/* No Corrections Mode Banner */}
-      {noBackspaceMode  && (
+      {noBackspaceMode && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">

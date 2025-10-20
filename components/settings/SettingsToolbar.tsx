@@ -29,7 +29,10 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
     setShowPracticeHighlights,
   } = useSettingsStore();
 
-  const { testContentTitle, testContentCategory, userLabels, setUserLabels } = useTestStore();
+  const { testContentTitle, testContentCategory, userLabels, setUserLabels, duration } = useTestStore();
+
+  // Check if we're in benchmark mode
+  const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
   const [showContentOptions, setShowContentOptions] = useState(false);
 
@@ -48,6 +51,8 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
   // Get content label and display text based on current test
   const getContentDisplay = () => {
+    console.log('[SettingsToolbar] getContentDisplay - isLoadingContent:', isLoadingContent, 'testContentCategory:', testContentCategory, 'testContentTitle:', testContentTitle);
+
     // Show loading state if content is being loaded/generated
     if (isLoadingContent) {
       return {
@@ -80,24 +85,30 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
       }`}>
         <div className="flex items-center justify-between gap-4">
           {/* Duration Selection */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 group relative">
             <Clock className="w-5 h-5 text-editor-accent" />
             <div className="flex gap-2">
               {durationOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => !disabled && setDefaultDuration(option.value)}
-                  disabled={disabled}
+                  onClick={() => !disabled && !isBenchmarkMode && setDefaultDuration(option.value)}
+                  disabled={disabled || isBenchmarkMode}
                   className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                    defaultDuration === option.value
+                    (isBenchmarkMode ? duration : defaultDuration) === option.value
                       ? 'bg-editor-accent text-white'
                       : 'bg-editor-muted/30 text-editor-muted hover:bg-editor-muted/50'
-                  }`}
+                  } ${isBenchmarkMode ? 'cursor-not-allowed' : ''}`}
                 >
                   {option.label}
                 </button>
               ))}
             </div>
+            {/* Tooltip for benchmark mode */}
+            {isBenchmarkMode && (
+              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                Test duration is fixed at 2m for benchmark tests to ensure consistent comparisons.
+              </div>
+            )}
           </div>
 
           {/* No Backspace Mode Toggle */}
@@ -174,6 +185,8 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
             <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
               {!isAuthenticated
                 ? 'Sign in to save test results to your history.'
+                : isBenchmarkMode && autoSave
+                ? 'Benchmark test results will be saved to track your progress. You can disable this if needed.'
                 : autoSave
                 ? 'Test results will be saved to your history for tracking progress.'
                 : 'Test results will NOT be saved. Use this for casual practice without affecting your stats.'}
