@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { useUserStore } from './user-store';
 
-export type TestDuration = 15 | 30 | 60 | 120;
+export type TestDuration = 15 | 30 | 60 | 120 | 'content-length';
 // Static content from library
 export type StaticContentStyle = 'random' | 'quote' | 'prose' | 'technical' | 'common' | 'benchmark';
 // AI-generated content styles

@@ -41,6 +41,7 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
     { value: 30, label: '30s' },
     { value: 60, label: '60s' },
     { value: 120, label: '2m' },
+    { value: 'content-length', label: 'Content Length' },
   ];
 
   const handleContentChange = () => {
@@ -87,22 +88,20 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
           {/* Duration Selection */}
           <div className="flex items-center gap-2 group relative">
             <Clock className="w-5 h-5 text-editor-accent" />
-            <div className="flex gap-2">
+            <select
+              value={isBenchmarkMode ? duration : defaultDuration}
+              onChange={(e) => !disabled && !isBenchmarkMode && setDefaultDuration(e.target.value as TestDuration)}
+              disabled={disabled || isBenchmarkMode}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all bg-editor-muted/30 text-editor-fg border border-editor-muted hover:bg-editor-muted/50 ${
+                isBenchmarkMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+              }`}
+            >
               {durationOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => !disabled && !isBenchmarkMode && setDefaultDuration(option.value)}
-                  disabled={disabled || isBenchmarkMode}
-                  className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-                    (isBenchmarkMode ? duration : defaultDuration) === option.value
-                      ? 'bg-editor-accent text-white'
-                      : 'bg-editor-muted/30 text-editor-muted hover:bg-editor-muted/50'
-                  } ${isBenchmarkMode ? 'cursor-not-allowed' : ''}`}
-                >
+                <option key={option.value} value={option.value}>
                   {option.label}
-                </button>
+                </option>
               ))}
-            </div>
+            </select>
             {/* Tooltip for benchmark mode */}
             {isBenchmarkMode && (
               <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">

@@ -79,7 +79,7 @@ export interface CharacterMatch {
 
 // Test configuration
 export interface TestConfig {
-  duration: number; // seconds
+  duration: number | 'content-length'; // seconds or 'content-length' mode
   testContentId: string;
   testContentTitle?: string; // Title of the test content
   testContentCategory?: string; // Category of the test content
@@ -90,7 +90,7 @@ export interface TestConfig {
 
 // Stored test configuration for "try again"
 export interface StoredTestConfig {
-  duration: number;
+  duration: number | 'content-length';
   testContentId: string;
   targetWords: string[];
   isPractice: boolean;
@@ -101,7 +101,7 @@ export interface StoredTestConfig {
 export interface TestState {
   // Config
   testId: string | null;
-  duration: number;
+  duration: number | 'content-length';
   targetWords: string[];
   testContentId: string | null;
   testContentTitle: string | null; // Title of the current test content

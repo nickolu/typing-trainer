@@ -114,7 +114,9 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
         return;
       }
 
-      const requiredWords = calculateRequiredWords(defaultDuration);
+      const requiredWords = defaultDuration === 'content-length'
+        ? 100
+        : calculateRequiredWords(defaultDuration);
 
       // Use regular practice endpoint for sequences
       const response = await fetch('/api/generate-practice', {
