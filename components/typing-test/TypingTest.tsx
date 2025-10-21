@@ -455,21 +455,26 @@ export function TypingTest() {
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <>
+                <TestTimer
+                  duration={duration}
+                  startTime={startTime}
+                  onComplete={handleComplete}
+                />
                 <Link
                   href="/stats"
                   className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
                 >
                   View Stats
                 </Link>
+                <LogoutButton />
+              </>
+            ) : (
+              <>
                 <TestTimer
                   duration={duration}
                   startTime={startTime}
                   onComplete={handleComplete}
                 />
-                <LogoutButton />
-              </>
-            ) : (
-              <>
                 <div className="relative group">
                   <button
                     disabled
@@ -483,11 +488,6 @@ export function TypingTest() {
                     Create an account or log in to access stats
                   </div>
                 </div>
-                <TestTimer
-                  duration={duration}
-                  startTime={startTime}
-                  onComplete={handleComplete}
-                />
                 <Link
                   href="/login"
                   className="px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
