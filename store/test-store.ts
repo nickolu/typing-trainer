@@ -244,9 +244,10 @@ export const useTestStore = create<TestState>((set, get) => ({
     // Guard against invalid state - if test isn't active, reset and return
     if (state.status !== 'active' || !state.startTime || !state.testId) {
       console.warn('Cannot complete test: test not active. Resetting state.');
+      const defaultDuration = useSettingsStore.getState().defaultDuration;
       set({
         testId: null,
-        duration: 30,
+        duration: defaultDuration,
         targetWords: [],
         testContentId: null,
         testContentTitle: null,
@@ -266,6 +267,11 @@ export const useTestStore = create<TestState>((set, get) => ({
     }
 
     const endTime = performance.now();
+
+    // Calculate actual duration in seconds
+    const actualDuration = state.duration === 'content-length'
+      ? Math.round((endTime - state.startTime) / 1000)
+      : state.duration;
 
     // Add current input to completed words if there's any
     let finalCompletedWords = [...state.completedWords];
@@ -288,7 +294,7 @@ export const useTestStore = create<TestState>((set, get) => ({
     const wpm = calculateWPM(
       state.targetWords,
       normalizedTypedWords,
-      state.duration
+      actualDuration
     );
 
     // Analyze mistakes
@@ -311,7 +317,11 @@ export const useTestStore = create<TestState>((set, get) => ({
     const autoLabels: string[] = [];
 
     // Duration label
-    autoLabels.push(`time-${state.duration}s`);
+    if (state.duration === 'content-length') {
+      autoLabels.push('content-length-mode');
+    } else {
+      autoLabels.push(`time-${state.duration}s`);
+    }
 
     // No-corrections mode label
     const noBackspaceMode = useSettingsStore.getState().noBackspaceMode;
@@ -334,7 +344,7 @@ export const useTestStore = create<TestState>((set, get) => ({
     const result: TestResult = {
       id: state.testId,
       createdAt: new Date(),
-      duration: state.duration,
+      duration: actualDuration,
       testContentId: state.testContentId || '',
       targetWords: state.targetWords,
       typedWords: normalizedTypedWords,
@@ -386,9 +396,10 @@ export const useTestStore = create<TestState>((set, get) => ({
 
   // Reset test
   resetTest: () => {
+    const defaultDuration = useSettingsStore.getState().defaultDuration;
     set({
       testId: null,
-      duration: 30,
+      duration: defaultDuration,
       targetWords: [],
       testContentId: null,
       testContentTitle: null,

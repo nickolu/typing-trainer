@@ -47,7 +47,9 @@ export function ResultsView({ result }: ResultsViewProps) {
   const handleNewTest = () => {
     // Initialize a new test and go to home
     const testContent = getRandomTest();
-    const requiredWords = calculateRequiredWords(defaultDuration);
+    const requiredWords = defaultDuration === 'content-length'
+      ? 100
+      : calculateRequiredWords(defaultDuration);
     const words = textToWords(testContent.text, requiredWords);
 
     initializeTest(
@@ -74,7 +76,9 @@ export function ResultsView({ result }: ResultsViewProps) {
         return;
       }
 
-      const requiredWords = calculateRequiredWords(defaultDuration);
+      const requiredWords = defaultDuration === 'content-length'
+        ? 100
+        : calculateRequiredWords(defaultDuration);
 
       // Determine which API endpoint to use based on selections
       // If we have words, use the mistake practice endpoint, otherwise use regular practice
