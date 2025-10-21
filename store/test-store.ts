@@ -158,7 +158,37 @@ export const useTestStore = create<TestState>((set, get) => ({
       return;
     }
 
-    if (state.status !== 'active' || state.currentInput.length === 0) return;
+    if (state.status !== 'active') return;
+
+    // If current input is empty and we're at the start of a word, go to previous word
+    if (state.currentInput.length === 0) {
+      // Can't go back if we're at the first word
+      if (state.currentWordIndex === 0) return;
+
+      // Move back to previous word
+      const previousWordIndex = state.currentWordIndex - 1;
+      const previousWord = state.completedWords[previousWordIndex];
+      const newCompletedWords = state.completedWords.slice(0, previousWordIndex);
+
+      // Record keystroke
+      const keystroke: KeystrokeEvent = {
+        timestamp: performance.now(),
+        key: 'Backspace',
+        wordIndex: state.currentWordIndex,
+        charIndex: 0,
+        wasCorrect: true,
+        isBackspace: true,
+      };
+
+      set({
+        currentWordIndex: previousWordIndex,
+        currentInput: previousWord || '',
+        completedWords: newCompletedWords,
+        keystrokes: [...state.keystrokes, keystroke],
+      });
+
+      return;
+    }
 
     // Remove last character
     const newInput = state.currentInput.slice(0, -1);

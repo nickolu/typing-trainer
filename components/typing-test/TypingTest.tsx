@@ -11,6 +11,7 @@ import { useUserStore } from '@/store/user-store';
 import { TestDisplay } from './TestDisplay';
 import { TestTimer } from './TestTimer';
 import { WPMSpeedometer } from './WPMSpeedometer';
+import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
@@ -638,6 +639,9 @@ export function TypingTest() {
           />
         </div>
       </div>
+      {/* Tips Banner */}
+      <TipsBanner />
+
       {/* Footer hints */}
       <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
         {status === 'idle' && !isGenerating && (
