@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 const TIPS = [
+  'The timer shows your time limit (or word count in content-length mode) before you start typing',
+  'You can choose content-length from the time length menu if you prefer to type a fixed number of words instead of a time limit',
   'Use labels to flag tests taken on different keyboards or devices',
   'Use AI Character Sequence from the content menu to generate a test based on your weakest key strokes to improve your speed and accuracy',
   "Typing without looking is essential to typing quickly. Tape a piece of paper to your keyboard to cover your hands while you type if you struggle to break this habit.",
   'You can see your progress and weakest key sequences in the stats page',
   "Check out the stats page to see your accuracy and WPM over time",
   "You can also generate a practice test based on your weakest key strokes to improve your speed and accuracy",
-  "Benchmark tests are available in the content menu to test your typing speed and accuracy against other users",
+  "Take a benchmark test to see how you do on a standardized challenge",
   "Use the AI Custom option in the content menu to generate tests for the areas you want to improve on most"
 ];
 
