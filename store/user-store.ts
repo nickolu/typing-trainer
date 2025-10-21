@@ -17,6 +17,11 @@ interface UserState {
   displayName: string | null;
   isAuthenticated: boolean;
 
+  // WPM Score
+  wpmScore: number | null;
+  wpmLastUpdated: Date | null;
+  wpmScoreResetDate: Date | null;
+
   // Loading states
   isLoading: boolean;
   error: string | null;
@@ -26,6 +31,7 @@ interface UserState {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshUserProfile: () => Promise<void>;
   clearError: () => void;
 }
 
@@ -37,6 +43,9 @@ export const useUserStore = create<UserState>()(
       email: null,
       displayName: null,
       isAuthenticated: false,
+      wpmScore: null,
+      wpmLastUpdated: null,
+      wpmScoreResetDate: null,
       isLoading: false,
       error: null,
 
@@ -72,6 +81,9 @@ export const useUserStore = create<UserState>()(
             email: user.email,
             displayName,
             isAuthenticated: true,
+            wpmScore: null,
+            wpmLastUpdated: null,
+            wpmScoreResetDate: null,
             isLoading: false,
             error: null,
           });
@@ -120,6 +132,9 @@ export const useUserStore = create<UserState>()(
             currentUserId: user.uid,
             email: user.email,
             displayName: profile?.displayName || null,
+            wpmScore: profile?.wpmScore ?? null,
+            wpmLastUpdated: profile?.wpmLastUpdated ?? null,
+            wpmScoreResetDate: profile?.wpmScoreResetDate ?? null,
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -156,6 +171,9 @@ export const useUserStore = create<UserState>()(
             email: null,
             displayName: null,
             isAuthenticated: false,
+            wpmScore: null,
+            wpmLastUpdated: null,
+            wpmScoreResetDate: null,
             error: null,
           });
         } catch (error) {
@@ -182,6 +200,9 @@ export const useUserStore = create<UserState>()(
                   currentUserId: user.uid,
                   email: user.email,
                   displayName: profile?.displayName || null,
+                  wpmScore: profile?.wpmScore ?? null,
+                  wpmLastUpdated: profile?.wpmLastUpdated ?? null,
+                  wpmScoreResetDate: profile?.wpmScoreResetDate ?? null,
                   isAuthenticated: true,
                   isLoading: false,
                 });
@@ -191,6 +212,9 @@ export const useUserStore = create<UserState>()(
                   currentUserId: user.uid,
                   email: user.email,
                   displayName: null,
+                  wpmScore: null,
+                  wpmLastUpdated: null,
+                  wpmScoreResetDate: null,
                   isAuthenticated: true,
                   isLoading: false,
                 });
@@ -201,6 +225,9 @@ export const useUserStore = create<UserState>()(
                 currentUserId: null,
                 email: null,
                 displayName: null,
+                wpmScore: null,
+                wpmLastUpdated: null,
+                wpmScoreResetDate: null,
                 isAuthenticated: false,
                 isLoading: false,
               });
@@ -212,6 +239,29 @@ export const useUserStore = create<UserState>()(
           // Note: In a real app, you'd want to store and call unsubscribe on cleanup
           // For this use case, the listener will remain active throughout the app lifecycle
         });
+      },
+
+      /**
+       * Refresh user profile from Firestore
+       * Used to update WPM score after benchmark tests
+       */
+      refreshUserProfile: async () => {
+        const userId = get().currentUserId;
+        if (!userId) return;
+
+        try {
+          const profile = await getUserProfile(userId);
+          if (profile) {
+            set({
+              displayName: profile.displayName,
+              wpmScore: profile.wpmScore ?? null,
+              wpmLastUpdated: profile.wpmLastUpdated ?? null,
+              wpmScoreResetDate: profile.wpmScoreResetDate ?? null,
+            });
+          }
+        } catch (error) {
+          console.error('Failed to refresh user profile:', error);
+        }
       },
 
       /**

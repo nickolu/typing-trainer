@@ -20,7 +20,7 @@ import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
   const router = useRouter();
-  const { currentUserId, isAuthenticated } = useUserStore();
+  const { currentUserId, isAuthenticated, displayName, wpmScore } = useUserStore();
   const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, setAutoSave, setDefaultContentStyle } = useSettingsStore();
   const {
     status,
@@ -46,6 +46,16 @@ export function TypingTest() {
   const [isCompletingTest, setIsCompletingTest] = useState(false);
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [wpmStatus, setWpmStatus] = useState<{
+    canUpdate: boolean;
+    hasScore: boolean;
+    currentScore: number | null;
+    daysUntilUpdate: number | null;
+    daysUntilReset: number | null;
+    updateAllowedDate: Date | null;
+    resetDate: Date | null;
+  } | null>(null);
+
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
@@ -54,6 +64,24 @@ export function TypingTest() {
   const remainingWords = isContentLengthMode
     ? targetWords.length - currentWordIndex
     : undefined;
+
+  // Load WPM status when in benchmark mode and authenticated
+  useEffect(() => {
+    if (isBenchmarkMode && isAuthenticated && currentUserId) {
+      const loadWPMStatus = async () => {
+        try {
+          const { getWPMScoreStatus } = await import('@/lib/db/firebase');
+          const status = await getWPMScoreStatus(currentUserId);
+          setWpmStatus(status);
+        } catch (error) {
+          console.error('Failed to load WPM status:', error);
+        }
+      };
+      loadWPMStatus();
+    } else {
+      setWpmStatus(null);
+    }
+  }, [isBenchmarkMode, isAuthenticated, currentUserId]);
 
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
@@ -471,7 +499,15 @@ export function TypingTest() {
       {/* Header with timer */}
       <div className="w-full max-w-4xl mb-4">
         <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold">Typing Test</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">Typing Test</h1>
+            {isAuthenticated && displayName && wpmScore !== null && (
+              <div className="flex items-center gap-2 px-3 py-1 bg-editor-accent/10 border border-editor-accent/30 rounded-lg">
+                <span className="text-sm text-editor-muted">{displayName}</span>
+                <span className="text-sm font-bold text-editor-accent">{wpmScore} WPM</span>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <>
@@ -537,6 +573,37 @@ export function TypingTest() {
               <div className="flex-1">
                 <h3 className="font-bold text-orange-400 text-sm">No Corrections Mode Active</h3>
                 <p className="text-xs text-editor-muted">Backspace is disabled - focus on accuracy!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Benchmark WPM Status Banner - Show when in benchmark mode */}
+      {isBenchmarkMode && isAuthenticated && wpmStatus && (
+        <div className="w-full max-w-4xl mb-4">
+          <div className="bg-blue-600/10 border border-blue-600/30 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <div className="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">🏆</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-blue-400 mb-1">Official WPM Score</h3>
+                {!wpmStatus.hasScore ? (
+                  <p className="text-sm text-editor-muted">
+                    Take a benchmark test to set your official WPM
+                  </p>
+                ) : wpmStatus.canUpdate ? (
+                  <p className="text-sm text-editor-muted">
+                    You can take one more benchmark test in the next {wpmStatus.daysUntilReset} days. Your new score will be the average of the new score and the old score.
+                  </p>
+                ) : (
+                  <p className="text-sm text-editor-muted">
+                    Your WPM score is set and cannot be changed until {wpmStatus.updateAllowedDate?.toLocaleDateString()}. Your score will reset in {wpmStatus.daysUntilReset} days.
+                  </p>
+                )}
               </div>
             </div>
           </div>
