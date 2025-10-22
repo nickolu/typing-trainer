@@ -4,9 +4,10 @@ import { useState } from 'react';
 import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
-import { Clock, Save, BookOpen, ShieldOff, Highlighter } from 'lucide-react';
+import { Save, BookOpen, ShieldOff, Highlighter, Clock } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 import { LabelSelector } from './LabelSelector';
+import { TimeSelector } from './TimeSelector';
 
 interface SettingsToolbarProps {
   disabled?: boolean;
@@ -36,13 +37,6 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
   const [showContentOptions, setShowContentOptions] = useState(false);
 
-  const durationOptions: { value: TestDuration; label: string }[] = [
-    { value: 15, label: '15s' },
-    { value: 30, label: '30s' },
-    { value: 60, label: '60s' },
-    { value: 120, label: '2m' },
-    { value: 'content-length', label: 'Content Length' },
-  ];
 
   const handleContentChange = () => {
     if (onContentChange) {
@@ -86,29 +80,24 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
       }`}>
         <div className="flex items-center justify-between gap-4">
           {/* Duration Selection */}
-          <div className="flex items-center gap-2 group relative">
-            <Clock className="w-5 h-5 text-editor-accent" />
-            <select
-              value={isBenchmarkMode ? duration : defaultDuration}
-              onChange={(e) => !disabled && !isBenchmarkMode && setDefaultDuration(e.target.value as TestDuration)}
-              disabled={disabled || isBenchmarkMode}
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-all bg-editor-muted/30 text-editor-fg border border-editor-muted hover:bg-editor-muted/50 ${
-                isBenchmarkMode ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-              }`}
-            >
-              {durationOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {/* Tooltip for benchmark mode */}
-            {isBenchmarkMode && (
+          {isBenchmarkMode ? (
+            <div className="flex items-center gap-2 group relative">
+              <Clock className="w-5 h-5 text-editor-accent" />
+              <div className="px-4 py-2 rounded-lg text-sm font-medium bg-editor-muted/30 text-editor-fg border border-editor-muted opacity-50 cursor-not-allowed">
+                2 minutes
+              </div>
+              {/* Tooltip for benchmark mode */}
               <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                 Test duration is fixed at 2m for benchmark tests to ensure consistent comparisons.
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            <TimeSelector
+              selectedDuration={defaultDuration}
+              onDurationChange={setDefaultDuration}
+              disabled={disabled}
+            />
+          )}
 
           {/* No Backspace Mode Toggle */}
           <div className="flex items-center gap-2 group relative">
