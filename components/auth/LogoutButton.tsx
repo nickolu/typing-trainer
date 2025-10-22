@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/user-store';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Settings } from 'lucide-react';
 
 interface LogoutButtonProps {
   wpmStatusMessage?: string | null;
@@ -15,6 +15,10 @@ export function LogoutButton({ wpmStatusMessage }: LogoutButtonProps) {
   const handleLogout = async () => {
     await logout();
     router.push('/login');
+  };
+
+  const handleSettings = () => {
+    router.push('/settings');
   };
 
   return (
@@ -38,6 +42,16 @@ export function LogoutButton({ wpmStatusMessage }: LogoutButtonProps) {
           </div>
         )}
       </div>
+
+      {/* Settings Button */}
+      <button
+        onClick={handleSettings}
+        className="flex items-center gap-2 px-3 py-1.5 bg-editor-bg-alt border border-editor-muted
+                   hover:bg-editor-muted/30 text-editor-fg rounded-lg transition-colors"
+        title="Settings"
+      >
+        <Settings className="w-4 h-4" />
+      </button>
 
       {/* Logout Button */}
       <button

@@ -21,7 +21,7 @@ import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 export function TypingTest() {
   const router = useRouter();
   const { currentUserId, isAuthenticated, displayName, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, setAutoSave, setDefaultContentStyle } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle } = useSettingsStore();
   const {
     status,
     duration,
@@ -692,10 +692,10 @@ export function TypingTest() {
           <p>Press Tab or Space to skip to the next word.{noBackspaceMode ? ' Backspace is disabled' : ''}</p>
         )}
       </div>
-      {/* Live WPM Speedometer - Only show when test is active */}
-      <div style={{minHeight: '180px'}}>
+      {/* Live WPM Speedometer - Only show when test is active and speedometer is enabled */}
+      <div style={{minHeight: showSpeedometer ? '180px' : '0px'}}>
       <AnimatePresence>
-        {status === 'active' && (
+        {status === 'active' && showSpeedometer && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

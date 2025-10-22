@@ -1,5 +1,7 @@
 'use client';
 
+import { useSettingsStore } from '@/store/settings-store';
+
 interface WPMSpeedometerProps {
   wpm: number;
   maxWPM?: number;
@@ -7,12 +9,14 @@ interface WPMSpeedometerProps {
 }
 
 export function WPMSpeedometer({ wpm, maxWPM = 120, averageWPM = null }: WPMSpeedometerProps) {
+  const { showWPMOnSpeedometer } = useSettingsStore();
+
   // Calculate needle rotation (0 WPM = -90deg, maxWPM = 90deg)
   const clampedWPM = Math.min(wpm, maxWPM);
   const rotation = -90 + (clampedWPM / maxWPM) * 180;
 
-  // Calculate average marker position if provided
-  const averageMarkerRotation = averageWPM !== null && averageWPM !== undefined
+  // Calculate average marker position if provided and enabled in settings
+  const averageMarkerRotation = showWPMOnSpeedometer && averageWPM !== null && averageWPM !== undefined
     ? -90 + (Math.min(averageWPM, maxWPM) / maxWPM) * 180
     : null;
 
@@ -87,7 +91,7 @@ export function WPMSpeedometer({ wpm, maxWPM = 120, averageWPM = null }: WPMSpee
       <div className="text-center">
         <div className="text-2xl font-bold tabular-nums">{Math.round(wpm)}</div>
         <div className="text-xs text-editor-muted">WPM</div>
-        {averageWPM !== null && averageWPM !== undefined && (
+        {showWPMOnSpeedometer && averageWPM !== null && averageWPM !== undefined && (
           <div className="text-xs text-yellow-500 mt-1 flex items-center justify-center gap-1">
             <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
             Avg: {Math.round(averageWPM)}

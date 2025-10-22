@@ -23,6 +23,10 @@ interface SettingsState {
   customPrompt: string;
   customSequences: string[]; // User-defined character sequences for practice
 
+  // Display settings
+  showSpeedometer: boolean;
+  showWPMOnSpeedometer: boolean;
+
   // Actions
   setDefaultDuration: (duration: TestDuration) => void;
   setAutoSave: (autoSave: boolean) => void;
@@ -33,6 +37,8 @@ interface SettingsState {
   setLlmTemperature: (temperature: number) => void;
   setCustomPrompt: (prompt: string) => void;
   setCustomSequences: (sequences: string[]) => void;
+  setShowSpeedometer: (enabled: boolean) => void;
+  setShowWPMOnSpeedometer: (enabled: boolean) => void;
   resetSettings: () => void;
 }
 
@@ -51,6 +57,8 @@ const defaultSettings = {
   llmTemperature: 0.7,
   customPrompt: '',
   customSequences: [] as string[],
+  showSpeedometer: true,
+  showWPMOnSpeedometer: true,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -82,6 +90,10 @@ export const useSettingsStore = create<SettingsState>()(
       setCustomPrompt: (prompt) => set({ customPrompt: prompt }),
 
       setCustomSequences: (sequences) => set({ customSequences: sequences }),
+
+      setShowSpeedometer: (enabled) => set({ showSpeedometer: enabled }),
+
+      setShowWPMOnSpeedometer: (enabled) => set({ showWPMOnSpeedometer: enabled }),
 
       resetSettings: () => set(defaultSettings),
     }),
