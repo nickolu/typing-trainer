@@ -135,6 +135,8 @@ export const useTestStore = create<TestState>((set, get) => ({
 
     // In Strict mode, block incorrect characters
     if (correctionMode === 'strict' && !wasCorrect) {
+      console.log('[TestStore] Strict mode: blocking incorrect character', { key, expectedChar });
+
       // Increment error count
       const newErrorCount = state.strictModeErrors + 1;
 
@@ -154,10 +156,18 @@ export const useTestStore = create<TestState>((set, get) => ({
         keystrokes: [...state.keystrokes, keystroke],
       });
 
+      console.log('[TestStore] Strict mode error count:', newErrorCount, 'threshold:', mistakeThreshold);
+
       // Check if we've reached the mistake threshold
-      if (newErrorCount >= mistakeThreshold) {
+      if (newErrorCount >= mistakeThreshold && mistakeThreshold !== Infinity) {
         // End the test due to too many mistakes
-        get().completeTest(false);
+        // Use setTimeout to allow the UI to update first
+        setTimeout(() => {
+          const currentState = get();
+          if (currentState.status === 'active') {
+            currentState.completeTest(false);
+          }
+        }, 500);
       }
 
       return; // Don't add the character to input
