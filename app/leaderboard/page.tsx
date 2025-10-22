@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebase-config';
 
 interface LeaderboardEntry {
   displayName: string;
@@ -19,12 +21,31 @@ export default function LeaderboardPage() {
 
   const loadLeaderboard = async () => {
     try {
-      const response = await fetch('/api/leaderboard');
-      if (!response.ok) {
-        throw new Error('Failed to load leaderboard');
-      }
-      const data = await response.json();
-      setLeaderboard(data.leaderboard);
+      const db = getFirebaseDb();
+      const usersRef = collection(db, 'users');
+
+      // Query for users with wpmScore, ordered by wpmScore descending, limit 100
+      const q = query(
+        usersRef,
+        where('wpmScore', '!=', null),
+        orderBy('wpmScore', 'desc'),
+        limit(100)
+      );
+
+      const snapshot = await getDocs(q);
+
+      const leaderboardData: LeaderboardEntry[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        if (data.wpmScore && data.displayName) {
+          leaderboardData.push({
+            displayName: data.displayName,
+            wpmScore: data.wpmScore,
+          });
+        }
+      });
+
+      setLeaderboard(leaderboardData);
     } catch (err) {
       console.error('Failed to load leaderboard:', err);
       setError('Failed to load leaderboard. Please try again later.');
