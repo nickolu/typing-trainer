@@ -19,8 +19,8 @@ import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
   const router = useRouter();
-  const { currentUserId, isAuthenticated, displayName, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle } = useSettingsStore();
+  const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold } = useSettingsStore();
   const {
     status,
     duration,
@@ -32,6 +32,7 @@ export function TypingTest() {
     result,
     isPractice,
     practiceSequences,
+    strictModeErrors,
     initializeTest,
     startTest,
     handleKeyPress,
@@ -45,6 +46,7 @@ export function TypingTest() {
   const [isCompletingTest, setIsCompletingTest] = useState(false);
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [shouldShake, setShouldShake] = useState(false);
   const [wpmStatus, setWpmStatus] = useState<{
     canUpdate: boolean;
     hasScore: boolean;
@@ -416,6 +418,15 @@ export function TypingTest() {
     }
   }, [isContentLengthMode, status, currentWordIndex, targetWords.length, handleComplete]);
 
+  // Trigger screen shake on strict mode errors
+  useEffect(() => {
+    if (correctionMode === 'strict' && strictModeErrors > 0) {
+      setShouldShake(true);
+      const timer = setTimeout(() => setShouldShake(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [strictModeErrors, correctionMode]);
+
   // Update live WPM during active test
   useEffect(() => {
     if (status === 'active' && startTime) {
@@ -544,19 +555,40 @@ export function TypingTest() {
         </div>
       </div>
 
-      {/* No Corrections Mode Banner */}
-      {noBackspaceMode && (
+      {/* Correction Mode Banners */}
+      {correctionMode === 'speed' && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
                 <div className="w-7 h-7 bg-orange-500/20 rounded-lg flex items-center justify-center">
-                  <span className="text-lg">🔒</span>
+                  <span className="text-lg">⚡</span>
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-orange-400 text-sm">No Corrections Mode Active</h3>
-                <p className="text-xs text-editor-muted">Backspace is disabled - focus on accuracy!</p>
+                <h3 className="font-bold text-orange-400 text-sm">Speed Mode Active</h3>
+                <p className="text-xs text-editor-muted">Backspace is disabled - skip mistakes and keep moving!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {correctionMode === 'strict' && (
+        <div className="w-full max-w-4xl mb-4">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-7 h-7 bg-red-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">🎯</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-red-400 text-sm">Strict Mode Active</h3>
+                <p className="text-xs text-editor-muted">
+                  Wrong keys are blocked. Mistakes: <span className="font-bold text-red-400">{strictModeErrors}</span>
+                  {mistakeThreshold > 0 && <span> / {mistakeThreshold}</span>}
+                </p>
               </div>
             </div>
           </div>
@@ -642,7 +674,9 @@ export function TypingTest() {
       {/* Test display */}
       <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${
         isGenerating ? 'opacity-50' : 'opacity-100'
-      } transition-opacity ${status === 'complete' ? 'hidden' : ''}`}>
+      } transition-opacity ${status === 'complete' ? 'hidden' : ''} ${
+        shouldShake ? 'animate-shake' : ''
+      }`}>
         {isGenerating && (
           <div className="absolute inset-0 flex items-center justify-center bg-editor-bg/80 backdrop-blur-sm z-10">
             <p className="text-editor-muted">Generating new content...</p>
@@ -668,7 +702,11 @@ export function TypingTest() {
           <p>Start typing to begin the test...</p>
         )}
         {status === 'active' && (
-          <p>Press Tab or Space to skip to the next word.{noBackspaceMode ? ' Backspace is disabled' : ''}</p>
+          <p>
+            Press Tab or Space to skip to the next word.
+            {correctionMode === 'speed' && ' Backspace is disabled.'}
+            {correctionMode === 'strict' && ' Wrong keys are blocked.'}
+          </p>
         )}
       </div>
       {/* Live WPM Speedometer - Only show when test is active and speedometer is enabled */}

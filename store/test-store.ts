@@ -36,6 +36,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   completedWords: [],
   keystrokes: [],
   result: null,
+  strictModeErrors: 0, // Track mistakes in strict mode
   // Store last test configuration for "try again" functionality
   lastTestConfig: null,
 
@@ -62,6 +63,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       currentInput: '',
       completedWords: [],
       keystrokes: [],
+      strictModeErrors: 0,
       result: null,
       // Store configuration for "try again"
       lastTestConfig: {
@@ -95,10 +97,24 @@ export const useTestStore = create<TestState>((set, get) => ({
     const currentWord = state.targetWords[state.currentWordIndex];
     if (!currentWord) return;
 
+    const correctionMode = useSettingsStore.getState().correctionMode;
+    const mistakeThreshold = useSettingsStore.getState().mistakeThreshold;
+
     // Check if this is a space (word completion)
     if (key === ' ') {
       // Don't add space if current input is empty
       if (state.currentInput.length === 0) return;
+
+      // In Strict mode, only allow space if the word is complete and correct
+      if (correctionMode === 'strict') {
+        const isWordComplete = state.currentInput.length === currentWord.length;
+        const isWordCorrect = state.currentInput === currentWord;
+
+        if (!isWordComplete || !isWordCorrect) {
+          console.log('[TestStore] Strict mode: blocking space - word not complete or incorrect');
+          return; // Block space in strict mode if word isn't perfect
+        }
+      }
 
       // Complete the current word
       const newCompletedWords = [...state.completedWords, state.currentInput];
@@ -124,12 +140,53 @@ export const useTestStore = create<TestState>((set, get) => ({
       return;
     }
 
-    // Add character to current input
-    const newInput = state.currentInput + key;
-
     // Determine if this keystroke is correct
     const expectedChar = currentWord[state.currentInput.length];
     const wasCorrect = key === expectedChar;
+
+    // In Strict mode, block incorrect characters
+    if (correctionMode === 'strict' && !wasCorrect) {
+      console.log('[TestStore] Strict mode: blocking incorrect character', { key, expectedChar });
+
+      // Increment error count
+      const newErrorCount = state.strictModeErrors + 1;
+
+      // Record the failed keystroke (but don't add to input)
+      const keystroke: KeystrokeEvent = {
+        timestamp: performance.now(),
+        key,
+        wordIndex: state.currentWordIndex,
+        charIndex: state.currentInput.length,
+        expectedChar,
+        wasCorrect: false,
+        isBackspace: false,
+      };
+
+      set({
+        strictModeErrors: newErrorCount,
+        keystrokes: [...state.keystrokes, keystroke],
+      });
+
+      console.log('[TestStore] Strict mode error count:', newErrorCount, 'threshold:', mistakeThreshold);
+
+      // Check if we've reached the mistake threshold (-1 means unlimited)
+      if (mistakeThreshold > 0 && newErrorCount >= mistakeThreshold) {
+        console.log('[TestStore] Mistake threshold reached, ending test');
+        // End the test due to too many mistakes
+        // Use setTimeout to allow the UI to update first
+        setTimeout(() => {
+          const currentState = get();
+          if (currentState.status === 'active') {
+            currentState.completeTest(false);
+          }
+        }, 500);
+      }
+
+      return; // Don't add the character to input
+    }
+
+    // Normal and Speed modes: allow incorrect input
+    const newInput = state.currentInput + key;
 
     // Record keystroke with mistake tracking
     const keystroke: KeystrokeEvent = {
@@ -152,10 +209,10 @@ export const useTestStore = create<TestState>((set, get) => ({
   handleBackspace: () => {
     const state = get();
 
-    // Check if no-backspace mode is enabled
-    const noBackspaceMode = useSettingsStore.getState().noBackspaceMode;
-    if (noBackspaceMode) {
-      // Do nothing if no-backspace mode is enabled
+    // Check correction mode - backspace disabled in Speed and Strict modes
+    const correctionMode = useSettingsStore.getState().correctionMode;
+    if (correctionMode === 'speed' || correctionMode === 'strict') {
+      // Do nothing if Speed or Strict mode is enabled
       return;
     }
 
@@ -324,9 +381,9 @@ export const useTestStore = create<TestState>((set, get) => ({
       autoLabels.push(`time-${state.duration}s`);
     }
 
-    // No-corrections mode label
-    const noBackspaceMode = useSettingsStore.getState().noBackspaceMode;
-    autoLabels.push(noBackspaceMode ? 'no-corrections-on' : 'no-corrections-off');
+    // Correction mode label
+    const correctionMode = useSettingsStore.getState().correctionMode;
+    autoLabels.push(`correction-mode-${correctionMode}`);
 
     // Content category label (if available)
     if (state.testContentCategory) {
@@ -429,6 +486,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       currentInput: '',
       completedWords: [],
       keystrokes: [],
+      strictModeErrors: 0,
       result: null,
       // Preserve lastTestConfig so "try again" works
     });
@@ -465,6 +523,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       currentInput: '',
       completedWords: [],
       keystrokes: [],
+      strictModeErrors: 0,
       result: null,
       // Keep the same lastTestConfig
       lastTestConfig: state.lastTestConfig,
