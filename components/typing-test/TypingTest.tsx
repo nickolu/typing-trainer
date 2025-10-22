@@ -3,7 +3,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore, isAIContentStyle } from '@/store/settings-store';
@@ -511,8 +510,7 @@ export function TypingTest() {
     <div className="flex flex-col items-center justify-center min-h-screen p-8">
       {/* Header with timer */}
       <div className="w-full max-w-4xl mb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold">Typing Test</h1>
+        <div className="flex items-center justify-end mb-4">
           <div className="flex items-center gap-4">
             {isAuthenticated ? (
               <>
@@ -523,12 +521,6 @@ export function TypingTest() {
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
                 />
-                <Link
-                  href="/stats"
-                  className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
-                >
-                  View Stats
-                </Link>
                 <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} />
               </>
             ) : (
@@ -540,19 +532,6 @@ export function TypingTest() {
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
                 />
-                <div className="relative group">
-                  <button
-                    disabled
-                    className="px-4 py-2 bg-editor-muted/30 text-editor-muted rounded-lg font-medium transition-colors flex items-center gap-2 cursor-not-allowed"
-                  >
-                    <Lock className="w-4 h-4" />
-                    View Stats
-                  </button>
-                  {/* Tooltip */}
-                  <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                    Create an account or log in to access stats
-                  </div>
-                </div>
                 <Link
                   href="/login"
                   className="px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"

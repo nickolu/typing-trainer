@@ -151,12 +151,6 @@ export default function StatsPage() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-4xl font-bold">Your Stats</h1>
             <div className="flex items-center gap-4">
-              <Link
-                href="/"
-                className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
-              >
-                Back to Home
-              </Link>
               <LogoutButton />
             </div>
           </div>
