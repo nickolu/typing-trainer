@@ -13,7 +13,8 @@ const TIPS = [
   "Check out the stats page to see your accuracy and WPM over time",
   "You can also generate a practice test based on your weakest key strokes to improve your speed and accuracy",
   "Take a benchmark test to see how you do on a standardized challenge",
-  "Use the AI Custom option in the content menu to generate tests for the areas you want to improve on most"
+  "Use the AI Custom option in the content menu to generate tests for the areas you want to improve on most",
+  "Take benchmark tests to earn an official WPM score that appears next to your name. Your score updates by averaging old and new scores every 30 days."
 ];
 
 export function TipsBanner() {
