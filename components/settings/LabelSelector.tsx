@@ -9,9 +9,10 @@ interface LabelSelectorProps {
   selectedLabels: string[];
   onLabelsChange: (labels: string[]) => void;
   disabled?: boolean;
+  inline?: boolean; // If true, render inline without button/dropdown
 }
 
-export function LabelSelector({ selectedLabels, onLabelsChange, disabled = false }: LabelSelectorProps) {
+export function LabelSelector({ selectedLabels, onLabelsChange, disabled = false, inline = false }: LabelSelectorProps) {
   const { currentUserId, isAuthenticated } = useUserStore();
   const [availableLabels, setAvailableLabels] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -113,6 +114,150 @@ export function LabelSelector({ selectedLabels, onLabelsChange, disabled = false
     return null;
   }
 
+  // Inline mode - render content directly without button/dropdown
+  if (inline) {
+    return (
+      <div className="w-full">
+        <div className={disabled ? 'opacity-50 pointer-events-none' : ''}>
+          {/* Selected Labels Display */}
+          {selectedLabels.length > 0 && (
+            <div className="mb-3">
+              <div className="text-xs text-editor-muted mb-2">Selected:</div>
+              <div className="flex flex-wrap gap-2">
+                {selectedLabels.map(label => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-blue-600/20 text-blue-400 rounded text-xs font-medium"
+                  >
+                    {label}
+                    <button
+                      onClick={() => handleToggleLabel(label)}
+                      className="hover:bg-blue-600/30 rounded p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Error Display */}
+          {error && (
+            <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+              {error}
+            </div>
+          )}
+
+          {/* Available Labels */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-editor-muted">Available Labels:</div>
+              {availableLabels.length > 0 && (
+                <button
+                  onClick={() => setDeleteMode(!deleteMode)}
+                  className={`p-1 rounded transition-colors text-xs ${
+                    deleteMode ? 'bg-red-500/20 text-red-400' : 'hover:bg-editor-muted/30 text-editor-muted'
+                  }`}
+                  title={deleteMode ? 'Done deleting' : 'Delete labels'}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {isLoading ? (
+              <div className="py-4 text-center text-sm text-editor-muted">
+                Loading labels...
+              </div>
+            ) : availableLabels.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {availableLabels.map(label => {
+                  const isSelected = selectedLabels.includes(label);
+                  return (
+                    <div
+                      key={label}
+                      className="flex items-center gap-1"
+                    >
+                      <button
+                        onClick={() => !deleteMode && handleToggleLabel(label)}
+                        disabled={deleteMode}
+                        className={`px-3 py-2 rounded text-sm transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600/10 text-blue-400 font-medium'
+                            : 'hover:bg-editor-muted/30 text-editor-fg'
+                        } ${deleteMode ? 'opacity-50' : ''}`}
+                      >
+                        {label}
+                      </button>
+                      {deleteMode && (
+                        <button
+                          onClick={() => handleDeleteLabel(label)}
+                          className="p-1 text-red-400 hover:bg-red-500/20 rounded transition-colors"
+                          title="Delete label"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-4 text-center text-sm text-editor-muted">
+                No labels yet. Add one below!
+              </div>
+            )}
+          </div>
+
+          {/* Add New Label */}
+          {availableLabels.length < 20 ? (
+            <div className="pt-3 border-t border-editor-muted">
+              <div className="text-xs text-editor-muted mb-2">
+                Add New Label ({availableLabels.length}/20)
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newLabel}
+                  onChange={(e) => {
+                    setNewLabel(e.target.value);
+                    setError(null);
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddLabel();
+                    }
+                  }}
+                  placeholder="Enter label name"
+                  maxLength={30}
+                  className="flex-1 px-3 py-2 bg-editor-muted/20 border border-editor-muted rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={isAddingLabel}
+                />
+                <button
+                  onClick={handleAddLabel}
+                  disabled={isAddingLabel || !newLabel.trim()}
+                  className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-3 border-t border-editor-muted">
+              <div className="text-xs text-orange-400 text-center">
+                Maximum of 20 labels reached. Delete some to add more.
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Dropdown mode - original behavior with button
   return (
     <div className="relative">
       {/* Toggle Button */}

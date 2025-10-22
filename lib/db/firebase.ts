@@ -228,6 +228,37 @@ export async function saveTestResult(result: TestResult, userId: string): Promis
 }
 
 /**
+ * Update labels for an existing test result
+ */
+export async function updateTestResultLabels(
+  resultId: string,
+  userId: string,
+  labels: string[]
+): Promise<void> {
+  try {
+    const { getFirebaseAuth } = await import('@/lib/firebase-config');
+    const auth = getFirebaseAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser || currentUser.uid !== userId) {
+      throw new Error('Not authenticated or user ID mismatch');
+    }
+
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, resultId);
+
+    await updateDoc(resultRef, {
+      labels: labels,
+    });
+
+    console.log('[Firebase] Successfully updated labels for test result:', resultId);
+  } catch (error) {
+    console.error('[Firebase] Failed to update test result labels:', error);
+    throw error;
+  }
+}
+
+/**
  * Get a test result by ID
  */
 export async function getTestResult(id: string): Promise<TestResult | undefined> {
