@@ -137,7 +137,11 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
               {staticOptions.map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setDefaultContentStyle(option.value)}
+                  onClick={() => {
+                    setDefaultContentStyle(option.value);
+                    // Static options have no additional config, so apply immediately
+                    handleSave();
+                  }}
                   className={`p-3 rounded-lg border text-left transition-all ${
                     defaultContentStyle === option.value
                       ? 'border-editor-accent bg-editor-accent/10'
