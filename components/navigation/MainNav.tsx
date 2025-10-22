@@ -16,7 +16,7 @@ export function MainNav() {
   return (
     <nav className="bg-editor-bg border-b border-editor-muted">
       <div className="max-w-6xl mx-auto px-8">
-        <div className="flex items-center h-16">
+        <div className="flex items-center h-16 justify-center">
           <div className="flex items-center gap-8">
             <Link href="/" className="text-xl font-bold text-editor-fg hover:text-editor-accent transition-colors">
               CunningType
