@@ -953,7 +953,7 @@ export async function getWPMScoreStatus(userId: string): Promise<{
         daysUntilUpdate: 0,
         daysUntilReset: null,
         updateAllowedDate: now,
-        resetDate: resetDate,
+        resetDate: resetDate ? new Date(resetDate) : null,
       };
     }
 
@@ -980,7 +980,7 @@ export async function getWPMScoreStatus(userId: string): Promise<{
       daysUntilUpdate,
       daysUntilReset,
       updateAllowedDate,
-      resetDate,
+      resetDate: resetDate ? new Date(resetDate) : null,
     };
   } catch (error) {
     console.error('Failed to get WPM score status:', error);
