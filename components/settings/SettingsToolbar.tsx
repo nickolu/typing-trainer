@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
-import { Save, BookOpen, ShieldOff, Highlighter, Clock } from 'lucide-react';
+import { Save, BookOpen, Highlighter, Clock } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 import { LabelSelector } from './LabelSelector';
 import { TimeSelector } from './TimeSelector';
+import { CorrectionModeSelector } from './CorrectionModeSelector';
 
 interface SettingsToolbarProps {
   disabled?: boolean;
@@ -21,12 +22,14 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
   const {
     defaultDuration,
     autoSave,
-    noBackspaceMode,
+    correctionMode,
+    mistakeThreshold,
     showPracticeHighlights,
     defaultContentStyle,
     setDefaultDuration,
     setAutoSave,
-    setNoBackspaceMode,
+    setCorrectionMode,
+    setMistakeThreshold,
     setShowPracticeHighlights,
   } = useSettingsStore();
 
@@ -99,30 +102,14 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
             />
           )}
 
-          {/* No Backspace Mode Toggle */}
-          <div className="flex items-center gap-2 group relative">
-            <ShieldOff className={`w-5 h-5 ${noBackspaceMode ? 'text-orange-400' : 'text-editor-muted'}`} />
-            <button
-              onClick={() => !disabled && setNoBackspaceMode(!noBackspaceMode)}
-              disabled={disabled}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                noBackspaceMode ? 'bg-orange-500' : 'bg-editor-muted/30'
-              }`}
-              aria-label="Toggle no corrections mode"
-            >
-              <div
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  noBackspaceMode ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-            {/* Tooltip */}
-            <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-              {noBackspaceMode
-                ? 'Backspace is disabled. You cannot correct mistakes - focus on accuracy!'
-                : 'Enable to disable backspace during tests. Forces you to type accurately without corrections.'}
-            </div>
-          </div>
+          {/* Correction Mode Selector */}
+          <CorrectionModeSelector
+            selectedMode={correctionMode}
+            onModeChange={setCorrectionMode}
+            mistakeThreshold={mistakeThreshold}
+            onThresholdChange={setMistakeThreshold}
+            disabled={disabled}
+          />
 
           {/* Highlight Practice Sequences Toggle - Only in targeted practice mode */}
           {showHighlightToggle && (

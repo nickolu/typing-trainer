@@ -9,11 +9,14 @@ export type StaticContentStyle = 'random' | 'quote' | 'prose' | 'technical' | 'c
 export type AIContentStyle = 'ai-prose' | 'ai-quote' | 'ai-technical' | 'ai-common' | 'ai-sequences' | 'ai-custom';
 export type ContentStyle = StaticContentStyle | AIContentStyle;
 
+export type CorrectionMode = 'normal' | 'speed' | 'strict';
+
 interface SettingsState {
   // Test settings
   defaultDuration: TestDuration;
   autoSave: boolean;
-  noBackspaceMode: boolean;
+  correctionMode: CorrectionMode;
+  mistakeThreshold: number; // Number of mistakes allowed in strict mode (Infinity for unlimited)
   showPracticeHighlights: boolean;
 
   // Content settings
@@ -26,7 +29,8 @@ interface SettingsState {
   // Actions
   setDefaultDuration: (duration: TestDuration) => void;
   setAutoSave: (autoSave: boolean) => void;
-  setNoBackspaceMode: (enabled: boolean) => void;
+  setCorrectionMode: (mode: CorrectionMode) => void;
+  setMistakeThreshold: (threshold: number) => void;
   setShowPracticeHighlights: (enabled: boolean) => void;
   setDefaultContentStyle: (style: ContentStyle) => void;
   setLlmModel: (model: string) => void;
@@ -44,7 +48,8 @@ export const isAIContentStyle = (style: ContentStyle): style is AIContentStyle =
 const defaultSettings = {
   defaultDuration: 30 as TestDuration,
   autoSave: true,
-  noBackspaceMode: false,
+  correctionMode: 'normal' as CorrectionMode,
+  mistakeThreshold: Infinity,
   showPracticeHighlights: true,
   defaultContentStyle: 'random' as ContentStyle,
   llmModel: 'gpt-4o-mini',
@@ -69,7 +74,9 @@ export const useSettingsStore = create<SettingsState>()(
         set({ autoSave });
       },
 
-      setNoBackspaceMode: (enabled) => set({ noBackspaceMode: enabled }),
+      setCorrectionMode: (mode) => set({ correctionMode: mode }),
+
+      setMistakeThreshold: (threshold) => set({ mistakeThreshold: threshold }),
 
       setShowPracticeHighlights: (enabled) => set({ showPracticeHighlights: enabled }),
 

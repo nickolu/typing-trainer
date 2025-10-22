@@ -123,6 +123,9 @@ export interface TestState {
   // Keystroke tracking
   keystrokes: KeystrokeEvent[];
 
+  // Strict mode mistake tracking
+  strictModeErrors: number;
+
   // Computed result (set when test completes)
   result: TestResult | null;
 
