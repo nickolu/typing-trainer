@@ -105,6 +105,17 @@ export const useTestStore = create<TestState>((set, get) => ({
       // Don't add space if current input is empty
       if (state.currentInput.length === 0) return;
 
+      // In Strict mode, only allow space if the word is complete and correct
+      if (correctionMode === 'strict') {
+        const isWordComplete = state.currentInput.length === currentWord.length;
+        const isWordCorrect = state.currentInput === currentWord;
+
+        if (!isWordComplete || !isWordCorrect) {
+          console.log('[TestStore] Strict mode: blocking space - word not complete or incorrect');
+          return; // Block space in strict mode if word isn't perfect
+        }
+      }
+
       // Complete the current word
       const newCompletedWords = [...state.completedWords, state.currentInput];
 
