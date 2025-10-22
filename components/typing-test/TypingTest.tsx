@@ -473,6 +473,11 @@ export function TypingTest() {
         e.preventDefault();
       }
 
+      // Prevent Firefox's Quick Find feature (triggered by single quote)
+      if (e.key === "'" || e.key === '/') {
+        e.preventDefault();
+      }
+
       // Handle Tab (skip to next word)
       if (e.key === 'Tab') {
         handleTab();
