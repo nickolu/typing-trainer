@@ -115,7 +115,7 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
   return (
     <div className="bg-editor-bg border border-editor-muted rounded-lg overflow-hidden">
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
         <table className="w-full">
           <thead className="bg-editor-bg/80">
             <tr className="border-b border-editor-muted">
