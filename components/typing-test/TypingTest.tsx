@@ -20,7 +20,7 @@ import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
   const router = useRouter();
-  const { currentUserId, isAuthenticated } = useUserStore();
+  const { currentUserId, isAuthenticated, displayName, wpmScore } = useUserStore();
   const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, noBackspaceMode, showPracticeHighlights, setAutoSave, setDefaultContentStyle } = useSettingsStore();
   const {
     status,
@@ -46,6 +46,16 @@ export function TypingTest() {
   const [isCompletingTest, setIsCompletingTest] = useState(false);
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [wpmStatus, setWpmStatus] = useState<{
+    canUpdate: boolean;
+    hasScore: boolean;
+    currentScore: number | null;
+    daysUntilUpdate: number | null;
+    daysUntilReset: number | null;
+    updateAllowedDate: Date | null;
+    resetDate: Date | null;
+  } | null>(null);
+
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
@@ -54,6 +64,37 @@ export function TypingTest() {
   const remainingWords = isContentLengthMode
     ? targetWords.length - currentWordIndex
     : undefined;
+
+  // Load WPM status when authenticated (for tooltip)
+  useEffect(() => {
+    if (isAuthenticated && currentUserId) {
+      const loadWPMStatus = async () => {
+        try {
+          const { getWPMScoreStatus } = await import('@/lib/db/firebase');
+          const status = await getWPMScoreStatus(currentUserId);
+          setWpmStatus(status);
+        } catch (error) {
+          console.error('Failed to load WPM status:', error);
+        }
+      };
+      loadWPMStatus();
+    } else {
+      setWpmStatus(null);
+    }
+  }, [isAuthenticated, currentUserId]);
+
+  // Generate tooltip message based on WPM status
+  const getWpmTooltipMessage = () => {
+    if (!wpmStatus) return null;
+
+    if (!wpmStatus.hasScore) {
+      return 'Take a benchmark test to set your official WPM';
+    } else if (wpmStatus.canUpdate) {
+      return `You can take one more benchmark test in the next ${wpmStatus.daysUntilReset} days. Your new score will be the average of the new score and the old score.`;
+    } else {
+      return `Your WPM score is set and cannot be changed until ${wpmStatus.updateAllowedDate?.toLocaleDateString()}. Your score will reset in ${wpmStatus.daysUntilReset} days.`;
+    }
+  };
 
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
@@ -488,7 +529,7 @@ export function TypingTest() {
                 >
                   View Stats
                 </Link>
-                <LogoutButton />
+                <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} />
               </>
             ) : (
               <>

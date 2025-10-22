@@ -12,9 +12,10 @@ import {
   normalizeTypedWords,
 } from '@/lib/test-engine/calculations';
 import { analyzeMistakes } from '@/lib/test-engine/mistake-analysis';
-import { saveTestResult } from '@/lib/db/firebase';
+import { saveTestResult, updateUserWPMScore } from '@/lib/db/firebase';
 import { useSettingsStore } from './settings-store';
 import { useUserStore } from './user-store';
+import { BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 
 export const useTestStore = create<TestState>((set, get) => ({
   // Initial state
@@ -382,6 +383,20 @@ export const useTestStore = create<TestState>((set, get) => ({
       }
 
       await saveTestResult(result, currentUserId);
+
+      // Check if this is a benchmark test and update WPM score
+      const isBenchmarkTest = allLabels.includes(BENCHMARK_CONFIG.label);
+      if (isBenchmarkTest) {
+        console.log('[TestStore] Benchmark test completed, updating WPM score:', wpm);
+        try {
+          await updateUserWPMScore(currentUserId, wpm);
+          // Refresh user profile to get updated WPM score
+          await userState.refreshUserProfile();
+        } catch (error) {
+          console.error('Failed to update WPM score:', error);
+          // Don't throw - test is still saved, just WPM update failed
+        }
+      }
     }
 
     // Update state
