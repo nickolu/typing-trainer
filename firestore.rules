@@ -13,9 +13,11 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Users collection - users can only read/write their own profile
+    // Users collection
+    // - Any authenticated user can read profiles (for leaderboard)
+    // - Users can only write their own profile
     match /users/{userId} {
-      allow read: if isOwner(userId);
+      allow read: if isAuthenticated();
       allow write: if isOwner(userId);
     }
 

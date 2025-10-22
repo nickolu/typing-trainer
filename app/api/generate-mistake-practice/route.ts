@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateMistakePractice } from '@/lib/llm/openai';
 
+// Force this route to use Node.js runtime (not Edge)
+export const runtime = 'nodejs';
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
