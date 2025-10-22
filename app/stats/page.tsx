@@ -262,13 +262,11 @@ export default function StatsPage() {
             {/* Results Table */}
             <StatsTable results={filteredResults} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
 
-            {/* Problematic Words and Aggregate Analytics - Side by Side */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <ProblematicWords results={filteredResults} />
-              <div className="lg:col-span-2">
-                <AggregateAnalytics results={filteredResults} />
-              </div>
-            </div>
+            {/* Aggregate Analytics */}
+            <AggregateAnalytics results={filteredResults} />
+
+            {/* Problematic Words */}
+            <ProblematicWords results={filteredResults} />
           </div>
         )}
       </div>

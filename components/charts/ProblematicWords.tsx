@@ -32,7 +32,7 @@ export function ProblematicWords({ results }: ProblematicWordsProps) {
           </p>
         </div>
       ) : (
-        <div className="space-y-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
           {problematicWords.map(({ word, count }) => (
             <div
               key={word}
