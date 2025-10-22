@@ -20,8 +20,8 @@ import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
   const router = useRouter();
-  const { currentUserId, isAuthenticated, displayName, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, correctionMode, mistakeThreshold, showPracticeHighlights, setAutoSave, setDefaultContentStyle } = useSettingsStore();
+  const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold } = useSettingsStore();
   const {
     status,
     duration,
@@ -730,10 +730,10 @@ export function TypingTest() {
           </p>
         )}
       </div>
-      {/* Live WPM Speedometer - Only show when test is active */}
-      <div style={{minHeight: '180px'}}>
+      {/* Live WPM Speedometer - Only show when test is active and speedometer is enabled */}
+      <div style={{minHeight: showSpeedometer ? '180px' : '0px'}}>
       <AnimatePresence>
-        {status === 'active' && (
+        {status === 'active' && showSpeedometer && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -741,7 +741,7 @@ export function TypingTest() {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="w-full max-w-4xl mt-6 flex justify-center"
           >
-            <WPMSpeedometer wpm={liveWPM} />
+            <WPMSpeedometer wpm={liveWPM} averageWPM={wpmScore} />
           </motion.div>
         )}
       </AnimatePresence>

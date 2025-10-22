@@ -11,6 +11,9 @@ import { TargetedPracticeModal } from './TargetedPracticeModal';
 import { Zap, Target, Check, X, BrainCircuit } from 'lucide-react';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
+import { useUserStore } from '@/store/user-store';
+import { LabelSelector } from '../settings/LabelSelector';
+import { updateTestResultLabels } from '@/lib/db/firebase';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
 import { calculateSequenceTimings } from '@/lib/test-engine/calculations';
 import { analyzeMistakes, getMistakeSequencesForPractice } from '@/lib/test-engine/mistake-analysis';
@@ -23,9 +26,13 @@ export function ResultsView({ result }: ResultsViewProps) {
   const router = useRouter();
   const { defaultDuration, llmModel, llmTemperature } = useSettingsStore();
   const { initializeTest, resetTest, retryLastTest } = useTestStore();
+  const { currentUserId, isAuthenticated } = useUserStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
   const [practiceError, setPracticeError] = useState<string | null>(null);
+  const [currentLabels, setCurrentLabels] = useState<string[]>(result.labels || []);
+  const [isSavingLabels, setIsSavingLabels] = useState(false);
+  const [labelError, setLabelError] = useState<string | null>(null);
 
   // Calculate sequence timings
   const twoCharSequences = useMemo(
@@ -61,6 +68,27 @@ export function ResultsView({ result }: ResultsViewProps) {
     );
 
     router.push('/');
+  };
+
+  const handleLabelsChange = async (labels: string[]) => {
+    // Update local state immediately for UI responsiveness
+    setCurrentLabels(labels);
+    setLabelError(null);
+
+    // Only save to database if the test result is saved and user is authenticated
+    if (result.userId && currentUserId && isAuthenticated) {
+      setIsSavingLabels(true);
+      try {
+        await updateTestResultLabels(result.id, currentUserId, labels);
+      } catch (error) {
+        console.error('Failed to update labels:', error);
+        setLabelError('Failed to save labels. Please try again.');
+        // Revert to original labels on error
+        setCurrentLabels(result.labels || []);
+      } finally {
+        setIsSavingLabels(false);
+      }
+    }
   };
 
   const handleGenerateTargetedPractice = async (selectedSequences: string[], selectedWords: string[]) => {
@@ -175,6 +203,29 @@ export function ResultsView({ result }: ResultsViewProps) {
             icon={<Target className="w-8 h-8" />}
           />
         </div>
+
+        {/* Labels Section */}
+        {isAuthenticated && result.userId && (
+          <div className="bg-editor-bg border border-editor-muted rounded-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">Labels</h2>
+              {isSavingLabels && (
+                <span className="text-sm text-editor-muted">Saving...</span>
+              )}
+            </div>
+            {labelError && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-sm text-red-400">
+                {labelError}
+              </div>
+            )}
+            <LabelSelector
+              selectedLabels={currentLabels}
+              onLabelsChange={handleLabelsChange}
+              disabled={isSavingLabels}
+              inline={true}
+            />
+          </div>
+        )}
 
         {/* Detailed Stats */}
         <div className="bg-editor-bg border border-editor-muted rounded-lg p-6 mb-8">

@@ -182,9 +182,9 @@ export default function StatsPage() {
             </Link>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Filters */}
-            <div className="bg-editor-bg border border-editor-muted rounded-lg p-4 space-y-4">
+            <div className="bg-editor-bg border border-editor-muted rounded-lg p-3 space-y-3">
               {/* Date Range Filter */}
               <div className="flex items-center gap-4">
                 <span className="text-editor-muted font-medium">Time Range:</span>
@@ -215,9 +215,9 @@ export default function StatsPage() {
 
               {/* Label Filter */}
               {availableLabels.length > 0 && (
-                <div className="border-t border-editor-muted/30 pt-4">
+                <div className="border-t border-editor-muted/30 pt-3">
                   <div className="flex items-start gap-4">
-                    <div className="flex items-center gap-2 text-editor-muted font-medium pt-1">
+                    <div className="flex items-center gap-2 text-editor-muted font-medium pt-0.5">
                       <Tag className="w-4 h-4" />
                       <span>Labels:</span>
                     </div>
@@ -254,7 +254,7 @@ export default function StatsPage() {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <WPMChart results={filteredResults} />
               <AccuracyChart results={filteredResults} />
             </div>
@@ -262,11 +262,11 @@ export default function StatsPage() {
             {/* Results Table */}
             <StatsTable results={filteredResults} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
 
-            {/* Problematic Words */}
-            <ProblematicWords results={filteredResults} />
-
             {/* Aggregate Analytics */}
             <AggregateAnalytics results={filteredResults} />
+
+            {/* Problematic Words */}
+            <ProblematicWords results={filteredResults} />
           </div>
         )}
       </div>

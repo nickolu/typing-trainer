@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteTestResult, restoreTestResult } from '@/lib/db/firebase';
 
+// Force this route to use Node.js runtime (not Edge)
+export const runtime = 'nodejs';
+
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

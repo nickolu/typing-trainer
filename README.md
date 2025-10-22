@@ -43,7 +43,7 @@ A modern, local-first typing speed trainer built with Next.js, TypeScript, and T
 - **Language**: TypeScript (strict mode)
 - **Styling**: Tailwind CSS with custom theme
 - **State Management**: Zustand with localStorage persistence
-- **Database**: IndexedDB via Dexie (local-first)
+- **Database**: Firebase Firestore (cloud) + Firebase Auth
 - **AI Integration**: OpenAI API (server-side)
 - **Charts**: Recharts for data visualization
 - **Fonts**: Inter (UI), JetBrains Mono (test content)
@@ -53,6 +53,7 @@ A modern, local-first typing speed trainer built with Next.js, TypeScript, and T
 
 ### Prerequisites
 - Node.js 18+ and npm
+- Firebase account and project (required for authentication and cloud storage)
 - OpenAI API key (optional, only needed for AI-generated content)
 
 ### Installation
@@ -65,8 +66,11 @@ cd typing-trainer
 # Install dependencies
 npm install
 
-# Create .env.local file (optional, for AI features)
-echo "OPENAI_API_KEY=your-api-key-here" > .env.local
+# Set up Firebase (required)
+# See FIREBASE_SETUP.md for detailed instructions
+# Create .env.local file with Firebase credentials:
+cp .env.example .env.local
+# Edit .env.local with your Firebase and OpenAI credentials
 
 # Run development server
 npm run dev
@@ -80,7 +84,7 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-**Note:** The app works fully without an API key using 50 built-in static tests. AI features require an OpenAI API key.
+**Important:** Firebase setup is required for the app to work. See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) for detailed setup instructions.
 
 ## Project Structure
 
@@ -156,11 +160,11 @@ typing-trainer/
 8. Complete practice test and see improvement
 
 ### Data Storage
-- **Local-first**: All test results stored in IndexedDB
-- **No cloud dependency**: Works completely offline
-- **Privacy-focused**: Data never leaves your device
-- **Persistent**: Data saved across browser sessions
-- **Future-ready**: Schema designed for optional cloud sync
+- **Cloud-based**: All test results stored in Firebase Firestore
+- **User authentication**: Secure login with email/password
+- **Multi-device sync**: Access your data from any device
+- **Persistent**: Data saved across sessions and devices
+- **Privacy-focused**: Firestore security rules ensure data isolation
 
 ## Content Options
 
