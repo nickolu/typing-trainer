@@ -115,24 +115,24 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
   return (
     <div className="bg-editor-bg border border-editor-muted rounded-lg overflow-hidden">
       {/* Table */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+      <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
         <table className="w-full">
-          <thead className="bg-editor-bg/80">
+          <thead className="bg-editor-bg/80 sticky top-0">
             <tr className="border-b border-editor-muted">
-              <th className="text-left p-4">
+              <th className="text-left p-3">
                 <SortButton field="date" label="Date" />
               </th>
-              <th className="text-left p-4">
+              <th className="text-left p-3">
                 <SortButton field="wpm" label="WPM" />
               </th>
-              <th className="text-left p-4">
+              <th className="text-left p-3">
                 <SortButton field="accuracy" label="Accuracy" />
               </th>
-              <th className="text-left p-4">
+              <th className="text-left p-3">
                 <SortButton field="duration" label="Duration" />
               </th>
-              <th className="text-left p-4">Words</th>
-              <th className="text-left p-4 w-20">Actions</th>
+              <th className="text-left p-3">Words</th>
+              <th className="text-left p-3 w-20">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -142,31 +142,31 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
                 onClick={() => handleRowClick(result.id)}
                 className="border-b border-editor-muted/30 hover:bg-editor-muted/10 cursor-pointer transition-colors"
               >
-                <td className="p-4">
+                <td className="p-3">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-editor-muted" />
+                    <Calendar className="w-3.5 h-3.5 text-editor-muted" />
                     <div>
-                      <div className="font-medium">
+                      <div className="font-medium text-sm">
                         {format(new Date(result.createdAt), 'MMM d, yyyy')}
                       </div>
-                      <div className="text-sm text-editor-muted">
+                      <div className="text-xs text-editor-muted">
                         {format(new Date(result.createdAt), 'h:mm a')}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="p-3">
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-editor-accent" />
-                    <span className="font-mono font-bold text-lg">
+                    <Zap className="w-3.5 h-3.5 text-editor-accent" />
+                    <span className="font-mono font-bold">
                       {result.wpm}
                     </span>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="p-3">
                   <div className="flex items-center gap-2">
                     <Target
-                      className={`w-4 h-4 ${
+                      className={`w-3.5 h-3.5 ${
                         result.accuracy >= 95
                           ? 'text-editor-success'
                           : result.accuracy >= 80
@@ -179,14 +179,14 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
                     </span>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="p-3">
                   <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-editor-muted" />
-                    <span className="font-mono">{result.duration}s</span>
+                    <Clock className="w-3.5 h-3.5 text-editor-muted" />
+                    <span className="font-mono text-sm">{result.duration}s</span>
                   </div>
                 </td>
-                <td className="p-4">
-                  <div className="text-sm">
+                <td className="p-3">
+                  <div className="text-xs">
                     <div className="text-editor-success">
                       {result.correctWordCount} correct
                     </div>
@@ -195,23 +195,23 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
                     </div>
                   </div>
                 </td>
-                <td className="p-4">
+                <td className="p-3">
                   {deletedTests.has(result.id) ? (
                     <button
                       onClick={(e) => handleUndoClick(e, result.id)}
-                      className="flex items-center gap-1 px-3 py-1 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded transition-colors text-sm font-medium"
+                      className="flex items-center gap-1 px-2 py-1 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded transition-colors text-xs font-medium"
                       title="Undo delete"
                     >
-                      <Undo2 className="w-4 h-4" />
+                      <Undo2 className="w-3 h-3" />
                       Undo
                     </button>
                   ) : (
                     <button
                       onClick={(e) => handleDeleteClick(e, result.id)}
-                      className="flex items-center gap-1 px-3 py-1 bg-editor-error/10 hover:bg-editor-error/20 text-editor-error rounded transition-colors text-sm font-medium"
+                      className="flex items-center gap-1 px-2 py-1 bg-editor-error/10 hover:bg-editor-error/20 text-editor-error rounded transition-colors text-xs font-medium"
                       title="Delete test"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3" />
                       Delete
                     </button>
                   )}

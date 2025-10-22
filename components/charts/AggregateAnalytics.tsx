@@ -166,12 +166,12 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Section Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold mb-2">Aggregate Analytics</h2>
-          <p className="text-editor-muted">
+          <h2 className="text-xl font-bold mb-1">Aggregate Analytics</h2>
+          <p className="text-editor-muted text-sm">
             Your typing patterns and common mistakes across all {results.length} test
             {results.length === 1 ? '' : 's'}
           </p>
@@ -179,7 +179,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
         <button
           onClick={() => setIsModalOpen(true)}
           disabled={isGeneratingPractice}
-          className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
         >
           {isGeneratingPractice ? (
             <>
@@ -220,7 +220,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
       )}
 
       {/* Charts Grid */}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Sequence Analysis */}
         {hasSequenceData && (
           <AggregateSequenceChart

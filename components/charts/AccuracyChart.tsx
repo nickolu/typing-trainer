@@ -56,13 +56,13 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
   const avgColor = getAccuracyColor(parseFloat(avgAccuracy));
 
   return (
-    <div className="bg-editor-bg border border-editor-muted rounded-lg p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Accuracy Trends</h2>
-        <p className="text-editor-muted mb-4">Your typing accuracy over time</p>
+    <div className="bg-editor-bg border border-editor-muted rounded-lg p-4">
+      <div className="mb-4">
+        <h2 className="text-xl font-bold mb-1">Accuracy Trends</h2>
+        <p className="text-editor-muted text-sm mb-3">Your typing accuracy over time</p>
 
         {/* Stats Summary */}
-        <div className="flex gap-6 text-sm">
+        <div className="flex gap-4 text-sm">
           <div>
             <span className="text-editor-muted">Average: </span>
             <span className="font-semibold" style={{ color: avgColor }}>
@@ -82,7 +82,7 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={250}>
         <AreaChart
           data={chartData}
           margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
