@@ -9,6 +9,7 @@ import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';
 import { AccuracyChart } from '@/components/charts/AccuracyChart';
 import { AggregateAnalytics } from '@/components/charts/AggregateAnalytics';
+import { ProblematicWords } from '@/components/charts/ProblematicWords';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { Tag, X } from 'lucide-react';
 
@@ -260,6 +261,9 @@ export default function StatsPage() {
 
             {/* Results Table */}
             <StatsTable results={filteredResults} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
+
+            {/* Problematic Words */}
+            <ProblematicWords results={filteredResults} />
 
             {/* Aggregate Analytics */}
             <AggregateAnalytics results={filteredResults} />

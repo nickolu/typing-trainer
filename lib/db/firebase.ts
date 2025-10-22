@@ -703,6 +703,46 @@ export async function getAggregateMistakes(
 }
 
 /**
+ * Aggregate problematic word data
+ */
+export interface ProblematicWord {
+  word: string;
+  count: number;
+}
+
+/**
+ * Get aggregate problematic words from a set of test results
+ * Returns words that were mistyped 2 or more times
+ */
+export function getProblematicWords(results: TestResult[]): ProblematicWord[] {
+  const wordMistakeMap = new Map<string, number>();
+
+  for (const result of results) {
+    // Only analyze tests with target and typed words
+    if (!result.targetWords || !result.typedWords) {
+      continue;
+    }
+
+    // Compare target words with typed words
+    for (let i = 0; i < Math.min(result.targetWords.length, result.typedWords.length); i++) {
+      const target = result.targetWords[i];
+      const typed = result.typedWords[i];
+
+      // If the words don't match and both are non-empty, count as a mistake
+      if (target && typed && target !== typed && target.length > 0) {
+        wordMistakeMap.set(target, (wordMistakeMap.get(target) || 0) + 1);
+      }
+    }
+  }
+
+  // Convert to array and filter for count >= 2, then sort by frequency
+  return Array.from(wordMistakeMap.entries())
+    .filter(([_, count]) => count >= 2)
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
  * User label management
  */
 export interface UserLabels {
