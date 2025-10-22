@@ -71,12 +71,6 @@ export default function LeaderboardPage() {
         <div className="text-center">
           <div className="text-2xl font-bold mb-2 text-red-500">Error</div>
           <div className="text-editor-muted mb-4">{error}</div>
-          <Link
-            href="/"
-            className="px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
-          >
-            Back to Home
-          </Link>
         </div>
       </div>
     );
@@ -89,12 +83,6 @@ export default function LeaderboardPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-4xl font-bold">Global Leaderboard</h1>
-            <Link
-              href="/"
-              className="px-4 py-2 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
-            >
-              Back to Home
-            </Link>
           </div>
           <p className="text-editor-muted">
             Top 100 typists by highest WPM score

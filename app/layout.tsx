@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { MainNav } from "@/components/navigation/MainNav";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,7 +51,10 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <AuthGuard>{children}</AuthGuard>
+        <AuthGuard>
+          <MainNav />
+          {children}
+        </AuthGuard>
       </body>
     </html>
   );

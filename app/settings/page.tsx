@@ -1,11 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
 import { useSettingsStore } from '@/store/settings-store';
 
 export default function SettingsPage() {
-  const router = useRouter();
   const { showSpeedometer, showWPMOnSpeedometer, setShowSpeedometer, setShowWPMOnSpeedometer } = useSettingsStore();
 
   return (
@@ -13,13 +10,6 @@ export default function SettingsPage() {
       <div className="w-full max-w-2xl">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 px-3 py-2 bg-editor-bg-alt border border-editor-muted hover:bg-editor-muted/30 text-editor-fg rounded-lg transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back
-          </button>
           <h1 className="text-3xl font-bold">Settings</h1>
         </div>
 
