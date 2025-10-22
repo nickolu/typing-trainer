@@ -608,7 +608,7 @@ export function TypingTest() {
                 <h3 className="font-bold text-red-400 text-sm">Strict Mode Active</h3>
                 <p className="text-xs text-editor-muted">
                   Wrong keys are blocked. Mistakes: <span className="font-bold text-red-400">{strictModeErrors}</span>
-                  {mistakeThreshold !== Infinity && <span> / {mistakeThreshold}</span>}
+                  {mistakeThreshold > 0 && <span> / {mistakeThreshold}</span>}
                 </p>
               </div>
             </div>

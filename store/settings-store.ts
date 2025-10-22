@@ -55,7 +55,7 @@ const defaultSettings = {
   defaultDuration: 30 as TestDuration,
   autoSave: true,
   correctionMode: 'normal' as CorrectionMode,
-  mistakeThreshold: Infinity,
+  mistakeThreshold: -1, // -1 represents unlimited (instead of Infinity which doesn't serialize)
   showPracticeHighlights: true,
   defaultContentStyle: 'random' as ContentStyle,
   llmModel: 'gpt-4o-mini',

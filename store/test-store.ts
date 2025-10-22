@@ -158,8 +158,9 @@ export const useTestStore = create<TestState>((set, get) => ({
 
       console.log('[TestStore] Strict mode error count:', newErrorCount, 'threshold:', mistakeThreshold);
 
-      // Check if we've reached the mistake threshold
-      if (newErrorCount >= mistakeThreshold && mistakeThreshold !== Infinity) {
+      // Check if we've reached the mistake threshold (-1 means unlimited)
+      if (mistakeThreshold > 0 && newErrorCount >= mistakeThreshold) {
+        console.log('[TestStore] Mistake threshold reached, ending test');
         // End the test due to too many mistakes
         // Use setTimeout to allow the UI to update first
         setTimeout(() => {

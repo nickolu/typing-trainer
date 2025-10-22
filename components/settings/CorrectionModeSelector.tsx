@@ -27,7 +27,7 @@ export function CorrectionModeSelector({
 }: CorrectionModeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [tempThreshold, setTempThreshold] = useState<string>(
-    mistakeThreshold === Infinity ? '' : String(mistakeThreshold)
+    !mistakeThreshold || mistakeThreshold < 0 ? '' : String(mistakeThreshold)
   );
 
   const handleSelectMode = (mode: CorrectionMode) => {
@@ -38,9 +38,13 @@ export function CorrectionModeSelector({
   const handleThresholdChange = (value: string) => {
     setTempThreshold(value);
     if (onThresholdChange) {
-      const numValue = value === '' ? Infinity : parseInt(value, 10);
-      if (!isNaN(numValue) && numValue > 0) {
-        onThresholdChange(numValue);
+      if (value === '') {
+        onThresholdChange(-1); // -1 represents unlimited
+      } else {
+        const numValue = parseInt(value, 10);
+        if (!isNaN(numValue) && numValue > 0) {
+          onThresholdChange(numValue);
+        }
       }
     }
   };
@@ -137,6 +141,8 @@ export function CorrectionModeSelector({
                     placeholder="Infinity"
                     value={tempThreshold}
                     onChange={(e) => handleThresholdChange(e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    onClick={(e) => e.stopPropagation()}
                     className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded text-sm focus:outline-none focus:border-editor-accent"
                   />
                   <p className="text-xs text-editor-muted mt-1">
