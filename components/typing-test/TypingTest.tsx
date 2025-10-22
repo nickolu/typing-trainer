@@ -703,7 +703,7 @@ export function TypingTest() {
             transition={{ duration: 0.5, ease: 'easeOut' }}
             className="w-full max-w-4xl mt-6 flex justify-center"
           >
-            <WPMSpeedometer wpm={liveWPM} />
+            <WPMSpeedometer wpm={liveWPM} averageWPM={wpmScore} />
           </motion.div>
         )}
       </AnimatePresence>

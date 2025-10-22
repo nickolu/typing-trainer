@@ -3,12 +3,18 @@
 interface WPMSpeedometerProps {
   wpm: number;
   maxWPM?: number;
+  averageWPM?: number | null;
 }
 
-export function WPMSpeedometer({ wpm, maxWPM = 120 }: WPMSpeedometerProps) {
+export function WPMSpeedometer({ wpm, maxWPM = 120, averageWPM = null }: WPMSpeedometerProps) {
   // Calculate needle rotation (0 WPM = -90deg, maxWPM = 90deg)
   const clampedWPM = Math.min(wpm, maxWPM);
   const rotation = -90 + (clampedWPM / maxWPM) * 180;
+
+  // Calculate average marker position if provided
+  const averageMarkerRotation = averageWPM !== null && averageWPM !== undefined
+    ? -90 + (Math.min(averageWPM, maxWPM) / maxWPM) * 180
+    : null;
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -47,6 +53,21 @@ export function WPMSpeedometer({ wpm, maxWPM = 120 }: WPMSpeedometerProps) {
           </defs>
         </svg>
 
+        {/* Average WPM marker - only show if averageWPM is provided */}
+        {averageMarkerRotation !== null && (
+          <div
+            className="absolute bottom-0 left-1/2 w-1 h-16 origin-bottom"
+            style={{
+              transform: `translateX(-50%) rotate(${averageMarkerRotation}deg)`,
+            }}
+          >
+            {/* Marker line */}
+            <div className="absolute top-0 left-1/2 w-0.5 h-full bg-yellow-500/80 -translate-x-1/2" />
+            {/* Marker tip */}
+            <div className="absolute top-0 left-1/2 w-0 h-0 -translate-x-1/2 -translate-y-2 border-l-[5px] border-r-[5px] border-b-[7px] border-l-transparent border-r-transparent border-b-yellow-500" />
+          </div>
+        )}
+
         {/* Needle */}
         <div
           className="absolute bottom-0 left-1/2 w-1 h-14 bg-editor-accent origin-bottom transition-transform duration-300 ease-out"
@@ -66,6 +87,12 @@ export function WPMSpeedometer({ wpm, maxWPM = 120 }: WPMSpeedometerProps) {
       <div className="text-center">
         <div className="text-2xl font-bold tabular-nums">{Math.round(wpm)}</div>
         <div className="text-xs text-editor-muted">WPM</div>
+        {averageWPM !== null && averageWPM !== undefined && (
+          <div className="text-xs text-yellow-500 mt-1 flex items-center justify-center gap-1">
+            <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+            Avg: {Math.round(averageWPM)}
+          </div>
+        )}
       </div>
     </div>
   );
