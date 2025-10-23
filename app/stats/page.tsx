@@ -20,6 +20,7 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('7days');
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [isLabelsExpanded, setIsLabelsExpanded] = useState(false);
   const { currentUserId } = useUserStore();
 
   useEffect(() => {
@@ -68,17 +69,6 @@ export default function StatsPage() {
     }
   };
 
-  // Get all unique labels from results
-  const availableLabels = useMemo(() => {
-    const labelSet = new Set<string>();
-    results.forEach((result) => {
-      if (result.labels && Array.isArray(result.labels)) {
-        result.labels.forEach((label) => labelSet.add(label));
-      }
-    });
-    return Array.from(labelSet).sort();
-  }, [results]);
-
   // Filter results by time range and labels
   const filteredResults = useMemo(() => {
     let filtered = results;
@@ -119,6 +109,26 @@ export default function StatsPage() {
 
     return filtered;
   }, [results, timeFilter, selectedLabels]);
+
+  // Get all unique labels with counts from filtered results
+  const labelCounts = useMemo(() => {
+    const countMap = new Map<string, number>();
+    filteredResults.forEach((result) => {
+      if (result.labels && Array.isArray(result.labels)) {
+        result.labels.forEach((label) => {
+          countMap.set(label, (countMap.get(label) || 0) + 1);
+        });
+      }
+    });
+    return countMap;
+  }, [filteredResults]);
+
+  // Sort labels by count (most to least used)
+  const sortedLabels = useMemo(() => {
+    return Array.from(labelCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([label]) => label);
+  }, [labelCounts]);
 
   const toggleLabel = (label: string) => {
     setSelectedLabels((prev) =>
@@ -208,7 +218,7 @@ export default function StatsPage() {
               </div>
 
               {/* Label Filter */}
-              {availableLabels.length > 0 && (
+              {sortedLabels.length > 0 && (
                 <div className="border-t border-editor-muted/30 pt-3">
                   <div className="flex items-start gap-4">
                     <div className="flex items-center gap-2 text-editor-muted font-medium pt-0.5">
@@ -217,30 +227,45 @@ export default function StatsPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex flex-wrap gap-2">
-                        {availableLabels.map((label) => (
+                        {sortedLabels.map((label, index) => (
                           <button
                             key={label}
                             onClick={() => toggleLabel(label)}
-                            className={`px-3 py-1 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
+                            className={`px-3 py-1 rounded-full text-sm font-medium transition-all duration-300 ease-in-out flex items-center gap-2 ${
                               selectedLabels.includes(label)
                                 ? 'bg-editor-accent text-white'
                                 : 'bg-editor-muted/30 text-editor-fg hover:bg-editor-muted/50'
+                            } ${
+                              !isLabelsExpanded && index >= 5
+                                ? 'opacity-0 max-h-0 scale-95 pointer-events-none overflow-hidden'
+                                : 'opacity-100 max-h-10 scale-100'
                             }`}
                           >
                             <Tag className="w-3 h-3" />
                             {label}
+                            <span className="text-xs opacity-75">({labelCounts.get(label)})</span>
                           </button>
                         ))}
                       </div>
-                      {selectedLabels.length > 0 && (
-                        <button
-                          onClick={clearAllLabels}
-                          className="mt-2 text-sm text-editor-muted hover:text-editor-fg transition-colors flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" />
-                          Clear all labels
-                        </button>
-                      )}
+                      <div className="mt-2 flex items-center gap-3">
+                        {sortedLabels.length > 5 && (
+                          <button
+                            onClick={() => setIsLabelsExpanded(!isLabelsExpanded)}
+                            className="text-sm text-editor-muted hover:text-editor-fg transition-colors"
+                          >
+                            {isLabelsExpanded ? 'less' : `more (${sortedLabels.length - 5})`}
+                          </button>
+                        )}
+                        {selectedLabels.length > 0 && (
+                          <button
+                            onClick={clearAllLabels}
+                            className="text-sm text-editor-muted hover:text-editor-fg transition-colors flex items-center gap-1"
+                          >
+                            <X className="w-3 h-3" />
+                            Clear all labels
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
