@@ -9,12 +9,13 @@ import { StatsCard } from './StatsCard';
 import { SequenceAnalysis } from './SequenceAnalysis';
 import { MistakeAnalysis } from './MistakeAnalysis';
 import { TargetedPracticeModal } from './TargetedPracticeModal';
+import { TrialHistory } from './TrialHistory';
 import { Zap, Target, Check, X, BrainCircuit, Trophy, Sparkles } from 'lucide-react';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { LabelSelector } from '../settings/LabelSelector';
-import { updateTestResultLabels, getTimeTrialBestTime } from '@/lib/db/firebase';
+import { updateTestResultLabels, getTimeTrialBestTime, getTestResultsByContent } from '@/lib/db/firebase';
 import { getRandomTest, textToWords, calculateRequiredWords, getTestById } from '@/lib/test-content';
 import { calculateSequenceTimings } from '@/lib/test-engine/calculations';
 import { analyzeMistakes, getMistakeSequencesForPractice } from '@/lib/test-engine/mistake-analysis';
@@ -43,6 +44,10 @@ export function ResultsView({ result }: ResultsViewProps) {
     previousBest?: number;
   } | null>(null);
   const [isLoadingTimeTrialData, setIsLoadingTimeTrialData] = useState(false);
+
+  // Trial history state
+  const [trialHistory, setTrialHistory] = useState<TestResult[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Check for time trial and load previous best time
   useEffect(() => {
@@ -95,6 +100,29 @@ export function ResultsView({ result }: ResultsViewProps) {
       });
     }
   }, [result, currentUserId]);
+
+  // Load trial history for this content
+  useEffect(() => {
+    // Only load history if user is authenticated, result is saved, and not a practice test
+    if (currentUserId && result.userId && result.testContentId && !result.isPractice) {
+      setIsLoadingHistory(true);
+
+      getTestResultsByContent(currentUserId, result.testContentId)
+        .then((history) => {
+          // Filter out the current result and practice tests
+          const filteredHistory = history.filter(
+            h => !h.isPractice
+          );
+          setTrialHistory(filteredHistory);
+        })
+        .catch((error) => {
+          console.error('Failed to load trial history:', error);
+        })
+        .finally(() => {
+          setIsLoadingHistory(false);
+        });
+    }
+  }, [currentUserId, result.userId, result.testContentId, result.isPractice, result.id]);
 
   // Calculate sequence timings
   const twoCharSequences = useMemo(
@@ -336,6 +364,13 @@ export function ResultsView({ result }: ResultsViewProps) {
               disabled={isSavingLabels}
               inline={true}
             />
+          </div>
+        )}
+
+        {/* Trial History */}
+        {!isLoadingHistory && trialHistory.length > 0 && (
+          <div className="mb-8">
+            <TrialHistory history={trialHistory} currentResult={result} />
           </div>
         )}
 

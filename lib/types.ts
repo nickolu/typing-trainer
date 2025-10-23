@@ -23,6 +23,7 @@ export interface TestResult {
   // Content
   testContentId: string; // Reference to static test
   targetWords: string[]; // Words to type
+  iteration?: number; // Which iteration/attempt this is for this content (1-based)
 
   // Typing data
   typedWords: string[]; // What user actually typed

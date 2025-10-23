@@ -291,7 +291,7 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
   try {
     const db = getFirebaseDb();
     const resultsRef = collection(db, TEST_RESULTS_COLLECTION);
-    
+
     // Query for all tests by user, then filter out DELETED tests in memory
     // We can't use 'in' with null in Firestore, so we query all and filter
     const q = query(
@@ -306,7 +306,7 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
     snapshot.forEach((doc) => {
       const data = doc.data();
       const status = data.status || 'COMPLETE'; // Default to COMPLETE for legacy tests
-      
+
       // Only include tests that are not DELETED
       if (status !== 'DELETED') {
         results.push({
@@ -321,6 +321,71 @@ export async function getTestResultsByUser(userId: string): Promise<TestResult[]
   } catch (error) {
     console.error('Failed to get test results by user:', error);
     throw error;
+  }
+}
+
+/**
+ * Get all test results for a specific user and content ID (sorted by date, oldest first)
+ * Used to show the history of attempts on the same content
+ */
+export async function getTestResultsByContent(
+  userId: string,
+  testContentId: string
+): Promise<TestResult[]> {
+  try {
+    const db = getFirebaseDb();
+    const resultsRef = collection(db, TEST_RESULTS_COLLECTION);
+
+    const q = query(
+      resultsRef,
+      where('userId', '==', userId),
+      where('testContentId', '==', testContentId),
+      orderBy('createdAt', 'asc')
+    );
+
+    const snapshot = await getDocs(q);
+    const results: TestResult[] = [];
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const status = data.status || 'COMPLETE';
+
+      // Only include tests that are not DELETED
+      if (status !== 'DELETED') {
+        results.push({
+          ...data,
+          createdAt: convertTimestampToDate(data.createdAt),
+          status,
+        } as TestResult);
+      }
+    });
+
+    return results;
+  } catch (error) {
+    console.error('Failed to get test results by content:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get the next iteration number for a specific content
+ * Returns 1 if this is the first attempt
+ */
+export async function getNextIterationNumber(
+  userId: string,
+  testContentId: string
+): Promise<number> {
+  try {
+    const results = await getTestResultsByContent(userId, testContentId);
+
+    // Filter out practice tests as they shouldn't count toward iterations
+    const nonPracticeResults = results.filter(r => !r.isPractice);
+
+    // Return the next iteration number
+    return nonPracticeResults.length + 1;
+  } catch (error) {
+    console.error('Failed to get next iteration number:', error);
+    return 1; // Default to 1 on error
   }
 }
 

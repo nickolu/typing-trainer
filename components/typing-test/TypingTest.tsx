@@ -296,7 +296,13 @@ export function TypingTest() {
           }
         } else {
           // Load regular content
-          testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
+          // Extract category from content style
+          // At this point, we know currentContentStyle is one of: 'random' | 'quote' | 'prose' | 'technical' | 'common'
+          // (AI styles and benchmark were handled above, time-trials were handled in if block)
+          const category = currentContentStyle === 'random'
+            ? undefined
+            : (currentContentStyle as 'quote' | 'prose' | 'technical' | 'common');
+          testContent = getRandomTest(category);
         }
 
         // For time trials, use content-length mode
@@ -309,7 +315,10 @@ export function TypingTest() {
 
         // If random was selected, update settings to show what was actually loaded
         if (currentContentStyle === 'random') {
-          setDefaultContentStyle(testContent.category);
+          // Only update if it's a standard category (not time-trial)
+          if (testContent.category !== 'time-trial') {
+            setDefaultContentStyle(testContent.category);
+          }
         }
 
         initializeTest(
@@ -375,7 +384,10 @@ export function TypingTest() {
         const words = textToWords(testContent.text, requiredWords);
 
         // Update settings to reflect the actual content loaded (sync settings with reality)
-        setDefaultContentStyle(testContent.category);
+        // Only update if it's a standard category (not time-trial)
+        if (testContent.category !== 'time-trial') {
+          setDefaultContentStyle(testContent.category);
+        }
 
         initializeTest(
           {

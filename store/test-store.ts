@@ -410,6 +410,24 @@ export const useTestStore = create<TestState>((set, get) => ({
     // Combine user labels and auto labels
     const allLabels = [...state.userLabels, ...autoLabels];
 
+    // Get iteration number for this content if saving and not a practice test
+    let iteration: number | undefined;
+    if (shouldSave && !state.isPractice && state.testContentId) {
+      const userState = useUserStore.getState();
+      const currentUserId = userState.currentUserId;
+
+      if (currentUserId) {
+        try {
+          const { getNextIterationNumber } = await import('@/lib/db/firebase');
+          iteration = await getNextIterationNumber(currentUserId, state.testContentId);
+          console.log('[TestStore] Iteration number:', iteration);
+        } catch (error) {
+          console.error('Failed to get iteration number:', error);
+          // Continue without iteration number
+        }
+      }
+    }
+
     // Create result object
     const result: TestResult = {
       id: state.testId,
@@ -417,6 +435,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       duration: actualDuration,
       testContentId: state.testContentId || '',
       targetWords: state.targetWords,
+      iteration,
       typedWords: normalizedTypedWords,
       wpm,
       accuracy,
