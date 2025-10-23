@@ -28,6 +28,8 @@ export const useTestStore = create<TestState>((set, get) => ({
   isPractice: false,
   practiceSequences: [], // Can include both character sequences and full words
   userLabels: [],
+  isTimeTrial: false,
+  timeTrialId: null,
   status: 'idle',
   startTime: null,
   endTime: null,
@@ -45,6 +47,8 @@ export const useTestStore = create<TestState>((set, get) => ({
     console.log('[TestStore] initializeTest called with:', {
       testContentTitle: config.testContentTitle,
       testContentCategory: config.testContentCategory,
+      isTimeTrial: config.isTimeTrial,
+      timeTrialId: config.timeTrialId,
     });
     set({
       testId: uuidv4(),
@@ -56,6 +60,8 @@ export const useTestStore = create<TestState>((set, get) => ({
       isPractice: config.isPractice || false,
       practiceSequences: config.practiceSequences || [],
       userLabels: config.userLabels || [],
+      isTimeTrial: config.isTimeTrial || false,
+      timeTrialId: config.timeTrialId || null,
       status: 'idle',
       startTime: null,
       endTime: null,
@@ -331,6 +337,9 @@ export const useTestStore = create<TestState>((set, get) => ({
       ? Math.round((endTime - state.startTime) / 1000)
       : state.duration;
 
+    // Calculate completion time (elapsed time from start to finish)
+    const completionTime = (endTime - state.startTime) / 1000; // in seconds
+
     // Add current input to completed words if there's any
     let finalCompletedWords = [...state.completedWords];
     if (state.currentInput.length > 0) {
@@ -419,6 +428,9 @@ export const useTestStore = create<TestState>((set, get) => ({
       correctionCount: mistakeAnalysis.totalCorrections,
       characterSubstitutions: Object.keys(characterSubstitutions).length > 0 ? characterSubstitutions : undefined,
       labels: allLabels.length > 0 ? allLabels : undefined,
+      isTimeTrial: state.isTimeTrial,
+      timeTrialId: state.timeTrialId || undefined,
+      completionTime: state.duration === 'content-length' ? completionTime : undefined,
     };
 
     // Save to Firebase only if shouldSave is true
@@ -454,6 +466,24 @@ export const useTestStore = create<TestState>((set, get) => ({
           // Don't throw - test is still saved, just WPM update failed
         }
       }
+
+      // Check if this is a time trial and update best time
+      if (state.isTimeTrial && state.timeTrialId && result.completionTime) {
+        console.log('[TestStore] Time trial completed, updating best time:', result.completionTime);
+        try {
+          const { updateTimeTrialBestTime } = await import('@/lib/db/firebase');
+          const isNewBest = await updateTimeTrialBestTime(
+            currentUserId,
+            state.timeTrialId,
+            result.completionTime,
+            result.id
+          );
+          console.log('[TestStore] Is new best time:', isNewBest);
+        } catch (error) {
+          console.error('Failed to update time trial best time:', error);
+          // Don't throw - test is still saved, just best time update failed
+        }
+      }
     }
 
     // Update state
@@ -479,6 +509,8 @@ export const useTestStore = create<TestState>((set, get) => ({
       isPractice: false,
       practiceSequences: [],
       userLabels: [],
+      isTimeTrial: false,
+      timeTrialId: null,
       status: 'idle',
       startTime: null,
       endTime: null,

@@ -1,20 +1,21 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import confetti from 'canvas-confetti';
 import { TestResult } from '@/lib/types';
 import { StatsCard } from './StatsCard';
 import { SequenceAnalysis } from './SequenceAnalysis';
 import { MistakeAnalysis } from './MistakeAnalysis';
 import { TargetedPracticeModal } from './TargetedPracticeModal';
-import { Zap, Target, Check, X, BrainCircuit } from 'lucide-react';
+import { Zap, Target, Check, X, BrainCircuit, Trophy, Sparkles } from 'lucide-react';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { LabelSelector } from '../settings/LabelSelector';
-import { updateTestResultLabels } from '@/lib/db/firebase';
-import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
+import { updateTestResultLabels, getTimeTrialBestTime } from '@/lib/db/firebase';
+import { getRandomTest, textToWords, calculateRequiredWords, getTestById } from '@/lib/test-content';
 import { calculateSequenceTimings } from '@/lib/test-engine/calculations';
 import { analyzeMistakes, getMistakeSequencesForPractice } from '@/lib/test-engine/mistake-analysis';
 
@@ -33,6 +34,67 @@ export function ResultsView({ result }: ResultsViewProps) {
   const [currentLabels, setCurrentLabels] = useState<string[]>(result.labels || []);
   const [isSavingLabels, setIsSavingLabels] = useState(false);
   const [labelError, setLabelError] = useState<string | null>(null);
+
+  // Time trial state
+  const [timeTrialMessage, setTimeTrialMessage] = useState<{
+    type: 'first' | 'new-best' | 'not-best';
+    message: string;
+    improvement?: number;
+    previousBest?: number;
+  } | null>(null);
+  const [isLoadingTimeTrialData, setIsLoadingTimeTrialData] = useState(false);
+
+  // Check for time trial and load previous best time
+  useEffect(() => {
+    if (result.isTimeTrial && result.timeTrialId && result.completionTime && currentUserId) {
+      setIsLoadingTimeTrialData(true);
+
+      // Fetch the best time BEFORE this test was saved
+      // We'll use the current best time from the database, which was already updated by test-store
+      getTimeTrialBestTime(currentUserId, result.timeTrialId).then((bestTime) => {
+        const completionTime = result.completionTime!;
+        const testContent = getTestById(result.timeTrialId!);
+        const trialName = testContent?.title || 'Time Trial';
+
+        if (bestTime === null || bestTime === completionTime) {
+          // This is the first completion
+          setTimeTrialMessage({
+            type: 'first',
+            message: `Great job! You completed ${trialName} in ${completionTime.toFixed(1)} seconds. Try again to beat your time!`,
+          });
+        } else if (completionTime < bestTime) {
+          // New best time! (This shouldn't happen as the DB is already updated, but handle it)
+          const improvement = bestTime - completionTime;
+          setTimeTrialMessage({
+            type: 'new-best',
+            message: `New Personal Record! You beat your previous time by ${improvement.toFixed(1)} seconds!`,
+            improvement,
+            previousBest: bestTime,
+          });
+
+          // Trigger confetti
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#FFD700', '#FFA500', '#FF6347'],
+          });
+        } else {
+          // Not a new best
+          setTimeTrialMessage({
+            type: 'not-best',
+            message: `You completed in ${completionTime.toFixed(1)} seconds. Your best is ${bestTime.toFixed(1)} seconds. Try again!`,
+            previousBest: bestTime,
+          });
+        }
+
+        setIsLoadingTimeTrialData(false);
+      }).catch((error) => {
+        console.error('Failed to load time trial data:', error);
+        setIsLoadingTimeTrialData(false);
+      });
+    }
+  }, [result, currentUserId]);
 
   // Calculate sequence timings
   const twoCharSequences = useMemo(
@@ -203,6 +265,56 @@ export function ResultsView({ result }: ResultsViewProps) {
             icon={<Target className="w-8 h-8" />}
           />
         </div>
+
+        {/* Time Trial Message */}
+        {result.isTimeTrial && !isLoadingTimeTrialData && timeTrialMessage && (
+          <div className={`rounded-lg p-6 mb-8 border ${
+            timeTrialMessage.type === 'new-best'
+              ? 'bg-yellow-600/10 border-yellow-400/30'
+              : timeTrialMessage.type === 'first'
+              ? 'bg-blue-600/10 border-blue-400/30'
+              : 'bg-gray-600/10 border-gray-400/30'
+          }`}>
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                {timeTrialMessage.type === 'new-best' ? (
+                  <Trophy className="w-8 h-8 text-yellow-400" />
+                ) : (
+                  <Trophy className="w-8 h-8 text-gray-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className={`text-xl font-bold mb-2 ${
+                  timeTrialMessage.type === 'new-best'
+                    ? 'text-yellow-400'
+                    : timeTrialMessage.type === 'first'
+                    ? 'text-blue-400'
+                    : 'text-gray-300'
+                }`}>
+                  {timeTrialMessage.type === 'new-best' && <Sparkles className="inline w-6 h-6 mr-2" />}
+                  {timeTrialMessage.type === 'new-best' ? 'New Personal Record!' :
+                   timeTrialMessage.type === 'first' ? 'First Completion!' :
+                   'Keep Trying!'}
+                </h3>
+                <p className="text-lg text-editor-fg">{timeTrialMessage.message}</p>
+                {result.completionTime && (
+                  <div className="mt-4 flex gap-4 text-sm">
+                    <div>
+                      <span className="text-editor-muted">Your Time: </span>
+                      <span className="font-bold text-yellow-400">{result.completionTime.toFixed(1)}s</span>
+                    </div>
+                    {timeTrialMessage.previousBest && (
+                      <div>
+                        <span className="text-editor-muted">Previous Best: </span>
+                        <span className="font-bold">{timeTrialMessage.previousBest.toFixed(1)}s</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Labels Section */}
         {isAuthenticated && result.userId && (

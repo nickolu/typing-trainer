@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Timer, FileText } from 'lucide-react';
+import { Timer, FileText, Trophy } from 'lucide-react';
 import { TestDuration } from '@/store/settings-store';
 
 interface TestTimerProps {
@@ -11,9 +11,11 @@ interface TestTimerProps {
   // For content-length mode
   totalWords?: number;
   remainingWords?: number;
+  // For time trials
+  bestTime?: number | null; // Best time in seconds
 }
 
-export function TestTimer({ duration, startTime, onComplete, totalWords, remainingWords }: TestTimerProps) {
+export function TestTimer({ duration, startTime, onComplete, totalWords, remainingWords, bestTime }: TestTimerProps) {
   // Helper to convert duration to number (handles both string and number from store)
   const getDurationAsNumber = (dur: number | 'content-length' | string): number => {
     if (dur === 'content-length') return 0;
@@ -58,11 +60,21 @@ export function TestTimer({ duration, startTime, onComplete, totalWords, remaini
   // For content-length mode, display remaining words
   if (duration === 'content-length') {
     return (
-      <div className="flex items-center gap-2 text-editor-fg">
-        <FileText className="w-5 h-5" />
-        <span className="text-2xl font-bold font-mono tabular-nums">
-          {remainingWords ?? totalWords ?? 0} words
-        </span>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 text-editor-fg">
+          <FileText className="w-5 h-5" />
+          <span className="text-2xl font-bold font-mono tabular-nums">
+            {remainingWords ?? totalWords ?? 0} words
+          </span>
+        </div>
+        {bestTime !== undefined && bestTime !== null && (
+          <div className="flex items-center gap-2 text-yellow-400">
+            <Trophy className="w-4 h-4" />
+            <span className="text-sm font-bold font-mono">
+              Best: {bestTime.toFixed(1)}s
+            </span>
+          </div>
+        )}
       </div>
     );
   }

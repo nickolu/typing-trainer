@@ -338,6 +338,50 @@ export const staticTests: TestContent[] = [
     title: 'Home is Where Heart Is',
     text: 'Home is where the heart is most comfortable. This beautiful sentiment captures the emotional essence of what makes a place truly feel like home. While a house is simply a physical structure, a home is created through love, memories, and the people who inhabit it. The heart finds comfort not in luxurious surroundings or perfect conditions, but in the sense of belonging, acceptance, and unconditional love that a true home provides. This phrase reminds us that home can be found anywhere we feel safe, loved, and accepted for who we are. It celebrates the importance of creating emotional sanctuary wherever we are, whether in a grand mansion or a modest apartment. The most beautiful homes are those filled with laughter, warmth, and the people we hold dear.',
   },
+
+  // Time Trials (6)
+  {
+    id: 'time-trial-001',
+    category: 'time-trial',
+    title: 'Speed Sprint - Basic',
+    text: 'The quick brown fox jumps over the lazy dog while the clever cat watches from the windowsill. Every morning brings new opportunities to practice and improve your typing skills through dedicated effort and consistent training sessions.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-002',
+    category: 'time-trial',
+    title: 'Speed Sprint - Intermediate',
+    text: 'Technology continues to evolve at an unprecedented pace, transforming how we communicate, work, and live our daily lives. The digital revolution has connected billions of people across the globe, creating opportunities for collaboration and innovation that were once unimaginable.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-003',
+    category: 'time-trial',
+    title: 'Speed Sprint - Advanced',
+    text: 'Software development requires careful attention to detail, systematic thinking, and the ability to break complex problems into manageable components. Developers must balance multiple competing priorities including performance optimization, code maintainability, security considerations, and user experience requirements while meeting project deadlines.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-004',
+    category: 'time-trial',
+    title: 'Precision Challenge',
+    text: 'The synthesis of complex chemical compounds demands precise measurement, careful timing, and rigorous quality control procedures. Scientists employ sophisticated instrumentation and analytical techniques to verify molecular structure, purity levels, and thermodynamic properties throughout each experimental phase.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-005',
+    category: 'time-trial',
+    title: 'Endurance Test',
+    text: 'Artificial intelligence and machine learning algorithms have revolutionized numerous industries by enabling computers to recognize patterns, make predictions, and automate decision-making processes. These technologies leverage vast datasets and computational power to identify correlations that would be impossible for humans to detect manually, leading to breakthroughs in medical diagnosis, financial forecasting, and natural language processing applications.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-006',
+    category: 'time-trial',
+    title: 'Ultimate Marathon',
+    text: 'The intersection of quantum mechanics and computational theory presents fascinating challenges for researchers attempting to build practical quantum computers. Unlike classical computers that process information using binary bits, quantum systems exploit superposition and entanglement to perform certain calculations exponentially faster. However, maintaining quantum coherence requires isolating qubits from environmental interference at temperatures approaching absolute zero, while developing error correction algorithms robust enough to handle the inherent fragility of quantum states remains an active area of investigation.',
+    source: 'Time Trial',
+  },
 ];
 
 // Helper function to get a random test (optionally filtered by category)
@@ -388,4 +432,14 @@ export function textToWords(text: string, minWords: number = 150): string[] {
 
   // Return exactly minWords
   return result.slice(0, minWords);
+}
+
+// Helper function to get all time trial tests
+export function getTimeTrialTests(): TestContent[] {
+  return staticTests.filter((test) => test.category === 'time-trial');
+}
+
+// Helper function to check if a content ID is a time trial
+export function isTimeTrialTest(contentId: string): boolean {
+  return contentId.startsWith('time-trial-');
 }

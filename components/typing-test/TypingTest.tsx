@@ -13,7 +13,7 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
-import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
+import { getRandomTest, textToWords, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
@@ -59,6 +59,27 @@ export function TypingTest() {
 
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
+
+  // Check if we're in time trial mode
+  const isTimeTrialMode = isTimeTrialTest(defaultContentStyle);
+
+  // Time trial best time state
+  const [timeTrialBestTime, setTimeTrialBestTime] = useState<number | null>(null);
+
+  // Load best time for time trials
+  useEffect(() => {
+    if (isTimeTrialMode && currentUserId) {
+      import('@/lib/db/firebase').then(({ getTimeTrialBestTime }) => {
+        getTimeTrialBestTime(currentUserId, defaultContentStyle).then((bestTime) => {
+          setTimeTrialBestTime(bestTime);
+        }).catch((error) => {
+          console.error('Failed to load best time:', error);
+        });
+      });
+    } else {
+      setTimeTrialBestTime(null);
+    }
+  }, [isTimeTrialMode, currentUserId, defaultContentStyle]);
 
   // Check if we're in content-length mode
   const isContentLengthMode = duration === 'content-length';
@@ -263,10 +284,27 @@ export function TypingTest() {
     } else {
       // Load static content
       try {
-        const testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
-        const requiredWords = defaultDuration === 'content-length'
+        // Check if this is a time trial
+        const isTimeTrial = isTimeTrialTest(currentContentStyle);
+        let testContent;
+
+        if (isTimeTrial) {
+          // Load specific time trial by ID
+          testContent = getTestById(currentContentStyle);
+          if (!testContent) {
+            throw new Error(`Time trial ${currentContentStyle} not found`);
+          }
+        } else {
+          // Load regular content
+          testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
+        }
+
+        // For time trials, use content-length mode
+        // For regular content, use user's duration preference
+        const testDuration = isTimeTrial ? 'content-length' : defaultDuration;
+        const requiredWords = testDuration === 'content-length'
           ? 100
-          : calculateRequiredWords(defaultDuration);
+          : calculateRequiredWords(testDuration);
         const words = textToWords(testContent.text, requiredWords);
 
         // If random was selected, update settings to show what was actually loaded
@@ -276,10 +314,12 @@ export function TypingTest() {
 
         initializeTest(
           {
-            duration: defaultDuration,
+            duration: testDuration,
             testContentId: testContent.id,
             testContentTitle: testContent.title,
             testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+            isTimeTrial: isTimeTrial,
+            timeTrialId: isTimeTrial ? currentContentStyle : undefined,
           },
           words
         );
@@ -536,6 +576,7 @@ export function TypingTest() {
                   onComplete={handleComplete}
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
+                  bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
                 <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} />
               </>
@@ -547,6 +588,7 @@ export function TypingTest() {
                   onComplete={handleComplete}
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
+                  bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
                 <Link
                   href="/login"
