@@ -103,7 +103,8 @@ export const useTestStore = create<TestState>((set, get) => ({
     const currentWord = state.targetWords[state.currentWordIndex];
     if (!currentWord) return;
 
-    const correctionMode = useSettingsStore.getState().correctionMode;
+    // Force strict mode for time trials, otherwise use user's setting
+    const correctionMode = state.isTimeTrial ? 'strict' : useSettingsStore.getState().correctionMode;
     const mistakeThreshold = useSettingsStore.getState().mistakeThreshold;
 
     // Check if this is a space (word completion)
@@ -215,8 +216,10 @@ export const useTestStore = create<TestState>((set, get) => ({
   handleBackspace: () => {
     const state = get();
 
+    // Force strict mode for time trials, otherwise use user's setting
+    const correctionMode = state.isTimeTrial ? 'strict' : useSettingsStore.getState().correctionMode;
+
     // Check correction mode - backspace disabled in Speed and Strict modes
-    const correctionMode = useSettingsStore.getState().correctionMode;
     if (correctionMode === 'speed' || correctionMode === 'strict') {
       // Do nothing if Speed or Strict mode is enabled
       return;

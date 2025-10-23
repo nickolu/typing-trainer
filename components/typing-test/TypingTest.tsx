@@ -603,7 +603,25 @@ export function TypingTest() {
       </div>
 
       {/* Correction Mode Banners */}
-      {correctionMode === 'speed' && (
+      {isTimeTrialMode && (
+        <div className="w-full max-w-4xl mb-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-7 h-7 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">🏆</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-yellow-400 text-sm">Time Trial Mode</h3>
+                <p className="text-xs text-editor-muted">Type the entire passage as fast as possible! Wrong keys are blocked.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isTimeTrialMode && correctionMode === 'speed' && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
@@ -621,7 +639,7 @@ export function TypingTest() {
         </div>
       )}
 
-      {correctionMode === 'strict' && (
+      {!isTimeTrialMode && correctionMode === 'strict' && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
