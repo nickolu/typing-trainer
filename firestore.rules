@@ -34,5 +34,23 @@ service cloud.firestore {
       allow read: if isOwner(userId);
       allow write: if isOwner(userId);
     }
+
+    // Time trial best times - users can only access their own best times
+    // Document ID format: userId_trialId
+    match /timeTrialBestTimes/{bestTimeId} {
+      // Allow get (single document read) if authenticated and either:
+      // - Document doesn't exist yet (resource == null), OR
+      // - Document belongs to the authenticated user
+      allow get: if isAuthenticated() &&
+                    (resource == null || resource.data.userId == request.auth.uid);
+      // Allow list (query operations) only if document belongs to the authenticated user
+      allow list: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // Allow create if the document is being created by the owner
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      // Allow update if the user owns the document
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      // No delete allowed - best times are permanent records
+      allow delete: if false;
+    }
   }
 }

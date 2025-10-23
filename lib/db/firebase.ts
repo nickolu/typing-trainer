@@ -18,6 +18,7 @@ import { TestResult } from '@/lib/types';
 const USERS_COLLECTION = 'users';
 const TEST_RESULTS_COLLECTION = 'testResults';
 const USER_LABELS_COLLECTION = 'userLabels';
+const TIME_TRIAL_BEST_TIMES_COLLECTION = 'timeTrialBestTimes';
 
 // User profile type (stored in Firestore)
 export interface UserProfile {
@@ -867,6 +868,120 @@ export async function deleteUserLabel(userId: string, label: string): Promise<vo
   } catch (error) {
     console.error('Failed to delete user label:', error);
     throw error;
+  }
+}
+
+/**
+ * Time trial best time record
+ */
+export interface TimeTrialBestTime {
+  userId: string;
+  trialId: string; // e.g., 'time-trial-001'
+  bestTime: number; // in seconds
+  testResultId: string; // Reference to the test result that set this best time
+  updatedAt: Date;
+}
+
+/**
+ * Get best time for a specific time trial
+ * Returns null if no best time exists
+ */
+export async function getTimeTrialBestTime(
+  userId: string,
+  trialId: string
+): Promise<number | null> {
+  try {
+    const db = getFirebaseDb();
+    // Document ID is userId_trialId for easy lookup
+    const docId = `${userId}_${trialId}`;
+    const bestTimeRef = doc(db, TIME_TRIAL_BEST_TIMES_COLLECTION, docId);
+    const bestTimeDoc = await getDoc(bestTimeRef);
+
+    if (!bestTimeDoc.exists()) {
+      return null;
+    }
+
+    const data = bestTimeDoc.data();
+    return data.bestTime;
+  } catch (error) {
+    console.error('Failed to get time trial best time:', error);
+    return null;
+  }
+}
+
+/**
+ * Update best time for a specific time trial
+ * Returns true if new best time was set, false if current time wasn't better
+ */
+export async function updateTimeTrialBestTime(
+  userId: string,
+  trialId: string,
+  completionTime: number,
+  testResultId: string
+): Promise<boolean> {
+  try {
+    const db = getFirebaseDb();
+    const docId = `${userId}_${trialId}`;
+    const bestTimeRef = doc(db, TIME_TRIAL_BEST_TIMES_COLLECTION, docId);
+    const bestTimeDoc = await getDoc(bestTimeRef);
+
+    // If no existing best time, set this as the best
+    if (!bestTimeDoc.exists()) {
+      await setDoc(bestTimeRef, {
+        userId,
+        trialId,
+        bestTime: completionTime,
+        testResultId,
+        updatedAt: Timestamp.now(),
+      });
+      console.log('[Firebase] Set first best time for', trialId, ':', completionTime);
+      return true;
+    }
+
+    // Check if this is a new best time (lower is better)
+    const currentBest = bestTimeDoc.data().bestTime;
+    if (completionTime < currentBest) {
+      await updateDoc(bestTimeRef, {
+        bestTime: completionTime,
+        testResultId,
+        updatedAt: Timestamp.now(),
+      });
+      console.log('[Firebase] New best time for', trialId, ':', completionTime, '(previous:', currentBest, ')');
+      return true;
+    }
+
+    console.log('[Firebase] Time not better than current best for', trialId, ':', completionTime, 'vs', currentBest);
+    return false;
+  } catch (error) {
+    console.error('Failed to update time trial best time:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all best times for a user
+ * Returns a map of trialId -> bestTime
+ */
+export async function getAllTimeTrialBestTimes(
+  userId: string
+): Promise<Record<string, number>> {
+  try {
+    const db = getFirebaseDb();
+    const bestTimesRef = collection(db, TIME_TRIAL_BEST_TIMES_COLLECTION);
+    const q = query(bestTimesRef, where('userId', '==', userId));
+
+    const snapshot = await getDocs(q);
+    const bestTimes: Record<string, number> = {};
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      bestTimes[data.trialId] = data.bestTime;
+    });
+
+    return bestTimes;
+  } catch (error) {
+    console.error('Failed to get all time trial best times:', error);
+    return {};
   }
 }
 

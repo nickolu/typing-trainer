@@ -13,7 +13,7 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
-import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
+import { getRandomTest, textToWords, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
@@ -59,6 +59,27 @@ export function TypingTest() {
 
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
+
+  // Check if we're in time trial mode
+  const isTimeTrialMode = isTimeTrialTest(defaultContentStyle);
+
+  // Time trial best time state
+  const [timeTrialBestTime, setTimeTrialBestTime] = useState<number | null>(null);
+
+  // Load best time for time trials
+  useEffect(() => {
+    if (isTimeTrialMode && currentUserId) {
+      import('@/lib/db/firebase').then(({ getTimeTrialBestTime }) => {
+        getTimeTrialBestTime(currentUserId, defaultContentStyle).then((bestTime) => {
+          setTimeTrialBestTime(bestTime);
+        }).catch((error) => {
+          console.error('Failed to load best time:', error);
+        });
+      });
+    } else {
+      setTimeTrialBestTime(null);
+    }
+  }, [isTimeTrialMode, currentUserId, defaultContentStyle]);
 
   // Check if we're in content-length mode
   const isContentLengthMode = duration === 'content-length';
@@ -263,10 +284,27 @@ export function TypingTest() {
     } else {
       // Load static content
       try {
-        const testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
-        const requiredWords = defaultDuration === 'content-length'
+        // Check if this is a time trial
+        const isTimeTrial = isTimeTrialTest(currentContentStyle);
+        let testContent;
+
+        if (isTimeTrial) {
+          // Load specific time trial by ID
+          testContent = getTestById(currentContentStyle);
+          if (!testContent) {
+            throw new Error(`Time trial ${currentContentStyle} not found`);
+          }
+        } else {
+          // Load regular content
+          testContent = getRandomTest(currentContentStyle === 'random' ? undefined : currentContentStyle);
+        }
+
+        // For time trials, use content-length mode
+        // For regular content, use user's duration preference
+        const testDuration = isTimeTrial ? 'content-length' : defaultDuration;
+        const requiredWords = testDuration === 'content-length'
           ? 100
-          : calculateRequiredWords(defaultDuration);
+          : calculateRequiredWords(testDuration);
         const words = textToWords(testContent.text, requiredWords);
 
         // If random was selected, update settings to show what was actually loaded
@@ -276,10 +314,12 @@ export function TypingTest() {
 
         initializeTest(
           {
-            duration: defaultDuration,
+            duration: testDuration,
             testContentId: testContent.id,
             testContentTitle: testContent.title,
             testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+            isTimeTrial: isTimeTrial,
+            timeTrialId: isTimeTrial ? currentContentStyle : undefined,
           },
           words
         );
@@ -355,6 +395,9 @@ export function TypingTest() {
     // Skip duration updates for benchmark mode (it has a fixed duration)
     if (isBenchmarkMode) return;
     
+    // Skip duration updates for time trial mode (it always uses content-length)
+    if (isTimeTrialMode) return;
+    
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
       // If using AI content, regenerate with new duration
       if (isAIContentStyle(defaultContentStyle)) {
@@ -377,7 +420,7 @@ export function TypingTest() {
         );
       }
     }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, defaultContentStyle, handleContentLoad]);
+  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, isTimeTrialMode, defaultContentStyle, handleContentLoad]);
 
   // Cleanup: Reset test when component unmounts (e.g., navigating away)
   useEffect(() => {
@@ -536,6 +579,7 @@ export function TypingTest() {
                   onComplete={handleComplete}
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
+                  bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
                 <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} />
               </>
@@ -547,6 +591,7 @@ export function TypingTest() {
                   onComplete={handleComplete}
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
+                  bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
                 <Link
                   href="/login"
@@ -561,7 +606,25 @@ export function TypingTest() {
       </div>
 
       {/* Correction Mode Banners */}
-      {correctionMode === 'speed' && (
+      {isTimeTrialMode && (
+        <div className="w-full max-w-4xl mb-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-7 h-7 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <span className="text-lg">🏆</span>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-bold text-yellow-400 text-sm">Time Trial Mode</h3>
+                <p className="text-xs text-editor-muted">Type the entire passage as fast as possible! Wrong keys are blocked.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {!isTimeTrialMode && correctionMode === 'speed' && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">
@@ -579,7 +642,7 @@ export function TypingTest() {
         </div>
       )}
 
-      {correctionMode === 'strict' && (
+      {!isTimeTrialMode && correctionMode === 'strict' && (
         <div className="w-full max-w-4xl mb-4">
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
             <div className="flex items-center gap-3">

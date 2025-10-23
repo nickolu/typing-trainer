@@ -49,12 +49,17 @@ export interface TestResult {
 
   // Labels
   labels?: string[]; // User-selected and auto-generated labels for filtering
+
+  // Time trial metadata
+  isTimeTrial?: boolean; // Is this a time trial test
+  timeTrialId?: string; // ID of the time trial
+  completionTime?: number; // Actual completion time in seconds (for content-length tests)
 }
 
 // Static test content
 export interface TestContent {
   id: string;
-  category: 'quote' | 'prose' | 'technical' | 'common';
+  category: 'quote' | 'prose' | 'technical' | 'common' | 'time-trial';
   title: string; // Display name for the test content
   text: string;
   source?: string; // Attribution
@@ -86,6 +91,8 @@ export interface TestConfig {
   isPractice?: boolean; // Is this a targeted practice session
   practiceSequences?: string[]; // Character sequences and/or full words being practiced
   userLabels?: string[]; // User-selected labels for this test
+  isTimeTrial?: boolean; // Is this a time trial test
+  timeTrialId?: string; // ID of the time trial (e.g., 'time-trial-001')
 }
 
 // Stored test configuration for "try again"
@@ -109,6 +116,8 @@ export interface TestState {
   isPractice: boolean; // Is this a targeted practice session
   practiceSequences: string[]; // Character sequences and/or full words being practiced
   userLabels: string[]; // User-selected labels for this test
+  isTimeTrial: boolean; // Is this a time trial test
+  timeTrialId: string | null; // ID of the time trial (e.g., 'time-trial-001')
 
   // Runtime state
   status: TestStatus;

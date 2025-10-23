@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
-import { X, BookOpen, Sparkles, Target, Lock, Award } from 'lucide-react';
+import { X, BookOpen, Sparkles, Target, Lock, Award, Trophy } from 'lucide-react';
 
 interface ContentOptionsModalProps {
   isOpen: boolean;
@@ -47,6 +47,36 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
   const [sequenceInput, setSequenceInput] = useState('');
   const [isLoadingSequences, setIsLoadingSequences] = useState(false);
   const [sequenceError, setSequenceError] = useState<string | null>(null);
+
+  // Time trial best times
+  const [bestTimes, setBestTimes] = useState<Record<string, number>>({});
+  const [isLoadingBestTimes, setIsLoadingBestTimes] = useState(false);
+
+  // Time trial options
+  const timeTrialOptions: { value: ContentStyle; label: string; trialId: string }[] = [
+    { value: 'time-trial-001', label: 'Speed Sprint - Basic', trialId: 'time-trial-001' },
+    { value: 'time-trial-002', label: 'Speed Sprint - Intermediate', trialId: 'time-trial-002' },
+    { value: 'time-trial-003', label: 'Speed Sprint - Advanced', trialId: 'time-trial-003' },
+    { value: 'time-trial-004', label: 'Precision Challenge', trialId: 'time-trial-004' },
+    { value: 'time-trial-005', label: 'Endurance Test', trialId: 'time-trial-005' },
+    { value: 'time-trial-006', label: 'Ultimate Marathon', trialId: 'time-trial-006' },
+  ];
+
+  // Load best times when modal opens
+  useEffect(() => {
+    if (isOpen && currentUserId) {
+      setIsLoadingBestTimes(true);
+      import('@/lib/db/firebase').then(({ getAllTimeTrialBestTimes }) => {
+        getAllTimeTrialBestTimes(currentUserId).then((times) => {
+          setBestTimes(times);
+          setIsLoadingBestTimes(false);
+        }).catch((error) => {
+          console.error('Failed to load best times:', error);
+          setIsLoadingBestTimes(false);
+        });
+      });
+    }
+  }, [isOpen, currentUserId]);
 
   const modelOptions = [
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cheap)' },
@@ -155,6 +185,53 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Time Trials Section */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Trophy className="w-4 h-4 text-yellow-400" />
+              <h3 className="font-bold text-sm">Time Trials</h3>
+              <span className="text-xs text-editor-muted">(Race the clock!)</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              {timeTrialOptions.map((option) => {
+                const bestTime = bestTimes[option.trialId];
+                const hasBestTime = bestTime !== undefined;
+
+                return (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setDefaultContentStyle(option.value);
+                      handleSave();
+                    }}
+                    className={`p-3 rounded-lg border text-left transition-all ${
+                      defaultContentStyle === option.value
+                        ? 'border-yellow-400 bg-yellow-600/10'
+                        : 'border-editor-muted hover:border-yellow-400/50'
+                    }`}
+                  >
+                    <div className="font-medium text-sm flex items-center gap-1">
+                      <Trophy className="w-3 h-3 text-yellow-400" />
+                      {option.label}
+                    </div>
+                    <div className="text-xs mt-1">
+                      {isLoadingBestTimes ? (
+                        <span className="text-editor-muted">Loading...</span>
+                      ) : hasBestTime ? (
+                        <span className="text-yellow-400 font-medium">Best: {bestTime.toFixed(1)}s</span>
+                      ) : (
+                        <span className="text-editor-muted">Not Attempted</span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-editor-muted mt-2">
+              Time trials use strict mode and content-length duration. Complete the passage as fast as you can!
+            </p>
           </div>
 
           {/* AI Content Section */}
