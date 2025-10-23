@@ -395,6 +395,9 @@ export function TypingTest() {
     // Skip duration updates for benchmark mode (it has a fixed duration)
     if (isBenchmarkMode) return;
     
+    // Skip duration updates for time trial mode (it always uses content-length)
+    if (isTimeTrialMode) return;
+    
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
       // If using AI content, regenerate with new duration
       if (isAIContentStyle(defaultContentStyle)) {
@@ -417,7 +420,7 @@ export function TypingTest() {
         );
       }
     }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, defaultContentStyle, handleContentLoad]);
+  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, isTimeTrialMode, defaultContentStyle, handleContentLoad]);
 
   // Cleanup: Reset test when component unmounts (e.g., navigating away)
   useEffect(() => {
