@@ -10,6 +10,7 @@ setup:
 	
 start:
 	@echo "Starting development server..."
+	@npm i
 	@npm run dev
 
 clean:
