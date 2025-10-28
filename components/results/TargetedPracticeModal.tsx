@@ -177,6 +177,10 @@ export function TargetedPracticeModal({
     });
   };
 
+  const handleClearAll = () => {
+    setSelectedIds(new Set());
+  };
+
   const handleGenerate = () => {
     const selected = options.filter(opt => selectedIds.has(opt.id));
 
@@ -320,10 +324,16 @@ export function TargetedPracticeModal({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-5">
           {options.length > 0 && selectedIds.size > 0 && (
-            <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+            <div className="mb-4 p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg flex items-start justify-between gap-3">
               <p className="text-sm text-editor-fg">
                 <span className="font-semibold text-purple-400">✓ Recommended selections ready!</span> These patterns are holding back your performance. Drill them to see faster, more accurate typing.
               </p>
+              <button
+                onClick={handleClearAll}
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap flex-shrink-0"
+              >
+                Clear All
+              </button>
             </div>
           )}
 
