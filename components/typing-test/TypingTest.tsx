@@ -527,6 +527,13 @@ export function TypingTest() {
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Cmd+Enter (Mac) or Ctrl+Enter (Windows) for restart
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleRestart();
+        return;
+      }
+
       // If test is idle, start it on first character input
       if (status === 'idle') {
         // Only start on actual characters (not Shift, Ctrl, etc.)
@@ -575,7 +582,7 @@ export function TypingTest() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [status, handleKeyPress, handleBackspace, handleTab, startTest]);
+  }, [status, handleKeyPress, handleBackspace, handleTab, startTest, handleRestart]);
 
   // Show initial loading state (only when no content at all)
   if (targetWords.length === 0 && !isGenerating) {

@@ -21,6 +21,9 @@ interface SettingsToolbarProps {
 
 export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false, onRestart }: SettingsToolbarProps) {
   const { isAuthenticated } = useUserStore();
+
+  // Detect if user is on Mac
+  const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const {
     defaultDuration,
     autoSave,
@@ -92,16 +95,18 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
             <div className="flex items-center gap-2 group relative">
               <button
                 onClick={onRestart}
-                disabled={disabled}
                 className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors"
                 aria-label="Restart test"
               >
                 <RotateCcw className="w-5 h-5" />
                 <span className="text-sm font-medium">Restart</span>
+                <span className="text-xs text-editor-muted ml-1">
+                  {isMac ? '⌘↵' : 'Ctrl+↵'}
+                </span>
               </button>
               {/* Tooltip */}
               <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                Restart the test from the beginning. All settings will be preserved.
+                Restart the test from the beginning. All settings will be preserved. Press {isMac ? 'Cmd+Enter' : 'Ctrl+Enter'} to restart.
               </div>
             </div>
           )}
