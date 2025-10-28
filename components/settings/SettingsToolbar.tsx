@@ -97,8 +97,7 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
                 aria-label="Restart test"
               >
                 <RotateCcw className="w-5 h-5" />
-                <span className="text-sm font-medium">Restart</span>
-                <span className="text-xs text-editor-muted ml-1">
+                <span className="text-xs text-editor-muted ml-1 border border-editor-muted rounded-lg px-2 py-1">
                   {isMac ? '⌘↵' : 'Ctrl+↵'}
                 </span>
               </button>
