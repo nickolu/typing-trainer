@@ -118,6 +118,28 @@ export function TypingTest() {
     }
   };
 
+  // Handle restart
+  const handleRestart = useCallback(() => {
+    // Reset the test state to idle, preserving the current content
+    const currentState = useTestStore.getState();
+
+    // Re-initialize the test with the same words and configuration
+    initializeTest(
+      {
+        duration: currentState.duration,
+        testContentId: currentState.testContentId || 'restarted',
+        testContentTitle: currentState.testContentTitle || undefined,
+        testContentCategory: currentState.testContentCategory || undefined,
+        isPractice: currentState.isPractice,
+        practiceSequences: currentState.practiceSequences,
+        userLabels: currentState.userLabels,
+        isTimeTrial: currentState.isTimeTrial,
+        timeTrialId: currentState.timeTrialId || undefined,
+      },
+      currentState.targetWords
+    );
+  }, [initializeTest]);
+
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
     // Get the current content style from the store to ensure we have the latest value
@@ -719,6 +741,7 @@ export function TypingTest() {
           onContentChange={handleContentLoad}
           showHighlightToggle={isPractice && practiceSequences.length > 0}
           isLoadingContent={isLoadingContent}
+          onRestart={handleRestart}
         />
         {generationError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">

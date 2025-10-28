@@ -5,7 +5,7 @@ import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settin
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
 import { isTimeTrialTest } from '@/lib/test-content';
-import { Save, BookOpen, Highlighter, Clock } from 'lucide-react';
+import { Save, BookOpen, Highlighter, Clock, RotateCcw } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 import { LabelSelector } from './LabelSelector';
 import { TimeSelector } from './TimeSelector';
@@ -16,9 +16,10 @@ interface SettingsToolbarProps {
   onContentChange?: () => void; // Callback when content settings change
   showHighlightToggle?: boolean; // Only show in targeted practice mode
   isLoadingContent?: boolean; // Whether content is currently loading
+  onRestart?: () => void; // Callback when restart is clicked
 }
 
-export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false }: SettingsToolbarProps) {
+export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false, onRestart }: SettingsToolbarProps) {
   const { isAuthenticated } = useUserStore();
   const {
     defaultDuration,
@@ -86,6 +87,25 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
         disabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
       }`}>
         <div className="flex items-center justify-between gap-4">
+          {/* Restart Button */}
+          {onRestart && (
+            <div className="flex items-center gap-2 group relative">
+              <button
+                onClick={onRestart}
+                disabled={disabled}
+                className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors"
+                aria-label="Restart test"
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span className="text-sm font-medium">Restart</span>
+              </button>
+              {/* Tooltip */}
+              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                Restart the test from the beginning. All settings will be preserved.
+              </div>
+            </div>
+          )}
+
           {/* Duration Selection */}
           {isBenchmarkMode ? (
             <div className="flex items-center gap-2 group relative">
