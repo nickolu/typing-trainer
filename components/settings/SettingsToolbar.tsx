@@ -86,16 +86,14 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
   return (
     <>
-      <div className={`w-full bg-editor-bg/50 border border-editor-muted rounded-lg p-4 mb-6 transition-opacity ${
-        disabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
-      }`}>
+      <div className="w-full bg-editor-bg/50 border border-editor-muted rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between gap-4">
-          {/* Restart Button */}
+          {/* Restart Button - Always enabled */}
           {onRestart && (
-            <div className="flex items-center gap-2 group relative pointer-events-auto">
+            <div className="flex items-center gap-2 group relative">
               <button
                 onClick={onRestart}
-                className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors opacity-100"
+                className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors"
                 aria-label="Restart test"
               >
                 <RotateCcw className="w-5 h-5" />
@@ -153,11 +151,10 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
           {/* Highlight Practice Sequences Toggle - Only in targeted practice mode */}
           {showHighlightToggle && (
-            <div className="flex items-center gap-2 group relative">
+            <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
               <Highlighter className={`w-5 h-5 ${showPracticeHighlights ? 'text-purple-400' : 'text-editor-muted'}`} />
               <button
-                onClick={() => !disabled && setShowPracticeHighlights(!showPracticeHighlights)}
-                disabled={disabled}
+                onClick={() => setShowPracticeHighlights(!showPracticeHighlights)}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
                   showPracticeHighlights ? 'bg-purple-600' : 'bg-editor-muted/30'
                 }`}
@@ -179,11 +176,11 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
           )}
 
           {/* Save Results Toggle */}
-          <div className="flex items-center gap-2 group relative">
+          <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-editor-muted'}`} />
             <button
-              onClick={() => !disabled && isAuthenticated && setAutoSave(!autoSave)}
-              disabled={disabled || !isAuthenticated}
+              onClick={() => isAuthenticated && setAutoSave(!autoSave)}
+              disabled={!isAuthenticated}
               className={`relative w-11 h-6 rounded-full transition-colors ${
                 autoSave ? 'bg-editor-accent' : 'bg-editor-muted/30'
               } ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -216,10 +213,9 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
           />
 
           {/* Content Selection Button - More Prominent with Tooltip */}
-          <div className="ml-auto relative group">
+          <div className={`ml-auto relative group transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <button
-              onClick={() => !disabled && setShowContentOptions(true)}
-              disabled={disabled}
+              onClick={() => setShowContentOptions(true)}
               className="flex items-center gap-3 px-6 py-2.5 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-all shadow-lg"
             >
               <BookOpen className="w-5 h-5 flex-shrink-0" />
