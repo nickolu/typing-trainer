@@ -92,10 +92,10 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
         <div className="flex items-center justify-between gap-4">
           {/* Restart Button */}
           {onRestart && (
-            <div className="flex items-center gap-2 group relative">
+            <div className="flex items-center gap-2 group relative pointer-events-auto">
               <button
                 onClick={onRestart}
-                className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors opacity-100"
                 aria-label="Restart test"
               >
                 <RotateCcw className="w-5 h-5" />
