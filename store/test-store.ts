@@ -16,6 +16,7 @@ import { saveTestResult, updateUserWPMScore } from '@/lib/db/firebase';
 import { useSettingsStore } from './settings-store';
 import { useUserStore } from './user-store';
 import { BENCHMARK_CONFIG } from '@/lib/benchmark-config';
+import { STRICT_MODE_CONFIG } from '@/lib/strict-mode-config';
 
 export const useTestStore = create<TestState>((set, get) => ({
   // Initial state
@@ -39,6 +40,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   keystrokes: [],
   result: null,
   strictModeErrors: 0, // Track mistakes in strict mode
+  inputBlocked: false, // Track if input is temporarily blocked
   // Store last test configuration for "try again" functionality
   lastTestConfig: null,
 
@@ -70,6 +72,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       completedWords: [],
       keystrokes: [],
       strictModeErrors: 0,
+      inputBlocked: false,
       result: null,
       // Store configuration for "try again"
       lastTestConfig: {
@@ -100,12 +103,16 @@ export const useTestStore = create<TestState>((set, get) => ({
     // Only process if test is active
     if (state.status !== 'active' || !state.startTime) return;
 
+    // Block input if currently in delay penalty period
+    if (state.inputBlocked) return;
+
     const currentWord = state.targetWords[state.currentWordIndex];
     if (!currentWord) return;
 
     // Force strict mode for time trials, otherwise use user's setting
     const correctionMode = state.isTimeTrial ? 'strict' : useSettingsStore.getState().correctionMode;
-    const mistakeThreshold = useSettingsStore.getState().mistakeThreshold;
+    // Time trials always allow unlimited mistakes (threshold = -1), otherwise use user's setting
+    const mistakeThreshold = state.isTimeTrial ? -1 : useSettingsStore.getState().mistakeThreshold;
 
     // Check if this is a space (word completion)
     if (key === ' ') {
@@ -169,10 +176,20 @@ export const useTestStore = create<TestState>((set, get) => ({
         isBackspace: false,
       };
 
+      // Block input temporarily
       set({
         strictModeErrors: newErrorCount,
         keystrokes: [...state.keystrokes, keystroke],
+        inputBlocked: true,
       });
+
+      // Unblock input after delay
+      setTimeout(() => {
+        const currentState = get();
+        if (currentState.status === 'active') {
+          set({ inputBlocked: false });
+        }
+      }, STRICT_MODE_CONFIG.MISTAKE_DELAY_MS);
 
       console.log('[TestStore] Strict mode error count:', newErrorCount, 'threshold:', mistakeThreshold);
 
@@ -541,6 +558,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       completedWords: [],
       keystrokes: [],
       strictModeErrors: 0,
+      inputBlocked: false,
       result: null,
       // Preserve lastTestConfig so "try again" works
     });
@@ -578,6 +596,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       completedWords: [],
       keystrokes: [],
       strictModeErrors: 0,
+      inputBlocked: false,
       result: null,
       // Keep the same lastTestConfig
       lastTestConfig: state.lastTestConfig,

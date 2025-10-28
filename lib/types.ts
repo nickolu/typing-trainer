@@ -135,6 +135,7 @@ export interface TestState {
 
   // Strict mode mistake tracking
   strictModeErrors: number;
+  inputBlocked: boolean; // Temporarily blocks input after a mistake in strict mode
 
   // Computed result (set when test completes)
   result: TestResult | null;

@@ -473,14 +473,14 @@ export function TypingTest() {
     }
   }, [isContentLengthMode, status, currentWordIndex, targetWords.length, handleComplete]);
 
-  // Trigger screen shake on strict mode errors
+  // Trigger screen shake on strict mode errors (including time trials which force strict mode)
   useEffect(() => {
-    if (correctionMode === 'strict' && strictModeErrors > 0) {
+    if ((correctionMode === 'strict' || isTimeTrialMode) && strictModeErrors > 0) {
       setShouldShake(true);
       const timer = setTimeout(() => setShouldShake(false), 500);
       return () => clearTimeout(timer);
     }
-  }, [strictModeErrors, correctionMode]);
+  }, [strictModeErrors, correctionMode, isTimeTrialMode]);
 
   // Update live WPM during active test
   useEffect(() => {
@@ -629,7 +629,9 @@ export function TypingTest() {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-yellow-400 text-sm">Time Trial Mode</h3>
-                <p className="text-xs text-editor-muted">Type the entire passage as fast as possible! Wrong keys are blocked.</p>
+                <p className="text-xs text-editor-muted">
+                  Type the entire passage as fast as possible! Wrong keys are blocked. Mistakes: <span className="font-bold text-yellow-400">{strictModeErrors}</span>
+                </p>
               </div>
             </div>
           </div>
