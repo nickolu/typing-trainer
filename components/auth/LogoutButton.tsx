@@ -43,16 +43,6 @@ export function LogoutButton({ wpmStatusMessage }: LogoutButtonProps) {
         )}
       </div>
 
-      {/* Settings Button */}
-      <button
-        onClick={handleSettings}
-        className="flex items-center gap-2 px-3 py-1.5 bg-editor-bg-alt border border-editor-muted
-                   hover:bg-editor-muted/30 text-editor-fg rounded-lg transition-colors"
-        title="Settings"
-      >
-        <Settings className="w-4 h-4" />
-      </button>
-
       {/* Logout Button */}
       <button
         onClick={handleLogout}

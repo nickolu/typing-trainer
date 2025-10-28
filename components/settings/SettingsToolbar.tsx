@@ -10,6 +10,7 @@ import { ContentOptionsModal } from './ContentOptionsModal';
 import { LabelSelector } from './LabelSelector';
 import { TimeSelector } from './TimeSelector';
 import { CorrectionModeSelector } from './CorrectionModeSelector';
+import { cn } from '@/lib/utils';
 
 interface SettingsToolbarProps {
   disabled?: boolean;
@@ -86,151 +87,162 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
   return (
     <>
+      
       <div className="w-full bg-editor-bg/50 border border-editor-muted rounded-lg p-4 mb-6">
-        <div className="flex items-center justify-between gap-4">
-          {/* Restart Button - Always enabled */}
-          {onRestart && (
-            <div className="flex items-center gap-2 group relative">
-              <button
-                onClick={onRestart}
-                className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors"
-                aria-label="Restart test"
-              >
-                <RotateCcw className="w-5 h-5" />
-                <span className="text-xs text-editor-muted ml-1 border border-editor-muted rounded-lg px-2 py-1">
-                  {isMac ? '⌘↵' : 'Ctrl+↵'}
-                </span>
-              </button>
-              {/* Tooltip */}
-              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                Restart the test from the beginning. All settings will be preserved. Press {isMac ? 'Cmd+Enter' : 'Ctrl+Enter'} to restart.
-              </div>
-            </div>
-          )}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          {/* Left Side */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
 
-          {/* Duration Selection */}
-          {isBenchmarkMode ? (
-            <div className="flex items-center gap-2 group relative">
-              <Clock className="w-5 h-5 text-editor-accent" />
-              <div className="px-4 py-2 rounded-lg text-sm font-medium bg-editor-muted/30 text-editor-fg border border-editor-muted opacity-50 cursor-not-allowed">
-                2 minutes
+            {/* Duration Selection */}
+            {isBenchmarkMode ? (
+              <div className="flex items-center gap-2 group relative">
+                <Clock className="w-5 h-5 text-editor-accent" />
+                <div className="px-4 py-2 rounded-lg text-sm font-medium bg-editor-muted/30 text-editor-fg border border-editor-muted opacity-50 cursor-not-allowed">
+                  2 minutes
+                </div>
+                {/* Tooltip for benchmark mode */}
+                <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  Test duration is fixed at 2m for benchmark tests to ensure consistent comparisons.
+                </div>
               </div>
-              {/* Tooltip for benchmark mode */}
-              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                Test duration is fixed at 2m for benchmark tests to ensure consistent comparisons.
+            ) : isTimeTrialMode ? (
+              <div className="flex items-center gap-2 group relative">
+                <Clock className="w-5 h-5 text-editor-accent" />
+                <div className="px-4 py-2 rounded-lg text-sm font-medium bg-editor-muted/30 text-editor-fg border border-editor-muted opacity-50 cursor-not-allowed">
+                  Content Length
+                </div>
+                {/* Tooltip for time trial mode */}
+                <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  Time trials use fixed content. Complete all words as fast as possible!
+                </div>
               </div>
-            </div>
-          ) : isTimeTrialMode ? (
-            <div className="flex items-center gap-2 group relative">
-              <Clock className="w-5 h-5 text-editor-accent" />
-              <div className="px-4 py-2 rounded-lg text-sm font-medium bg-editor-muted/30 text-editor-fg border border-editor-muted opacity-50 cursor-not-allowed">
-                Content Length
-              </div>
-              {/* Tooltip for time trial mode */}
-              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                Time trials use fixed content. Complete all words as fast as possible!
-              </div>
-            </div>
-          ) : (
-            <TimeSelector
-              selectedDuration={defaultDuration}
-              onDurationChange={setDefaultDuration}
+            ) : (
+              <TimeSelector
+                selectedDuration={defaultDuration}
+                onDurationChange={setDefaultDuration}
+                disabled={disabled}
+              />
+            )}
+
+            {/* Correction Mode Selector */}
+            <CorrectionModeSelector
+              selectedMode={correctionMode}
+              onModeChange={setCorrectionMode}
+              mistakeThreshold={mistakeThreshold}
+              onThresholdChange={setMistakeThreshold}
               disabled={disabled}
             />
-          )}
 
-          {/* Correction Mode Selector */}
-          <CorrectionModeSelector
-            selectedMode={correctionMode}
-            onModeChange={setCorrectionMode}
-            mistakeThreshold={mistakeThreshold}
-            onThresholdChange={setMistakeThreshold}
-            disabled={disabled}
-          />
+            {/* Highlight Practice Sequences Toggle - Only in targeted practice mode */}
+            {showHighlightToggle && (
+              <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+                <Highlighter className={`w-5 h-5 ${showPracticeHighlights ? 'text-purple-400' : 'text-editor-muted'}`} />
+                <button
+                  onClick={() => setShowPracticeHighlights(!showPracticeHighlights)}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    showPracticeHighlights ? 'bg-purple-600' : 'bg-editor-muted/30'
+                  }`}
+                  aria-label="Toggle sequence highlights"
+                >
+                  <div
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                      showPracticeHighlights ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  {showPracticeHighlights
+                    ? 'Practice sequences are highlighted in purple to help you identify them as you type.'
+                    : 'Enable to highlight the targeted practice sequences in the test content.'}
+                </div>
+              </div>
+            )}
 
-          {/* Highlight Practice Sequences Toggle - Only in targeted practice mode */}
-          {showHighlightToggle && (
+            {/* Label Selector */}
+            <LabelSelector
+              selectedLabels={userLabels}
+              onLabelsChange={setUserLabels}
+              disabled={disabled}
+            />
+
+            {/* Save Results Toggle */}
             <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-              <Highlighter className={`w-5 h-5 ${showPracticeHighlights ? 'text-purple-400' : 'text-editor-muted'}`} />
+              <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-editor-muted'}`} />
               <button
-                onClick={() => setShowPracticeHighlights(!showPracticeHighlights)}
+                onClick={() => isAuthenticated && setAutoSave(!autoSave)}
+                disabled={!isAuthenticated}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
-                  showPracticeHighlights ? 'bg-purple-600' : 'bg-editor-muted/30'
-                }`}
-                aria-label="Toggle sequence highlights"
+                  autoSave ? 'bg-editor-accent' : 'bg-editor-muted/30'
+                } ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
+                aria-label="Toggle save results"
+                title={!isAuthenticated ? 'Sign in to save results' : ''}
               >
                 <div
                   className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    showPracticeHighlights ? 'translate-x-5' : 'translate-x-0'
+                    autoSave ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
               {/* Tooltip */}
               <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                {showPracticeHighlights
-                  ? 'Practice sequences are highlighted in purple to help you identify them as you type.'
-                  : 'Enable to highlight the targeted practice sequences in the test content.'}
+                {!isAuthenticated
+                  ? 'Sign in to save test results to your history.'
+                  : isBenchmarkMode && autoSave
+                  ? 'Benchmark test results will be saved to track your progress. You can disable this if needed.'
+                  : autoSave
+                  ? 'Test results will be saved to your history for tracking progress.'
+                  : 'Test results will NOT be saved. Use this for casual practice without affecting your stats.'}
               </div>
             </div>
-          )}
 
-          {/* Save Results Toggle */}
-          <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-            <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-editor-muted'}`} />
-            <button
-              onClick={() => isAuthenticated && setAutoSave(!autoSave)}
-              disabled={!isAuthenticated}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                autoSave ? 'bg-editor-accent' : 'bg-editor-muted/30'
-              } ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
-              aria-label="Toggle save results"
-              title={!isAuthenticated ? 'Sign in to save results' : ''}
-            >
-              <div
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  autoSave ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-            {/* Tooltip */}
-            <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-              {!isAuthenticated
-                ? 'Sign in to save test results to your history.'
-                : isBenchmarkMode && autoSave
-                ? 'Benchmark test results will be saved to track your progress. You can disable this if needed.'
-                : autoSave
-                ? 'Test results will be saved to your history for tracking progress.'
-                : 'Test results will NOT be saved. Use this for casual practice without affecting your stats.'}
-            </div>
           </div>
 
-          {/* Label Selector */}
-          <LabelSelector
-            selectedLabels={userLabels}
-            onLabelsChange={setUserLabels}
-            disabled={disabled}
-          />
-
-          {/* Content Selection Button - More Prominent with Tooltip */}
-          <div className={`ml-auto relative group transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-            <button
-              onClick={() => setShowContentOptions(true)}
-              className="flex items-center gap-3 px-6 py-2.5 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-all shadow-lg"
-            >
-              <BookOpen className="w-5 h-5 flex-shrink-0" />
-              <div className="text-left min-w-0">
-                <div className="text-xs opacity-75">{contentDisplay.category}</div>
-                <div className="text-sm font-bold truncate max-w-[200px]">{contentDisplay.title}</div>
+          {/* Right Side */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Restart Button */}
+            {onRestart && (
+              <div className="flex items-center gap-2 group relative">
+                <button
+                  onClick={onRestart}
+                  className="flex items-center gap-2 px-2 py-2 h-10 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors"
+                  aria-label="Restart test"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  <span className="text-sm">Restart</span>
+                  <span className="text-xs text-editor-muted ml-1 border border-editor-muted rounded-md px-1 py-0.5 whitespace-nowrap">
+                    {isMac ? '⌘↵' : 'Ctrl+↵'}
+                  </span>
+                </button>
+                {/* Tooltip */}
+                <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  Restart the test from the beginning. All settings will be preserved. Press {isMac ? 'Cmd+Enter' : 'Ctrl+Enter'} to restart.
+                </div>
               </div>
+            )}
+
+            {/* Content Button */}
+            <button
+              onClick={() => !disabled && setShowContentOptions(true)}
+              disabled={disabled}
+              className={cn("px-3 py-1 h-10 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-all text-sm whitespace-nowrap flex items-center gap-2", disabled ? 'opacity-50 cursor-not-allowed' : '')}
+            >
+                <BookOpen className="w-5 h-5 flex-shrink-0" /> <span className="text-sm">Content</span>
             </button>
-            {/* Tooltip showing full test information */}
-            <div className="absolute right-0 top-full mt-2 w-80 p-3 bg-gray-900 text-white text-sm rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 pointer-events-none">
-              <div className="font-bold mb-1">{contentDisplay.category}</div>
-              <div className="text-xs opacity-90">{contentDisplay.title}</div>
-            </div>
+
           </div>
         </div>
       </div>
+      {/* Content Display */}
+      <div className="flex items-center gap-2 text-editor-fg pb-2 justify-end ">
+
+        <div className="text-right min-w-0 flex items-center gap-2">
+          <div className="text-xs text-editor-muted">{contentDisplay.category}</div>
+          <div className="text-sm font-medium truncate max-w-[200px]">{contentDisplay.title}</div>
+        </div>
+        <BookOpen className="w-5 h-5 text-editor-accent flex-shrink-0" />
+      </div>
+
 
       {/* Content Options Modal */}
       <ContentOptionsModal
