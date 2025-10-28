@@ -5,7 +5,7 @@ import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settin
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
 import { isTimeTrialTest } from '@/lib/test-content';
-import { Save, BookOpen, Highlighter, Clock } from 'lucide-react';
+import { Save, BookOpen, Highlighter, Clock, RotateCcw } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 import { LabelSelector } from './LabelSelector';
 import { TimeSelector } from './TimeSelector';
@@ -16,10 +16,14 @@ interface SettingsToolbarProps {
   onContentChange?: () => void; // Callback when content settings change
   showHighlightToggle?: boolean; // Only show in targeted practice mode
   isLoadingContent?: boolean; // Whether content is currently loading
+  onRestart?: () => void; // Callback when restart is clicked
 }
 
-export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false }: SettingsToolbarProps) {
+export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false, onRestart }: SettingsToolbarProps) {
   const { isAuthenticated } = useUserStore();
+
+  // Detect if user is on Mac
+  const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const {
     defaultDuration,
     autoSave,
@@ -82,10 +86,28 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
   return (
     <>
-      <div className={`w-full bg-editor-bg/50 border border-editor-muted rounded-lg p-4 mb-6 transition-opacity ${
-        disabled ? 'opacity-50 pointer-events-none' : 'opacity-100'
-      }`}>
+      <div className="w-full bg-editor-bg/50 border border-editor-muted rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between gap-4">
+          {/* Restart Button - Always enabled */}
+          {onRestart && (
+            <div className="flex items-center gap-2 group relative">
+              <button
+                onClick={onRestart}
+                className="flex items-center gap-2 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg transition-colors"
+                aria-label="Restart test"
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span className="text-xs text-editor-muted ml-1 border border-editor-muted rounded-lg px-2 py-1">
+                  {isMac ? '⌘↵' : 'Ctrl+↵'}
+                </span>
+              </button>
+              {/* Tooltip */}
+              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                Restart the test from the beginning. All settings will be preserved. Press {isMac ? 'Cmd+Enter' : 'Ctrl+Enter'} to restart.
+              </div>
+            </div>
+          )}
+
           {/* Duration Selection */}
           {isBenchmarkMode ? (
             <div className="flex items-center gap-2 group relative">
@@ -128,11 +150,10 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
 
           {/* Highlight Practice Sequences Toggle - Only in targeted practice mode */}
           {showHighlightToggle && (
-            <div className="flex items-center gap-2 group relative">
+            <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
               <Highlighter className={`w-5 h-5 ${showPracticeHighlights ? 'text-purple-400' : 'text-editor-muted'}`} />
               <button
-                onClick={() => !disabled && setShowPracticeHighlights(!showPracticeHighlights)}
-                disabled={disabled}
+                onClick={() => setShowPracticeHighlights(!showPracticeHighlights)}
                 className={`relative w-11 h-6 rounded-full transition-colors ${
                   showPracticeHighlights ? 'bg-purple-600' : 'bg-editor-muted/30'
                 }`}
@@ -154,11 +175,11 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
           )}
 
           {/* Save Results Toggle */}
-          <div className="flex items-center gap-2 group relative">
+          <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-editor-muted'}`} />
             <button
-              onClick={() => !disabled && isAuthenticated && setAutoSave(!autoSave)}
-              disabled={disabled || !isAuthenticated}
+              onClick={() => isAuthenticated && setAutoSave(!autoSave)}
+              disabled={!isAuthenticated}
               className={`relative w-11 h-6 rounded-full transition-colors ${
                 autoSave ? 'bg-editor-accent' : 'bg-editor-muted/30'
               } ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -191,10 +212,9 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
           />
 
           {/* Content Selection Button - More Prominent with Tooltip */}
-          <div className="ml-auto relative group">
+          <div className={`ml-auto relative group transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <button
-              onClick={() => !disabled && setShowContentOptions(true)}
-              disabled={disabled}
+              onClick={() => setShowContentOptions(true)}
               className="flex items-center gap-3 px-6 py-2.5 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-all shadow-lg"
             >
               <BookOpen className="w-5 h-5 flex-shrink-0" />

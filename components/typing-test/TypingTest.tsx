@@ -118,6 +118,28 @@ export function TypingTest() {
     }
   };
 
+  // Handle restart
+  const handleRestart = useCallback(() => {
+    // Reset the test state to idle, preserving the current content
+    const currentState = useTestStore.getState();
+
+    // Re-initialize the test with the same words and configuration
+    initializeTest(
+      {
+        duration: currentState.duration,
+        testContentId: currentState.testContentId || 'restarted',
+        testContentTitle: currentState.testContentTitle || undefined,
+        testContentCategory: currentState.testContentCategory || undefined,
+        isPractice: currentState.isPractice,
+        practiceSequences: currentState.practiceSequences,
+        userLabels: currentState.userLabels,
+        isTimeTrial: currentState.isTimeTrial,
+        timeTrialId: currentState.timeTrialId || undefined,
+      },
+      currentState.targetWords
+    );
+  }, [initializeTest]);
+
   // Handle content generation/loading
   const handleContentLoad = useCallback(async () => {
     // Get the current content style from the store to ensure we have the latest value
@@ -505,6 +527,13 @@ export function TypingTest() {
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Handle Cmd+Enter (Mac) or Ctrl+Enter (Windows) for restart
+      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleRestart();
+        return;
+      }
+
       // If test is idle, start it on first character input
       if (status === 'idle') {
         // Only start on actual characters (not Shift, Ctrl, etc.)
@@ -553,7 +582,7 @@ export function TypingTest() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [status, handleKeyPress, handleBackspace, handleTab, startTest]);
+  }, [status, handleKeyPress, handleBackspace, handleTab, startTest, handleRestart]);
 
   // Show initial loading state (only when no content at all)
   if (targetWords.length === 0 && !isGenerating) {
@@ -719,6 +748,7 @@ export function TypingTest() {
           onContentChange={handleContentLoad}
           showHighlightToggle={isPractice && practiceSequences.length > 0}
           isLoadingContent={isLoadingContent}
+          onRestart={handleRestart}
         />
         {generationError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
