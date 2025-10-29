@@ -124,14 +124,16 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
               />
             )}
 
-            {/* Correction Mode Selector */}
-            <CorrectionModeSelector
-              selectedMode={correctionMode}
-              onModeChange={setCorrectionMode}
-              mistakeThreshold={mistakeThreshold}
-              onThresholdChange={setMistakeThreshold}
-              disabled={disabled}
-            />
+            {/* Correction Mode Selector - Hidden in time trial mode */}
+            {!isTimeTrialMode && (
+              <CorrectionModeSelector
+                selectedMode={correctionMode}
+                onModeChange={setCorrectionMode}
+                mistakeThreshold={mistakeThreshold}
+                onThresholdChange={setMistakeThreshold}
+                disabled={disabled}
+              />
+            )}
 
             {/* Highlight Practice Sequences Toggle - Only in targeted practice mode */}
             {showHighlightToggle && (
