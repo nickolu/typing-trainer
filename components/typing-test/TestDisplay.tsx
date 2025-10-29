@@ -1,11 +1,11 @@
 import { useEffect, useRef, useMemo } from 'react';
 import { WordDisplay } from './WordDisplay';
 import { TypingCursor } from './TypingCursor';
-import { WordState } from '@/lib/types';
+import { WordState, CompletedWord } from '@/lib/types';
 
 interface TestDisplayProps {
   targetWords: string[];
-  completedWords: string[];
+  completedWords: CompletedWord[];
   currentInput: string;
   currentWordIndex: number;
   practiceSequences?: string[];
@@ -94,10 +94,13 @@ export function TestDisplay({
         {targetWords.map((word, index) => {
           let state: WordState;
           let typed = '';
+          let wasSkipped = false;
 
           if (index < currentWordIndex) {
             // Completed word
-            typed = completedWords[index] || '';
+            const completedWord = completedWords[index];
+            typed = completedWord?.text || '';
+            wasSkipped = completedWord?.wasSkipped || false;
             state =
               typed === word ? 'completed-correct' : 'completed-incorrect';
           } else if (index === currentWordIndex) {
@@ -125,6 +128,7 @@ export function TestDisplay({
                 word={word}
                 typed={typed}
                 state={state}
+                wasSkipped={wasSkipped}
                 highlightIndices={highlightData.wordHighlights.get(index) || new Set()}
               />
               {/* Show highlighted space or regular space separator */}

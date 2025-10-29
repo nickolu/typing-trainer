@@ -5,6 +5,7 @@ import {
   TestConfig,
   TestResult,
   KeystrokeEvent,
+  CompletedWord,
 } from '@/lib/types';
 import {
   calculateWPM,
@@ -118,42 +119,173 @@ export const useTestStore = create<TestState>((set, get) => ({
 
     // Check if this is a space (word completion)
     if (key === ' ') {
-      // Don't add space if current input is empty
-      if (state.currentInput.length === 0) return;
+      const isWordComplete = state.currentInput.length === currentWord.length;
+      const isWordCorrect = state.currentInput === currentWord;
+      const isAtStart = state.currentInput.length === 0;
+      const isAtEnd = state.currentInput.length >= currentWord.length; // Allow moving forward even if typed past the end
 
-      // In Strict mode, only allow space if the word is complete and correct
+      // Handle space based on correction mode
       if (correctionMode === 'strict') {
-        const isWordComplete = state.currentInput.length === currentWord.length;
-        const isWordCorrect = state.currentInput === currentWord;
-
+        // Strict mode: only allow space at end of perfectly typed word
         if (!isWordComplete || !isWordCorrect) {
           console.log('[TestStore] Strict mode: blocking space - word not complete or incorrect');
-          return; // Block space in strict mode if word isn't perfect
+          
+          // Increment error count
+          const newErrorCount = state.strictModeErrors + 1;
+
+          // Record the failed keystroke (but don't add to input)
+          const keystroke: KeystrokeEvent = {
+            timestamp: performance.now(),
+            key: ' ',
+            wordIndex: state.currentWordIndex,
+            charIndex: state.currentInput.length,
+            expectedChar: currentWord[state.currentInput.length],
+            wasCorrect: false,
+            isBackspace: false,
+          };
+
+          // Block input temporarily
+          set({
+            strictModeErrors: newErrorCount,
+            keystrokes: [...state.keystrokes, keystroke],
+            inputBlocked: true,
+          });
+
+          // Unblock input after delay
+          setTimeout(() => {
+            const currentState = get();
+            if (currentState.status === 'active') {
+              set({ inputBlocked: false });
+            }
+          }, STRICT_MODE_CONFIG.MISTAKE_DELAY_MS);
+
+          console.log('[TestStore] Strict mode error count:', newErrorCount, 'threshold:', mistakeThreshold);
+
+          // Check if we've reached the mistake threshold (-1 means unlimited)
+          if (mistakeThreshold > 0 && newErrorCount >= mistakeThreshold) {
+            console.log('[TestStore] Mistake threshold reached, failing test');
+            // Fail the test due to too many mistakes
+            setTimeout(() => {
+              const currentState = get();
+              if (currentState.status === 'active') {
+                set({
+                  status: 'failed',
+                  endTime: performance.now(),
+                  failedReason: `You reached the mistake limit of ${mistakeThreshold}. ${mistakeThreshold === 1 ? '1 mistake' : mistakeThreshold + ' mistakes'} allowed.`,
+                });
+              }
+            }, 500);
+          }
+
+          return;
+        }
+        
+        // Complete the word (not skipped)
+        const completedWord: CompletedWord = {
+          text: state.currentInput,
+          wasSkipped: false,
+        };
+        const newCompletedWords = [...state.completedWords, completedWord];
+
+        const keystroke: KeystrokeEvent = {
+          timestamp: performance.now(),
+          key: ' ',
+          wordIndex: state.currentWordIndex,
+          charIndex: state.currentInput.length,
+          wasCorrect: true,
+          isBackspace: false,
+        };
+
+        set({
+          completedWords: newCompletedWords,
+          currentWordIndex: state.currentWordIndex + 1,
+          currentInput: '',
+          keystrokes: [...state.keystrokes, keystroke],
+        });
+        
+        return;
+      } else if (correctionMode === 'speed') {
+        // Speed mode: space at start does nothing, space in middle/end moves to next word
+        if (isAtStart) {
+          return; // Do nothing at start of word
+        }
+
+        // Mark as skipped if not complete or incorrect
+        const wasSkipped = !isWordCorrect || !isWordComplete;
+        const completedWord: CompletedWord = {
+          text: state.currentInput,
+          wasSkipped,
+        };
+        const newCompletedWords = [...state.completedWords, completedWord];
+
+        const keystroke: KeystrokeEvent = {
+          timestamp: performance.now(),
+          key: ' ',
+          wordIndex: state.currentWordIndex,
+          charIndex: state.currentInput.length,
+          wasCorrect: isWordCorrect && isWordComplete,
+          isBackspace: false,
+        };
+
+        set({
+          completedWords: newCompletedWords,
+          currentWordIndex: state.currentWordIndex + 1,
+          currentInput: '',
+          keystrokes: [...state.keystrokes, keystroke],
+        });
+
+        return;
+      } else {
+        // Normal mode: space at end moves to next word, space in middle adds space to input
+        if (isAtEnd) {
+          // At end of word (correct or incorrect), move to next word
+          const completedWord: CompletedWord = {
+            text: state.currentInput,
+            wasSkipped: false,
+          };
+          const newCompletedWords = [...state.completedWords, completedWord];
+
+          const keystroke: KeystrokeEvent = {
+            timestamp: performance.now(),
+            key: ' ',
+            wordIndex: state.currentWordIndex,
+            charIndex: state.currentInput.length,
+            wasCorrect: isWordCorrect,
+            isBackspace: false,
+          };
+
+          set({
+            completedWords: newCompletedWords,
+            currentWordIndex: state.currentWordIndex + 1,
+            currentInput: '',
+            keystrokes: [...state.keystrokes, keystroke],
+          });
+
+          return;
+        } else {
+          // At start or middle of word, add space to input
+          const newInput = state.currentInput + ' ';
+          const expectedChar = currentWord[state.currentInput.length];
+          const wasCorrect = ' ' === expectedChar;
+
+          const keystroke: KeystrokeEvent = {
+            timestamp: performance.now(),
+            key: ' ',
+            wordIndex: state.currentWordIndex,
+            charIndex: state.currentInput.length,
+            expectedChar,
+            wasCorrect,
+            isBackspace: false,
+          };
+
+          set({
+            currentInput: newInput,
+            keystrokes: [...state.keystrokes, keystroke],
+          });
+
+          return;
         }
       }
-
-      // Complete the current word
-      const newCompletedWords = [...state.completedWords, state.currentInput];
-
-      // Record keystroke for the space
-      const keystroke: KeystrokeEvent = {
-        timestamp: performance.now(),
-        key: ' ',
-        wordIndex: state.currentWordIndex,
-        charIndex: state.currentInput.length,
-        wasCorrect: true, // Space key always correct (it's a delimiter)
-        isBackspace: false,
-      };
-
-      // Move to next word
-      set({
-        completedWords: newCompletedWords,
-        currentWordIndex: state.currentWordIndex + 1,
-        currentInput: '',
-        keystrokes: [...state.keystrokes, keystroke],
-      });
-
-      return;
     }
 
     // Determine if this keystroke is correct
@@ -257,7 +389,7 @@ export const useTestStore = create<TestState>((set, get) => ({
 
       // Move back to previous word
       const previousWordIndex = state.currentWordIndex - 1;
-      const previousWord = state.completedWords[previousWordIndex];
+      const previousCompletedWord = state.completedWords[previousWordIndex];
       const newCompletedWords = state.completedWords.slice(0, previousWordIndex);
 
       // Record keystroke
@@ -272,7 +404,7 @@ export const useTestStore = create<TestState>((set, get) => ({
 
       set({
         currentWordIndex: previousWordIndex,
-        currentInput: previousWord || '',
+        currentInput: previousCompletedWord?.text || '',
         completedWords: newCompletedWords,
         keystrokes: [...state.keystrokes, keystroke],
       });
@@ -306,7 +438,12 @@ export const useTestStore = create<TestState>((set, get) => ({
     if (state.status !== 'active') return;
 
     // Add current input as-is to completed words (even if incomplete/incorrect)
-    const newCompletedWords = [...state.completedWords, state.currentInput];
+    // Tab always marks word as skipped
+    const completedWord: CompletedWord = {
+      text: state.currentInput,
+      wasSkipped: true,
+    };
+    const newCompletedWords = [...state.completedWords, completedWord];
 
     // Record keystroke
     const keystroke: KeystrokeEvent = {
@@ -369,13 +506,19 @@ export const useTestStore = create<TestState>((set, get) => ({
     // Add current input to completed words if there's any
     let finalCompletedWords = [...state.completedWords];
     if (state.currentInput.length > 0) {
-      finalCompletedWords.push(state.currentInput);
+      finalCompletedWords.push({
+        text: state.currentInput,
+        wasSkipped: false,
+      });
     }
+
+    // Extract just the text from completed words for calculations
+    const typedWordsText = finalCompletedWords.map(cw => cw.text);
 
     // Normalize typed words to match target length
     const normalizedTypedWords = normalizeTypedWords(
       state.targetWords,
-      finalCompletedWords
+      typedWordsText
     );
 
     // Calculate stats

@@ -105,6 +105,12 @@ export interface StoredTestConfig {
   practiceSequences: string[];
 }
 
+// Completed word metadata
+export interface CompletedWord {
+  text: string; // What the user typed
+  wasSkipped: boolean; // True if skipped in speed mode
+}
+
 // In-memory test state (used by Zustand)
 export interface TestState {
   // Config
@@ -128,7 +134,7 @@ export interface TestState {
 
   // User input
   currentInput: string; // Current word being typed
-  completedWords: string[]; // Finalized words
+  completedWords: CompletedWord[]; // Finalized words with metadata
 
   // Keystroke tracking
   keystrokes: KeystrokeEvent[];

@@ -6,10 +6,11 @@ interface WordDisplayProps {
   word: string;
   typed: string;
   state: WordState;
+  wasSkipped?: boolean;
   highlightIndices?: Set<number>;
 }
 
-export function WordDisplay({ word, typed, state, highlightIndices = new Set() }: WordDisplayProps) {
+export function WordDisplay({ word, typed, state, wasSkipped = false, highlightIndices = new Set() }: WordDisplayProps) {
   // Helper to render a character with potential highlighting
   const renderChar = (char: string, index: number, isTargeted: boolean) => {
     // Special handling for spaces when highlighted
@@ -49,11 +50,55 @@ export function WordDisplay({ word, typed, state, highlightIndices = new Set() }
   }
 
   if (state === 'completed-incorrect') {
+    // If word was skipped (in speed mode), show the correct word highlighted
+    if (wasSkipped) {
+      return (
+        <span className="test-word-incorrect inline-block">
+          {word.split('').map((char, index) => {
+            const isTargeted = highlightIndices.has(index);
+            return renderChar(char, index, isTargeted);
+          })}
+        </span>
+      );
+    }
+    
+    // If word was typed with mistakes, show the actual typed characters
+    // Use compareWords to show character-by-character comparison
+    const comparison = compareWords(word, typed);
+    
     return (
       <span className="test-word-incorrect inline-block">
-        {word.split('').map((char, index) => {
+        {comparison.map((charComp, index) => {
           const isTargeted = highlightIndices.has(index);
-          return renderChar(char, index, isTargeted);
+          const isSpace = charComp.char === ' ';
+
+          // Special styling for highlighted spaces
+          const baseClassName = cn(
+            'relative inline-block',
+            charComp.status === 'correct' && 'test-char-correct',
+            charComp.status === 'incorrect' && 'test-char-incorrect',
+            charComp.status === 'pending' && 'test-char-pending'
+          );
+
+          // Apply different highlight style for spaces
+          const className = isTargeted
+            ? isSpace
+              ? cn(baseClassName, 'bg-purple-500/30 border border-purple-500/50 rounded px-1 mx-0.5')
+              : cn(baseClassName, 'bg-purple-500/20 rounded')
+            : baseClassName;
+
+          // Display space as a visible character
+          const displayChar = isSpace ? '␣' : charComp.char;
+
+          return (
+            <span
+              key={index}
+              className={className}
+              style={isTargeted && isSpace ? { minWidth: '0.5rem' } : undefined}
+            >
+              {displayChar}
+            </span>
+          );
         })}
       </span>
     );
@@ -96,13 +141,16 @@ export function WordDisplay({ word, typed, state, highlightIndices = new Set() }
               : cn(baseClassName, 'bg-purple-500/20 rounded')
             : baseClassName;
 
+          // Display space as a visible character
+          const displayChar = isSpace ? '␣' : charComp.char;
+
           return (
             <span
               key={index}
               className={className}
               style={isTargeted && isSpace ? { minWidth: '0.5rem' } : undefined}
             >
-              {charComp.char}
+              {displayChar}
             </span>
           );
         })}

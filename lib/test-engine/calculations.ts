@@ -219,7 +219,7 @@ export function normalizeTypedWords(
  */
 export function calculateLiveWPM(
   targetWords: string[],
-  completedWords: string[],
+  completedWords: import('@/lib/types').CompletedWord[],
   currentInput: string,
   currentWordIndex: number,
   startTime: number
@@ -234,7 +234,7 @@ export function calculateLiveWPM(
 
   for (let i = 0; i < completedWords.length; i++) {
     const targetWord = targetWords[i] || '';
-    const typedWord = completedWords[i] || '';
+    const typedWord = completedWords[i]?.text || '';
 
     if (targetWord === typedWord) {
       correctChars += targetWord.length;
