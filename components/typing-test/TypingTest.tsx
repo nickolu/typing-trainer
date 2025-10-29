@@ -763,8 +763,9 @@ export function TypingTest() {
       {status === 'complete' && result && !autoSave && (
         <div className="w-full max-w-4xl mb-6 bg-editor-bg/80 border border-editor-muted rounded-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Test Complete!</h2>
-          <p className="text-sm text-editor-muted mb-4">Results not saved (Save Results is off)</p>
-          <div className="grid grid-cols-2 gap-4 mb-4">
+
+          {/* Results Grid */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-editor-bg/50 rounded-lg p-4">
               <div className="text-sm text-editor-muted mb-1">WPM</div>
               <div className="text-3xl font-bold">{result.wpm}</div>
@@ -774,12 +775,68 @@ export function TypingTest() {
               <div className="text-3xl font-bold">{result.accuracy}%</div>
             </div>
           </div>
-          <button
-            onClick={resetTest}
-            className="w-full px-4 py-3 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
-          >
-            Try Again
-          </button>
+
+          {/* Messaging based on authentication status */}
+          {isAuthenticated ? (
+            // Logged in user with Save Results disabled
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-blue-400 mb-2">Want to see more in-depth analysis?</h3>
+              <p className="text-sm text-editor-muted mb-3">
+                Enable "Save Results" in the menu bar to unlock detailed performance metrics, progress tracking, and personalized insights. Your results will be saved to help you improve over time!
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setAutoSave(true);
+                    resetTest();
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Enable Saving
+                </button>
+                <button
+                  onClick={resetTest}
+                  className="flex-1 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg font-medium transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : (
+            // Not logged in
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-green-400 mb-2">Get More From Your Practice!</h3>
+              <p className="text-sm text-editor-muted mb-3">
+                Create a free account (email only required) to unlock:
+              </p>
+              <ul className="text-sm text-editor-muted mb-4 space-y-1 list-disc list-inside">
+                <li>Detailed performance analytics and progress tracking</li>
+                <li>Personalized practice recommendations</li>
+                <li>Historical data and trends over time</li>
+                <li>Custom test configurations and sequences</li>
+              </ul>
+              <div className="flex gap-3">
+                <Link
+                  href="/signup"
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-center"
+                >
+                  Sign Up
+                </Link>
+                <Link
+                  href="/login"
+                  className="flex-1 px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors text-center"
+                >
+                  Log In
+                </Link>
+              </div>
+              <button
+                onClick={resetTest}
+                className="w-full mt-3 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg font-medium transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
         </div>
       )}
 
