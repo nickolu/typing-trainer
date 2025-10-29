@@ -782,7 +782,7 @@ export function TypingTest() {
             <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
               <h3 className="font-semibold text-blue-400 mb-2">Want to see more in-depth analysis?</h3>
               <p className="text-sm text-editor-muted mb-3">
-                Enable "Save Results" in the menu bar to unlock detailed performance metrics, progress tracking, and personalized insights. Your results will be saved to help you improve over time!
+                Enable &quot;Save Results&quot; in the menu bar to unlock detailed performance metrics, progress tracking, and personalized insights. Your results will be saved to help you improve over time!
               </p>
               <div className="flex gap-3">
                 <button
