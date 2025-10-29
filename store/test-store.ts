@@ -41,6 +41,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   result: null,
   strictModeErrors: 0, // Track mistakes in strict mode
   inputBlocked: false, // Track if input is temporarily blocked
+  failedReason: null, // Reason for test failure
   // Store last test configuration for "try again" functionality
   lastTestConfig: null,
 
@@ -73,6 +74,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       keystrokes: [],
       strictModeErrors: 0,
       inputBlocked: false,
+      failedReason: null,
       result: null,
       // Store configuration for "try again"
       lastTestConfig: {
@@ -100,7 +102,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   handleKeyPress: (key: string) => {
     const state = get();
 
-    // Only process if test is active
+    // Only process if test is active (not failed, complete, or idle)
     if (state.status !== 'active' || !state.startTime) return;
 
     // Block input if currently in delay penalty period
@@ -195,13 +197,17 @@ export const useTestStore = create<TestState>((set, get) => ({
 
       // Check if we've reached the mistake threshold (-1 means unlimited)
       if (mistakeThreshold > 0 && newErrorCount >= mistakeThreshold) {
-        console.log('[TestStore] Mistake threshold reached, ending test');
-        // End the test due to too many mistakes
+        console.log('[TestStore] Mistake threshold reached, failing test');
+        // Fail the test due to too many mistakes
         // Use setTimeout to allow the UI to update first
         setTimeout(() => {
           const currentState = get();
           if (currentState.status === 'active') {
-            currentState.completeTest(false);
+            set({
+              status: 'failed',
+              endTime: performance.now(),
+              failedReason: `You reached the mistake limit of ${mistakeThreshold}. ${mistakeThreshold === 1 ? '1 mistake' : mistakeThreshold + ' mistakes'} allowed.`,
+            });
           }
         }, 500);
       }
@@ -559,6 +565,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       keystrokes: [],
       strictModeErrors: 0,
       inputBlocked: false,
+      failedReason: null,
       result: null,
       // Preserve lastTestConfig so "try again" works
     });
@@ -597,6 +604,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       keystrokes: [],
       strictModeErrors: 0,
       inputBlocked: false,
+      failedReason: null,
       result: null,
       // Keep the same lastTestConfig
       lastTestConfig: state.lastTestConfig,

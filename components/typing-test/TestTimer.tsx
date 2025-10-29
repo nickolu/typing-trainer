@@ -7,6 +7,7 @@ import { TestDuration } from '@/store/settings-store';
 interface TestTimerProps {
   duration: number | string | 'content-length'; // Total duration in seconds (can be string from store) or 'content-length'
   startTime: number | null; // performance.now() when test started
+  endTime?: number | null; // performance.now() when test ended (for failed status)
   onComplete: () => void;
   // For content-length mode
   totalWords?: number;
@@ -15,7 +16,7 @@ interface TestTimerProps {
   bestTime?: number | null; // Best time in seconds
 }
 
-export function TestTimer({ duration, startTime, onComplete, totalWords, remainingWords, bestTime }: TestTimerProps) {
+export function TestTimer({ duration, startTime, endTime, onComplete, totalWords, remainingWords, bestTime }: TestTimerProps) {
   // Helper to convert duration to number (handles both string and number from store)
   const getDurationAsNumber = (dur: number | 'content-length' | string): number => {
     if (dur === 'content-length') return 0;
@@ -37,7 +38,8 @@ export function TestTimer({ duration, startTime, onComplete, totalWords, remaini
   }, [duration, startTime]);
 
   useEffect(() => {
-    if (!startTime || duration === 'content-length') {
+    // Stop the timer if the test has ended (failed or completed)
+    if (!startTime || duration === 'content-length' || endTime) {
       return;
     }
 
@@ -55,7 +57,7 @@ export function TestTimer({ duration, startTime, onComplete, totalWords, remaini
     }, 100); // Update every 100ms for smooth countdown
 
     return () => clearInterval(interval);
-  }, [startTime, duration, onComplete]);
+  }, [startTime, duration, endTime, onComplete]);
 
   // For content-length mode, display remaining words
   if (duration === 'content-length') {

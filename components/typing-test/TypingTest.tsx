@@ -29,10 +29,12 @@ export function TypingTest() {
     currentInput,
     currentWordIndex,
     startTime,
+    endTime,
     result,
     isPractice,
     practiceSequences,
     strictModeErrors,
+    failedReason,
     initializeTest,
     startTest,
     handleKeyPress,
@@ -617,6 +619,7 @@ export function TypingTest() {
                 <TestTimer
                   duration={duration}
                   startTime={startTime}
+                  endTime={endTime}
                   onComplete={handleComplete}
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
@@ -629,6 +632,7 @@ export function TypingTest() {
                 <TestTimer
                   duration={duration}
                   startTime={startTime}
+                  endTime={endTime}
                   onComplete={handleComplete}
                   totalWords={targetWords.length}
                   remainingWords={remainingWords}
@@ -759,6 +763,54 @@ export function TypingTest() {
         )}
       </div>
 
+      {/* Test Failure Display - Show when test fails due to too many mistakes */}
+      {status === 'failed' && failedReason && (
+        <div className="w-full max-w-4xl mb-6 bg-editor-bg/80 border border-red-500/30 rounded-lg p-6">
+          <h2 className="text-2xl font-bold mb-4 text-red-400">Test Failed</h2>
+
+          {/* Failure message */}
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+            <p className="text-lg text-editor-fg mb-2">{failedReason}</p>
+            <p className="text-sm text-editor-muted">
+              Mistakes made: <span className="font-bold text-red-400">{strictModeErrors}</span>
+            </p>
+          </div>
+
+          {/* Messaging based on authentication and auto-save status */}
+          {!isAuthenticated && (
+            // Not logged in
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
+              <h3 className="font-semibold text-green-400 mb-2">Want to Track Your Progress?</h3>
+              <p className="text-sm text-editor-muted mb-3">
+                Create a free account to save your results and see detailed analytics. Track your improvement over time!
+              </p>
+              <div className="flex gap-3">
+                <Link
+                  href="/signup"
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-center"
+                >
+                  Sign Up
+                </Link>
+                <Link
+                  href="/login"
+                  className="flex-1 px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors text-center"
+                >
+                  Log In
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Retry button */}
+          <button
+            onClick={resetTest}
+            className="w-full px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Quick Results Display - Show inline when results aren't being saved */}
       {status === 'complete' && result && !autoSave && (
         <div className="w-full max-w-4xl mb-6 bg-editor-bg/80 border border-editor-muted rounded-lg p-6">
@@ -843,7 +895,7 @@ export function TypingTest() {
       {/* Test display */}
       <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${
         isGenerating ? 'opacity-50' : 'opacity-100'
-      } transition-opacity ${status === 'complete' ? 'hidden' : ''} ${
+      } transition-opacity ${status === 'complete' || status === 'failed' ? 'hidden' : ''} ${
         shouldShake ? 'animate-shake' : ''
       }`}>
         {isGenerating && (
@@ -866,18 +918,20 @@ export function TypingTest() {
       <TipsBanner />
 
       {/* Footer hints */}
-      <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
-        {status === 'idle' && !isGenerating && (
-          <p>Start typing to begin the test...</p>
-        )}
-        {status === 'active' && (
-          <p>
-            Press Tab or Space to skip to the next word.
-            {correctionMode === 'speed' && ' Backspace is disabled.'}
-            {correctionMode === 'strict' && ' Wrong keys are blocked.'}
-          </p>
-        )}
-      </div>
+      {status !== 'complete' && status !== 'failed' && (
+        <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
+          {status === 'idle' && !isGenerating && (
+            <p>Start typing to begin the test...</p>
+          )}
+          {status === 'active' && (
+            <p>
+              Press Tab or Space to skip to the next word.
+              {correctionMode === 'speed' && ' Backspace is disabled.'}
+              {correctionMode === 'strict' && ' Wrong keys are blocked.'}
+            </p>
+          )}
+        </div>
+      )}
       {/* Live WPM Speedometer - Only show when test is active and speedometer is enabled */}
       <div style={{minHeight: showSpeedometer ? '180px' : '0px'}}>
       <AnimatePresence>

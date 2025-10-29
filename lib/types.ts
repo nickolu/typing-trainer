@@ -67,7 +67,7 @@ export interface TestContent {
 }
 
 // Test status
-export type TestStatus = 'idle' | 'active' | 'complete';
+export type TestStatus = 'idle' | 'active' | 'complete' | 'failed';
 
 // Word state for display
 export type WordState =
@@ -136,6 +136,9 @@ export interface TestState {
   // Strict mode mistake tracking
   strictModeErrors: number;
   inputBlocked: boolean; // Temporarily blocks input after a mistake in strict mode
+
+  // Failure tracking
+  failedReason: string | null; // Reason for test failure (e.g., "Too many mistakes")
 
   // Computed result (set when test completes)
   result: TestResult | null;
