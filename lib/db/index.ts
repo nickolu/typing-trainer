@@ -82,6 +82,9 @@ export async function getAggregateSlowSequences(limit: number = 5): Promise<stri
     const sequenceMap = new Map<string, { totalTime: number; count: number }>();
 
     for (const result of results) {
+      // Skip results without targetWords (will need to fetch from testContents if needed)
+      if (!result.targetWords || result.targetWords.length === 0) continue;
+      
       // Calculate 2-char and 3-char sequences for this test
       const twoChar = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 2, 50);
       const threeChar = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 3, 50);
@@ -163,6 +166,9 @@ export async function getAggregateSequenceTimings(
     const sequenceMap = new Map<string, { times: number[]; testIndices: number[] }>();
 
     results.forEach((result, index) => {
+      // Skip results without targetWords
+      if (!result.targetWords || result.targetWords.length === 0) return;
+      
       const sequences = calculateSequenceTimings(
         result.keystrokeTimings,
         result.targetWords,
@@ -287,8 +293,9 @@ export async function getAggregateMistakes(
     const mistakeSeqMap = new Map<string, { totalCount: number; testIndices: number[] }>();
 
     results.forEach((result, index) => {
-      // Only analyze tests with keystroke data
-      if (!result.keystrokeTimings || result.keystrokeTimings.length === 0) {
+      // Only analyze tests with keystroke data and targetWords
+      if (!result.keystrokeTimings || result.keystrokeTimings.length === 0 ||
+          !result.targetWords || result.targetWords.length === 0) {
         return;
       }
 

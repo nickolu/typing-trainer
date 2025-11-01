@@ -12,11 +12,12 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase-config';
-import { TestResult } from '@/lib/types';
+import { TestResult, StoredTestContent } from '@/lib/types';
 
 // Collection names
 const USERS_COLLECTION = 'users';
 const TEST_RESULTS_COLLECTION = 'testResults';
+const TEST_CONTENTS_COLLECTION = 'testContents';
 const USER_LABELS_COLLECTION = 'userLabels';
 const TIME_TRIAL_BEST_TIMES_COLLECTION = 'timeTrialBestTimes';
 
@@ -94,6 +95,20 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
 }
 
 /**
+ * Generate a hash from text content for deduplication
+ * Simple hash function for content comparison
+ */
+function generateContentHash(text: string): string {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    const char = text.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(36);
+}
+
+/**
  * Helper function to recursively remove undefined values from an object
  * Firestore doesn't accept undefined values, even in nested objects/arrays
  */
@@ -165,6 +180,160 @@ function convertTimestampToDate(timestamp: any): Date {
   // Fallback
   console.warn('Unknown timestamp format:', timestamp);
   return new Date();
+}
+
+/**
+ * Save test content to Firestore
+ */
+export async function saveTestContent(
+  content: Omit<StoredTestContent, 'id' | 'createdAt' | 'contentHash'> & { id: string },
+  userId: string
+): Promise<string> {
+  try {
+    const { getFirebaseAuth } = await import('@/lib/firebase-config');
+    const auth = getFirebaseAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser || currentUser.uid !== userId) {
+      throw new Error('Not authenticated - please log in again');
+    }
+
+    const db = getFirebaseDb();
+    const contentRef = doc(db, TEST_CONTENTS_COLLECTION, content.id);
+
+    const contentHash = generateContentHash(content.text);
+
+    const firestoreData = {
+      id: content.id,
+      userId,
+      text: content.text,
+      words: content.words,
+      sourceId: content.sourceId || null,
+      contentHash,
+      createdAt: Timestamp.now(),
+    };
+
+    await setDoc(contentRef, firestoreData);
+
+    console.log('[Firebase] Successfully saved test content:', content.id);
+    return content.id;
+  } catch (error) {
+    console.error('[Firebase] Failed to save test content:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get test content by ID
+ */
+export async function getTestContent(id: string): Promise<StoredTestContent | null> {
+  try {
+    const db = getFirebaseDb();
+    const contentRef = doc(db, TEST_CONTENTS_COLLECTION, id);
+    const contentDoc = await getDoc(contentRef);
+
+    if (!contentDoc.exists()) {
+      return null;
+    }
+
+    const data = contentDoc.data();
+    return {
+      id: data.id,
+      userId: data.userId,
+      text: data.text,
+      words: data.words,
+      sourceId: data.sourceId || undefined,
+      contentHash: data.contentHash,
+      createdAt: convertTimestampToDate(data.createdAt),
+    };
+  } catch (error) {
+    console.error('[Firebase] Failed to get test content:', error);
+    return null;
+  }
+}
+
+/**
+ * Find existing test content by sourceId and userId
+ * Used to avoid duplicating static test content
+ */
+export async function findTestContentBySource(
+  userId: string,
+  sourceId: string
+): Promise<StoredTestContent | null> {
+  try {
+    const db = getFirebaseDb();
+    const contentsRef = collection(db, TEST_CONTENTS_COLLECTION);
+
+    const q = query(
+      contentsRef,
+      where('userId', '==', userId),
+      where('sourceId', '==', sourceId),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    // Return the most recent one
+    const data = snapshot.docs[0].data();
+    return {
+      id: data.id,
+      userId: data.userId,
+      text: data.text,
+      words: data.words,
+      sourceId: data.sourceId || undefined,
+      contentHash: data.contentHash,
+      createdAt: convertTimestampToDate(data.createdAt),
+    };
+  } catch (error) {
+    console.error('[Firebase] Failed to find test content by source:', error);
+    return null;
+  }
+}
+
+/**
+ * Find existing test content by contentHash and userId
+ * Used to detect duplicate AI-generated content and maintain trial history
+ */
+export async function findTestContentByHash(
+  userId: string,
+  contentHash: string
+): Promise<StoredTestContent | null> {
+  try {
+    const db = getFirebaseDb();
+    const contentsRef = collection(db, TEST_CONTENTS_COLLECTION);
+
+    const q = query(
+      contentsRef,
+      where('userId', '==', userId),
+      where('contentHash', '==', contentHash),
+      orderBy('createdAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    // Return the most recent one
+    const data = snapshot.docs[0].data();
+    return {
+      id: data.id,
+      userId: data.userId,
+      text: data.text,
+      words: data.words,
+      sourceId: data.sourceId || undefined,
+      contentHash: data.contentHash,
+      createdAt: convertTimestampToDate(data.createdAt),
+    };
+  } catch (error) {
+    console.error('[Firebase] Failed to find test content by hash:', error);
+    return null;
+  }
 }
 
 /**
@@ -461,6 +630,9 @@ export async function getAggregateSlowSequences(userId: string, limit: number = 
     const sequenceMap = new Map<string, { totalTime: number; count: number }>();
 
     for (const result of results) {
+      // Skip results without targetWords (will need to fetch from testContents if needed)
+      if (!result.targetWords || result.targetWords.length === 0) continue;
+      
       // Calculate 2-char and 3-char sequences for this test
       const twoChar = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 2, 50);
       const threeChar = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 3, 50);
@@ -543,6 +715,9 @@ export async function getAggregateSequenceTimings(
     const sequenceMap = new Map<string, { times: number[]; testIndices: number[] }>();
 
     results.forEach((result, index) => {
+      // Skip results without targetWords
+      if (!result.targetWords || result.targetWords.length === 0) return;
+      
       const sequences = calculateSequenceTimings(
         result.keystrokeTimings,
         result.targetWords,
@@ -668,8 +843,9 @@ export async function getAggregateMistakes(
     const mistakeSeqMap = new Map<string, { totalCount: number; testIndices: number[] }>();
 
     results.forEach((result, index) => {
-      // Only analyze tests with keystroke data
-      if (!result.keystrokeTimings || result.keystrokeTimings.length === 0) {
+      // Only analyze tests with keystroke data and targetWords
+      if (!result.keystrokeTimings || result.keystrokeTimings.length === 0 ||
+          !result.targetWords || result.targetWords.length === 0) {
         return;
       }
 

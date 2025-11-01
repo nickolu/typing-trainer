@@ -35,6 +35,14 @@ export function ResultsView({ result }: ResultsViewProps) {
   const [currentLabels, setCurrentLabels] = useState<string[]>(result.labels || []);
   const [isSavingLabels, setIsSavingLabels] = useState(false);
   const [labelError, setLabelError] = useState<string | null>(null);
+  
+  // Test content availability for retry and trial history
+  const [canRetry, setCanRetry] = useState(false);
+  const [canShowTrialHistory, setCanShowTrialHistory] = useState(false);
+  const [isCheckingRetry, setIsCheckingRetry] = useState(true);
+  
+  // Target words (fetched from testContent if not in result)
+  const [targetWords, setTargetWords] = useState<string[]>(result.targetWords || []);
 
   // Time trial state
   const [timeTrialMessage, setTimeTrialMessage] = useState<{
@@ -101,10 +109,51 @@ export function ResultsView({ result }: ResultsViewProps) {
     }
   }, [result, currentUserId]);
 
+  // Check if test content is available for retry and fetch targetWords if needed
+  useEffect(() => {
+    async function checkTestContent() {
+      // Can only retry if test has a testContentId
+      if (!result.testContentId) {
+        setCanRetry(false);
+        setIsCheckingRetry(false);
+        return;
+      }
+
+      try {
+        const { getTestContent } = await import('@/lib/db/firebase');
+        const testContent = await getTestContent(result.testContentId);
+        
+        if (testContent) {
+          setCanRetry(true);
+          setCanShowTrialHistory(true);
+          // If result doesn't have targetWords, use the ones from testContent
+          if (!result.targetWords || result.targetWords.length === 0) {
+            setTargetWords(testContent.words);
+          }
+        } else {
+          setCanRetry(false);
+          setCanShowTrialHistory(false);
+        }
+      } catch (error) {
+        console.error('Failed to check test content:', error);
+        setCanRetry(false);
+        setCanShowTrialHistory(false);
+      } finally {
+        setIsCheckingRetry(false);
+      }
+    }
+
+    checkTestContent();
+  }, [result.testContentId, result.targetWords]);
+
   // Load trial history for this content
   useEffect(() => {
-    // Only load history if user is authenticated, result is saved, and not a practice test
-    if (currentUserId && result.userId && result.testContentId && !result.isPractice) {
+    // Only load history if:
+    // - User is authenticated
+    // - Result is saved (has userId)
+    // - Not a practice test
+    // - testContent exists (canShowTrialHistory)
+    if (canShowTrialHistory && currentUserId && result.userId && result.testContentId && !result.isPractice) {
       setIsLoadingHistory(true);
 
       getTestResultsByContent(currentUserId, result.testContentId)
@@ -121,24 +170,33 @@ export function ResultsView({ result }: ResultsViewProps) {
         .finally(() => {
           setIsLoadingHistory(false);
         });
+    } else {
+      // Clear trial history if conditions not met
+      setTrialHistory([]);
+      setIsLoadingHistory(false);
     }
-  }, [currentUserId, result.userId, result.testContentId, result.isPractice, result.id]);
+  }, [canShowTrialHistory, currentUserId, result.userId, result.testContentId, result.isPractice, result.id]);
 
   // Calculate sequence timings
   const twoCharSequences = useMemo(
-    () => calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 2, 10),
-    [result.keystrokeTimings, result.targetWords]
+    () => calculateSequenceTimings(result.keystrokeTimings, targetWords, 2, 10),
+    [result.keystrokeTimings, targetWords]
   );
 
   const threeCharSequences = useMemo(
-    () => calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 3, 10),
-    [result.keystrokeTimings, result.targetWords]
+    () => calculateSequenceTimings(result.keystrokeTimings, targetWords, 3, 10),
+    [result.keystrokeTimings, targetWords]
   );
 
-  const handleTryAgain = () => {
-    // Retry the same test configuration and go back to home
-    retryLastTest();
-    router.push('/');
+  const handleTryAgain = async () => {
+    try {
+      // Retry the same test configuration and go back to home
+      await retryLastTest();
+      router.push('/');
+    } catch (error) {
+      console.error('Failed to retry test:', error);
+      alert('Failed to retry test. The test content may no longer be available.');
+    }
   };
 
   const handleNewTest = () => {
@@ -368,9 +426,16 @@ export function ResultsView({ result }: ResultsViewProps) {
         )}
 
         {/* Trial History */}
-        {!isLoadingHistory && trialHistory.length > 0 && (
+        {/* Only show trial history if testContent exists and we have history */}
+        {canShowTrialHistory && !isLoadingHistory && trialHistory.length > 0 && (
           <div className="mb-8">
             <TrialHistory history={trialHistory} currentResult={result} />
+          </div>
+        )}
+        {/* Show loading state while checking */}
+        {isCheckingRetry && (
+          <div className="mb-8 bg-editor-bg border border-editor-muted rounded-lg p-6">
+            <p className="text-sm text-editor-muted text-center">Loading trial history...</p>
           </div>
         )}
 
@@ -417,7 +482,7 @@ export function ResultsView({ result }: ResultsViewProps) {
 
         {/* Mistake Analysis */}
         <div className="mb-8">
-          <MistakeAnalysis result={result} />
+          <MistakeAnalysis result={result} targetWords={targetWords} />
         </div>
 
         {/* Practice Error */}
@@ -469,12 +534,22 @@ export function ResultsView({ result }: ResultsViewProps) {
           >
             View Stats
           </Link>
-          <button
-            onClick={handleTryAgain}
-            className="px-6 py-3 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
-          >
-            Try Again
-          </button>
+          {canRetry && (
+            <button
+              onClick={handleTryAgain}
+              className="px-6 py-3 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          )}
+          {isCheckingRetry && (
+            <button
+              disabled
+              className="px-6 py-3 bg-editor-muted/50 text-editor-fg rounded-lg font-medium cursor-not-allowed"
+            >
+              Loading...
+            </button>
+          )}
           <button
             onClick={handleNewTest}
             className="px-6 py-3 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
@@ -489,6 +564,7 @@ export function ResultsView({ result }: ResultsViewProps) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         result={result}
+        targetWords={targetWords}
         onGeneratePractice={handleGenerateTargetedPractice}
       />
     </div>

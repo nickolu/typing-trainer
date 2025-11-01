@@ -5,9 +5,10 @@ import { AlertTriangle } from 'lucide-react';
 
 interface MistakeAnalysisProps {
   result: TestResult;
+  targetWords: string[];
 }
 
-export function MistakeAnalysis({ result }: MistakeAnalysisProps) {
+export function MistakeAnalysis({ result, targetWords }: MistakeAnalysisProps) {
   const mistakeData: MistakeAnalysisType | null = useMemo(() => {
     if (!result.keystrokeTimings || result.keystrokeTimings.length === 0) {
       return null;
@@ -15,10 +16,10 @@ export function MistakeAnalysis({ result }: MistakeAnalysisProps) {
 
     return analyzeMistakes(
       result.keystrokeTimings,
-      result.targetWords,
+      targetWords,
       result.typedWords
     );
-  }, [result]);
+  }, [result, targetWords]);
 
   if (!mistakeData || mistakeData.totalMistakes === 0) {
     return (

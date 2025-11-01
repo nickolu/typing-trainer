@@ -120,6 +120,68 @@ export function TypingTest() {
     }
   };
 
+  // Helper function to save test content and get testContentId
+  // Reuses existing testContent when possible to maintain trial history
+  const saveOrReuseTestContent = useCallback(async (
+    text: string,
+    words: string[],
+    sourceId?: string
+  ): Promise<string> => {
+    if (!isAuthenticated || !currentUserId) {
+      // For unauthenticated users, return a placeholder ID
+      return sourceId || 'temp-' + Date.now();
+    }
+
+    try {
+      const { saveTestContent, findTestContentBySource, findTestContentByHash } = await import('@/lib/db/firebase');
+      const { v4: uuidv4 } = await import('uuid');
+
+      // Try to find existing content
+      let existingContent = null;
+      
+      if (sourceId) {
+        // Static test: look up by sourceId
+        existingContent = await findTestContentBySource(currentUserId, sourceId);
+      } else {
+        // AI-generated or custom: look up by content hash
+        // Generate hash locally to check for duplicates
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          const char = text.charCodeAt(i);
+          hash = ((hash << 5) - hash) + char;
+          hash = hash & hash;
+        }
+        const contentHash = Math.abs(hash).toString(36);
+        existingContent = await findTestContentByHash(currentUserId, contentHash);
+      }
+
+      if (existingContent) {
+        console.log('[TypingTest] Reusing existing testContent:', existingContent.id);
+        return existingContent.id;
+      }
+
+      // Create new testContent
+      const testContentId = uuidv4();
+      await saveTestContent(
+        {
+          id: testContentId,
+          userId: currentUserId,
+          text,
+          words,
+          sourceId,
+        },
+        currentUserId
+      );
+
+      console.log('[TypingTest] Created new testContent:', testContentId);
+      return testContentId;
+    } catch (error) {
+      console.error('Failed to save test content:', error);
+      // Fallback to sourceId or temp ID
+      return sourceId || 'temp-' + Date.now();
+    }
+  }, [isAuthenticated, currentUserId]);
+
   // Handle restart
   const handleRestart = useCallback(() => {
     // Reset the test state to idle, preserving the current content
@@ -210,12 +272,15 @@ export function TypingTest() {
           const result = await response.json();
           const words = textToWords(result.text, requiredWords);
 
+          // Save test content and get ID
+          const testContentId = await saveOrReuseTestContent(result.text, words);
+
           // Initialize test with practice metadata
           resetTest();
           initializeTest(
             {
               duration: defaultDuration,
-              testContentId: 'ai-sequences',
+              testContentId,
               testContentTitle: result.title || 'Character Sequence Practice',
               testContentCategory: 'AI Character Sequence',
               isPractice: true,
@@ -252,12 +317,15 @@ export function TypingTest() {
           const result = await response.json();
           const words = textToWords(result.text, requiredWords);
 
+          // Save test content and get ID
+          const testContentId = await saveOrReuseTestContent(result.text, words);
+
           // Initialize test with generated content
           resetTest();
           initializeTest(
             {
               duration: defaultDuration,
-              testContentId: `ai-${apiStyle}`,
+              testContentId,
               testContentTitle: result.title || 'Generated Content',
               testContentCategory: `AI ${apiStyle.charAt(0).toUpperCase() + apiStyle.slice(1)}`,
             },
@@ -282,13 +350,16 @@ export function TypingTest() {
         const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
         const words = textToWords(benchmarkContent.text, requiredWords);
 
+        // Save test content and get ID (reuse if exists for this sourceId)
+        const testContentId = await saveOrReuseTestContent(benchmarkContent.text, words, benchmarkContent.id);
+
         // Get current user labels
         const currentUserLabels = useTestStore.getState().userLabels;
 
         initializeTest(
           {
             duration: BENCHMARK_CONFIG.duration,
-            testContentId: benchmarkContent.id,
+            testContentId,
             testContentTitle: benchmarkContent.title,
             testContentCategory: 'Benchmark',
             userLabels: [...currentUserLabels, BENCHMARK_CONFIG.label],
@@ -337,6 +408,9 @@ export function TypingTest() {
           : calculateRequiredWords(testDuration);
         const words = textToWords(testContent.text, requiredWords);
 
+        // Save test content and get ID (reuse if exists for this sourceId)
+        const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);
+
         // If random was selected, update settings to show what was actually loaded
         if (currentContentStyle === 'random') {
           // Only update if it's a standard category (not time-trial)
@@ -348,7 +422,7 @@ export function TypingTest() {
         initializeTest(
           {
             duration: testDuration,
-            testContentId: testContent.id,
+            testContentId,
             testContentTitle: testContent.title,
             testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
             isTimeTrial: isTimeTrial,
@@ -385,46 +459,66 @@ export function TypingTest() {
       // Check if benchmark mode is selected
       if (defaultContentStyle === 'benchmark') {
         console.log('[TypingTest] Loading benchmark content on mount');
-        const benchmarkContent = getRandomBenchmarkContent();
-        const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
-        const words = textToWords(benchmarkContent.text, requiredWords);
+        const loadBenchmarkContent = async () => {
+          try {
+            const benchmarkContent = getRandomBenchmarkContent();
+            const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
+            const words = textToWords(benchmarkContent.text, requiredWords);
 
-        initializeTest(
-          {
-            duration: BENCHMARK_CONFIG.duration,
-            testContentId: benchmarkContent.id,
-            testContentTitle: benchmarkContent.title,
-            testContentCategory: 'Benchmark',
-            userLabels: [BENCHMARK_CONFIG.label],
-          },
-          words
-        );
-        console.log('[TypingTest] Benchmark test initialized on mount');
+            // Save test content and get ID
+            const testContentId = await saveOrReuseTestContent(benchmarkContent.text, words, benchmarkContent.id);
+
+            initializeTest(
+              {
+                duration: BENCHMARK_CONFIG.duration,
+                testContentId,
+                testContentTitle: benchmarkContent.title,
+                testContentCategory: 'Benchmark',
+                userLabels: [BENCHMARK_CONFIG.label],
+              },
+              words
+            );
+            console.log('[TypingTest] Benchmark test initialized on mount');
+          } catch (error) {
+            console.error('Failed to initialize benchmark content:', error);
+          }
+        };
+        loadBenchmarkContent();
       } else {
-        const testContent = getRandomTest();
-        const requiredWords = defaultDuration === 'content-length'
-          ? 100
-          : calculateRequiredWords(defaultDuration);
-        const words = textToWords(testContent.text, requiredWords);
+        const loadStaticContent = async () => {
+          try {
+            const testContent = getRandomTest();
+            const requiredWords = defaultDuration === 'content-length'
+              ? 100
+              : calculateRequiredWords(defaultDuration);
+            const words = textToWords(testContent.text, requiredWords);
 
-        // Update settings to reflect the actual content loaded (sync settings with reality)
-        // Only update if it's a standard category (not time-trial)
-        if (testContent.category !== 'time-trial') {
-          setDefaultContentStyle(testContent.category);
-        }
+            // Save test content and get ID
+            const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);
 
-        initializeTest(
-          {
-            duration: defaultDuration,
-            testContentId: testContent.id,
-            testContentTitle: testContent.title,
-            testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
-          },
-          words
-        );
+            // Update settings to reflect the actual content loaded (sync settings with reality)
+            // Only update if it's a standard category (not time-trial)
+            if (testContent.category !== 'time-trial') {
+              setDefaultContentStyle(testContent.category);
+            }
+
+            initializeTest(
+              {
+                duration: defaultDuration,
+                testContentId,
+                testContentTitle: testContent.title,
+                testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+              },
+              words
+            );
+          } catch (error) {
+            console.error('Failed to initialize static content:', error);
+          }
+        };
+        loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {

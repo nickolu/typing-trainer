@@ -16,6 +16,7 @@ interface TargetedPracticeModalProps {
   isOpen: boolean;
   onClose: () => void;
   result: TestResult;
+  targetWords: string[];
   onGeneratePractice: (selectedSequences: string[], selectedWords: string[]) => void;
 }
 
@@ -23,6 +24,7 @@ export function TargetedPracticeModal({
   isOpen,
   onClose,
   result,
+  targetWords,
   onGeneratePractice,
 }: TargetedPracticeModalProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -33,7 +35,7 @@ export function TargetedPracticeModal({
     const opts: PracticeOption[] = [];
 
     // Slow 2-char sequences
-    const twoCharSeqs = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 2, 10);
+    const twoCharSeqs = calculateSequenceTimings(result.keystrokeTimings, targetWords, 2, 10);
     twoCharSeqs.forEach((seq, idx) => {
       opts.push({
         id: `slow-2-${idx}`,
@@ -45,7 +47,7 @@ export function TargetedPracticeModal({
     });
 
     // Slow 3-char sequences
-    const threeCharSeqs = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 3, 10);
+    const threeCharSeqs = calculateSequenceTimings(result.keystrokeTimings, targetWords, 3, 10);
     threeCharSeqs.forEach((seq, idx) => {
       opts.push({
         id: `slow-3-${idx}`,
@@ -60,7 +62,7 @@ export function TargetedPracticeModal({
     if (result.keystrokeTimings && result.keystrokeTimings.length > 0) {
       const mistakeAnalysis = analyzeMistakes(
         result.keystrokeTimings,
-        result.targetWords,
+        targetWords,
         result.typedWords
       );
 
@@ -101,7 +103,7 @@ export function TargetedPracticeModal({
     }
 
     return opts;
-  }, [result]);
+  }, [result, targetWords]);
 
   // Group options by type
   const groupedOptions = useMemo(() => {

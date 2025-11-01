@@ -81,7 +81,6 @@ export const useTestStore = create<TestState>((set, get) => ({
       lastTestConfig: {
         duration: config.duration,
         testContentId: config.testContentId,
-        targetWords: words,
         isPractice: config.isPractice || false,
         practiceSequences: config.practiceSequences || [],
       },
@@ -600,7 +599,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       createdAt: new Date(),
       duration: actualDuration,
       testContentId: state.testContentId || '',
-      targetWords: state.targetWords,
+      // targetWords no longer saved - fetched from testContents collection instead
       iteration,
       typedWords: normalizedTypedWords,
       wpm,
@@ -720,37 +719,54 @@ export const useTestStore = create<TestState>((set, get) => ({
   },
 
   // Retry the last test with the same configuration
-  retryLastTest: () => {
+  retryLastTest: async () => {
     const state = get();
     if (!state.lastTestConfig) {
       console.warn('No previous test configuration found');
-      return;
+      return null;
     }
 
-    const { duration, testContentId, targetWords, isPractice, practiceSequences } = state.lastTestConfig;
+    const { duration, testContentId, isPractice, practiceSequences } = state.lastTestConfig;
 
-    set({
-      testId: uuidv4(),
-      duration,
-      targetWords,
-      testContentId,
-      testContentTitle: state.testContentTitle, // Preserve title
-      testContentCategory: state.testContentCategory, // Preserve category
-      isPractice,
-      practiceSequences,
-      status: 'idle',
-      startTime: null,
-      endTime: null,
-      currentWordIndex: 0,
-      currentInput: '',
-      completedWords: [],
-      keystrokes: [],
-      strictModeErrors: 0,
-      inputBlocked: false,
-      failedReason: null,
-      result: null,
-      // Keep the same lastTestConfig
-      lastTestConfig: state.lastTestConfig,
-    });
+    // Fetch test content from Firestore
+    try {
+      const { getTestContent } = await import('@/lib/db/firebase');
+      const testContent = await getTestContent(testContentId);
+
+      if (!testContent) {
+        console.error('Test content not found:', testContentId);
+        throw new Error('Test content not found. Cannot retry this test.');
+      }
+
+      // Initialize test with fetched content
+      set({
+        testId: uuidv4(),
+        duration,
+        targetWords: testContent.words,
+        testContentId,
+        testContentTitle: state.testContentTitle, // Preserve title
+        testContentCategory: state.testContentCategory, // Preserve category
+        isPractice,
+        practiceSequences,
+        status: 'idle',
+        startTime: null,
+        endTime: null,
+        currentWordIndex: 0,
+        currentInput: '',
+        completedWords: [],
+        keystrokes: [],
+        strictModeErrors: 0,
+        inputBlocked: false,
+        failedReason: null,
+        result: null,
+        // Keep the same lastTestConfig
+        lastTestConfig: state.lastTestConfig,
+      });
+
+      return testContent.words;
+    } catch (error) {
+      console.error('Failed to retry test:', error);
+      throw error;
+    }
   },
 }));

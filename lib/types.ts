@@ -12,6 +12,17 @@ export interface KeystrokeEvent {
 // Test result status
 export type TestResultStatus = 'COMPLETE' | 'DELETED';
 
+// Stored test content (in Firestore testContents collection)
+export interface StoredTestContent {
+  id: string; // UUID
+  userId: string; // Owner of this content
+  text: string; // Original text
+  words: string[]; // Parsed words array
+  createdAt: Date;
+  sourceId?: string; // Optional reference to static test ID (e.g., 'quote-001')
+  contentHash: string; // Hash of text for deduplication
+}
+
 // Test result stored in IndexedDB
 export interface TestResult {
   id: string; // UUID
@@ -21,8 +32,8 @@ export interface TestResult {
   status?: TestResultStatus; // Status of the test (defaults to COMPLETE if not set)
 
   // Content
-  testContentId: string; // Reference to static test
-  targetWords: string[]; // Words to type
+  testContentId: string; // Reference to testContents collection
+  targetWords?: string[]; // DEPRECATED: Words to type (kept for backward compatibility, no longer saved in new tests)
   iteration?: number; // Which iteration/attempt this is for this content (1-based)
 
   // Typing data
@@ -100,7 +111,7 @@ export interface TestConfig {
 export interface StoredTestConfig {
   duration: number | 'content-length';
   testContentId: string;
-  targetWords: string[];
+  // targetWords removed - fetched from testContents collection instead
   isPractice: boolean;
   practiceSequences: string[];
 }
@@ -160,6 +171,6 @@ export interface TestState {
   handleTab: () => void;
   completeTest: (shouldSave?: boolean) => Promise<TestResult | null>;
   resetTest: () => void;
-  retryLastTest: () => void;
+  retryLastTest: () => Promise<string[] | null>;
   setUserLabels: (labels: string[]) => void;
 }
