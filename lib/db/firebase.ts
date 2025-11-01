@@ -1159,7 +1159,7 @@ export async function updateTimeTrialBestTime(
   trialId: string,
   completionTime: number,
   testResultId: string
-): Promise<boolean> {
+): Promise<{ isNewBest: boolean; previousBest: number | null }> {
   try {
     const db = getFirebaseDb();
     const docId = `${userId}_${trialId}`;
@@ -1176,7 +1176,7 @@ export async function updateTimeTrialBestTime(
         updatedAt: Timestamp.now(),
       });
       console.log('[Firebase] Set first best time for', trialId, ':', completionTime);
-      return true;
+      return { isNewBest: true, previousBest: null };
     }
 
     // Check if this is a new best time (lower is better)
@@ -1188,11 +1188,11 @@ export async function updateTimeTrialBestTime(
         updatedAt: Timestamp.now(),
       });
       console.log('[Firebase] New best time for', trialId, ':', completionTime, '(previous:', currentBest, ')');
-      return true;
+      return { isNewBest: true, previousBest: currentBest };
     }
 
     console.log('[Firebase] Time not better than current best for', trialId, ':', completionTime, 'vs', currentBest);
-    return false;
+    return { isNewBest: false, previousBest: currentBest };
   } catch (error) {
     console.error('Failed to update time trial best time:', error);
     throw error;

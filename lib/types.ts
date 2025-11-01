@@ -66,6 +66,7 @@ export interface TestResult {
   isTimeTrial?: boolean; // Is this a time trial test
   timeTrialId?: string; // ID of the time trial
   completionTime?: number; // Actual completion time in seconds (for content-length tests)
+  previousBestTime?: number; // Previous best time before this attempt (for comparison)
 }
 
 // Static test content

@@ -659,13 +659,16 @@ export const useTestStore = create<TestState>((set, get) => ({
         console.log('[TestStore] Time trial completed, updating best time:', result.completionTime);
         try {
           const { updateTimeTrialBestTime } = await import('@/lib/db/firebase');
-          const isNewBest = await updateTimeTrialBestTime(
+          const { isNewBest, previousBest } = await updateTimeTrialBestTime(
             currentUserId,
             state.timeTrialId,
             result.completionTime,
             result.id
           );
-          console.log('[TestStore] Is new best time:', isNewBest);
+          console.log('[TestStore] Is new best time:', isNewBest, 'Previous best:', previousBest);
+
+          // Store the previous best time in the result for display
+          result.previousBestTime = previousBest || undefined;
         } catch (error) {
           console.error('Failed to update time trial best time:', error);
           // Don't throw - test is still saved, just best time update failed

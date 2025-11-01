@@ -57,57 +57,51 @@ export function ResultsView({ result }: ResultsViewProps) {
   const [trialHistory, setTrialHistory] = useState<TestResult[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Check for time trial and load previous best time
+  // Check for time trial and generate message based on result data
   useEffect(() => {
-    if (result.isTimeTrial && result.timeTrialId && result.completionTime && currentUserId) {
-      setIsLoadingTimeTrialData(true);
+    if (result.isTimeTrial && result.timeTrialId && result.completionTime) {
+      const completionTime = result.completionTime;
+      const previousBest = result.previousBestTime;
+      const testContent = getTestById(result.timeTrialId);
+      const trialName = testContent?.title || 'Time Trial';
 
-      // Fetch the best time BEFORE this test was saved
-      // We'll use the current best time from the database, which was already updated by test-store
-      getTimeTrialBestTime(currentUserId, result.timeTrialId).then((bestTime) => {
-        const completionTime = result.completionTime!;
-        const testContent = getTestById(result.timeTrialId!);
-        const trialName = testContent?.title || 'Time Trial';
+      if (previousBest === undefined || previousBest === null) {
+        // This is the first completion
+        setTimeTrialMessage({
+          type: 'first',
+          message: `Congratulations on your first completion! You finished ${trialName} in ${completionTime.toFixed(1)} seconds. Try again to beat your time!`,
+        });
+      } else if (completionTime < previousBest) {
+        // New best time!
+        const improvement = previousBest - completionTime;
+        const improvementPercent = ((improvement / previousBest) * 100).toFixed(1);
+        setTimeTrialMessage({
+          type: 'new-best',
+          message: `Amazing! You crushed your personal record by ${improvement.toFixed(1)} seconds (${improvementPercent}% faster)! You're on fire!`,
+          improvement,
+          previousBest,
+        });
 
-        if (bestTime === null || bestTime === completionTime) {
-          // This is the first completion
-          setTimeTrialMessage({
-            type: 'first',
-            message: `Great job! You completed ${trialName} in ${completionTime.toFixed(1)} seconds. Try again to beat your time!`,
-          });
-        } else if (completionTime < bestTime) {
-          // New best time! (This shouldn't happen as the DB is already updated, but handle it)
-          const improvement = bestTime - completionTime;
-          setTimeTrialMessage({
-            type: 'new-best',
-            message: `New Personal Record! You beat your previous time by ${improvement.toFixed(1)} seconds!`,
-            improvement,
-            previousBest: bestTime,
-          });
+        // Trigger confetti
+        confetti({
+          particleCount: 150,
+          spread: 90,
+          origin: { y: 0.6 },
+          colors: ['#FFD700', '#FFA500', '#FF6347', '#FF1493'],
+        });
+      } else {
+        // Not a new best
+        const difference = completionTime - previousBest;
+        setTimeTrialMessage({
+          type: 'not-best',
+          message: `You completed in ${completionTime.toFixed(1)} seconds. Your best is ${previousBest.toFixed(1)} seconds (${difference.toFixed(1)}s slower). Keep practicing!`,
+          previousBest,
+        });
+      }
 
-          // Trigger confetti
-          confetti({
-            particleCount: 100,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#FFD700', '#FFA500', '#FF6347'],
-          });
-        } else {
-          // Not a new best
-          setTimeTrialMessage({
-            type: 'not-best',
-            message: `You completed in ${completionTime.toFixed(1)} seconds. Your best is ${bestTime.toFixed(1)} seconds. Try again!`,
-            previousBest: bestTime,
-          });
-        }
-
-        setIsLoadingTimeTrialData(false);
-      }).catch((error) => {
-        console.error('Failed to load time trial data:', error);
-        setIsLoadingTimeTrialData(false);
-      });
+      setIsLoadingTimeTrialData(false);
     }
-  }, [result, currentUserId]);
+  }, [result]);
 
   // Check if test content is available for retry and fetch targetWords if needed
   useEffect(() => {
@@ -356,7 +350,7 @@ export function ResultsView({ result }: ResultsViewProps) {
         {result.isTimeTrial && !isLoadingTimeTrialData && timeTrialMessage && (
           <div className={`rounded-lg p-6 mb-8 border ${
             timeTrialMessage.type === 'new-best'
-              ? 'bg-yellow-600/10 border-yellow-400/30'
+              ? 'bg-gradient-to-r from-yellow-600/20 to-orange-600/20 border-yellow-400/50'
               : timeTrialMessage.type === 'first'
               ? 'bg-blue-600/10 border-blue-400/30'
               : 'bg-gray-600/10 border-gray-400/30'
@@ -364,36 +358,53 @@ export function ResultsView({ result }: ResultsViewProps) {
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0">
                 {timeTrialMessage.type === 'new-best' ? (
-                  <Trophy className="w-8 h-8 text-yellow-400" />
+                  <Trophy className="w-10 h-10 text-yellow-400 animate-pulse" />
                 ) : (
                   <Trophy className="w-8 h-8 text-gray-400" />
                 )}
               </div>
               <div className="flex-1">
-                <h3 className={`text-xl font-bold mb-2 ${
+                <h3 className={`text-2xl font-bold mb-2 ${
                   timeTrialMessage.type === 'new-best'
                     ? 'text-yellow-400'
                     : timeTrialMessage.type === 'first'
                     ? 'text-blue-400'
                     : 'text-gray-300'
                 }`}>
-                  {timeTrialMessage.type === 'new-best' && <Sparkles className="inline w-6 h-6 mr-2" />}
-                  {timeTrialMessage.type === 'new-best' ? 'New Personal Record!' :
-                   timeTrialMessage.type === 'first' ? 'First Completion!' :
-                   'Keep Trying!'}
+                  {timeTrialMessage.type === 'new-best' && (
+                    <>
+                      <Sparkles className="inline w-7 h-7 mr-2 animate-pulse" />
+                      New Personal Record!
+                      <Sparkles className="inline w-7 h-7 ml-2 animate-pulse" />
+                    </>
+                  )}
+                  {timeTrialMessage.type === 'first' && 'First Completion!'}
+                  {timeTrialMessage.type === 'not-best' && 'Keep Trying!'}
                 </h3>
-                <p className="text-lg text-editor-fg">{timeTrialMessage.message}</p>
+                <p className={`text-lg ${
+                  timeTrialMessage.type === 'new-best' ? 'text-yellow-100 font-medium' : 'text-editor-fg'
+                }`}>{timeTrialMessage.message}</p>
                 {result.completionTime && (
-                  <div className="mt-4 flex gap-4 text-sm">
+                  <div className="mt-4 flex gap-6 text-sm">
                     <div>
                       <span className="text-editor-muted">Your Time: </span>
-                      <span className="font-bold text-yellow-400">{result.completionTime.toFixed(1)}s</span>
+                      <span className={`font-bold text-xl ${
+                        timeTrialMessage.type === 'new-best' ? 'text-yellow-400' : 'text-green-400'
+                      }`}>{result.completionTime.toFixed(1)}s</span>
                     </div>
                     {timeTrialMessage.previousBest && (
-                      <div>
-                        <span className="text-editor-muted">Previous Best: </span>
-                        <span className="font-bold">{timeTrialMessage.previousBest.toFixed(1)}s</span>
-                      </div>
+                      <>
+                        <div>
+                          <span className="text-editor-muted">Previous Best: </span>
+                          <span className="font-bold text-lg">{timeTrialMessage.previousBest.toFixed(1)}s</span>
+                        </div>
+                        {timeTrialMessage.improvement && (
+                          <div>
+                            <span className="text-editor-muted">Improvement: </span>
+                            <span className="font-bold text-lg text-green-400">-{timeTrialMessage.improvement.toFixed(1)}s</span>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}
