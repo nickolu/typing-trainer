@@ -11,6 +11,7 @@ export function MainNav() {
     { href: '/stats', label: 'Stats' },
     { href: '/settings', label: 'Settings' },
     { href: '/leaderboard', label: 'Leaderboard' },
+    { href: '/updates', label: 'Updates' },
   ];
 
   return (
