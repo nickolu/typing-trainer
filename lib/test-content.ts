@@ -434,6 +434,35 @@ export function textToWords(text: string, minWords: number = 150): string[] {
   return result.slice(0, minWords);
 }
 
+/**
+ * Convert text to words with custom repetition control
+ * @param text - The text to convert
+ * @param repeat - Repetition strategy: 'once' | 'fill-duration' | number
+ * @param minWords - Minimum words needed (used with 'fill-duration')
+ */
+export function textToWordsWithRepeat(
+  text: string,
+  repeat: 'once' | 'fill-duration' | number,
+  minWords: number = 150
+): string[] {
+  const words = text.split(/\s+/).filter((word) => word.length > 0);
+
+  if (repeat === 'once') {
+    // Return text once without repetition
+    return words;
+  } else if (repeat === 'fill-duration') {
+    // Use the existing textToWords logic to fill duration
+    return textToWords(text, minWords);
+  } else {
+    // Repeat exactly N times
+    const result: string[] = [];
+    for (let i = 0; i < repeat; i++) {
+      result.push(...words);
+    }
+    return result;
+  }
+}
+
 // Helper function to get all time trial tests
 export function getTimeTrialTests(): TestContent[] {
   return staticTests.filter((test) => test.category === 'time-trial');

@@ -13,14 +13,14 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
-import { getRandomTest, textToWords, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
+import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
   const router = useRouter();
   const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold } = useSettingsStore();
   const {
     status,
     duration,
@@ -379,6 +379,8 @@ export function TypingTest() {
     } else if (currentContentStyle === 'custom-text') {
       // Handle custom text
       try {
+        const { customTextRepeat: repeat } = useSettingsStore.getState();
+        
         if (!customText || customText.trim().length === 0) {
           throw new Error('No custom text provided. Please add some text in the content settings.');
         }
@@ -386,7 +388,7 @@ export function TypingTest() {
         const requiredWords = defaultDuration === 'content-length'
           ? 100
           : calculateRequiredWords(defaultDuration);
-        const words = textToWords(customText, requiredWords);
+        const words = textToWordsWithRepeat(customText, repeat, requiredWords);
 
         // Save test content and get ID (no sourceId for custom text)
         const testContentId = await saveOrReuseTestContent(customText, words);
@@ -472,7 +474,7 @@ export function TypingTest() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [llmModel, llmTemperature, customPrompt, customSequences, customText, defaultDuration, resetTest, initializeTest]);
+  }, [llmModel, llmTemperature, customPrompt, customSequences, customText, customTextRepeat, defaultDuration, resetTest, initializeTest]);
 
   // Manage autoSave based on authentication status
   useEffect(() => {
@@ -571,7 +573,7 @@ export function TypingTest() {
             const requiredWords = defaultDuration === 'content-length'
               ? 100
               : calculateRequiredWords(defaultDuration);
-            const words = textToWords(customText, requiredWords);
+            const words = textToWordsWithRepeat(customText, customTextRepeat, requiredWords);
 
             // Save test content and get ID
             const testContentId = await saveOrReuseTestContent(customText, words);
@@ -626,7 +628,7 @@ export function TypingTest() {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, setGenerationError]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {

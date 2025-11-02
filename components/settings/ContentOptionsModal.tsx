@@ -18,12 +18,14 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
   const {
     defaultContentStyle,
     customText,
+    customTextRepeat,
     customPrompt,
     llmModel,
     llmTemperature,
     customSequences,
     setDefaultContentStyle,
     setCustomText,
+    setCustomTextRepeat,
     setCustomPrompt,
     setLlmModel,
     setLlmTemperature,
@@ -260,6 +262,39 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                         Please paste some text before starting the test.
                       </p>
                     )}
+                  </div>
+                  
+                  {/* Repeat Options */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Repetition
+                    </label>
+                    <select
+                      value={customTextRepeat}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === 'once' || value === 'fill-duration') {
+                          setCustomTextRepeat(value);
+                        } else {
+                          setCustomTextRepeat(parseInt(value, 10));
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-editor-accent"
+                    >
+                      <option value="once">Once (no repeat)</option>
+                      <option value="2">Repeat 2 times</option>
+                      <option value="3">Repeat 3 times</option>
+                      <option value="5">Repeat 5 times</option>
+                      <option value="10">Repeat 10 times</option>
+                      <option value="fill-duration">Fill test duration</option>
+                    </select>
+                    <p className="text-xs text-editor-muted mt-2">
+                      {customTextRepeat === 'once'
+                        ? 'The text will be used once without repetition.'
+                        : customTextRepeat === 'fill-duration'
+                        ? 'The text will repeat as needed to fill the selected test duration.'
+                        : `The text will repeat exactly ${customTextRepeat} times.`}
+                    </p>
                   </div>
                 </div>
               )}
