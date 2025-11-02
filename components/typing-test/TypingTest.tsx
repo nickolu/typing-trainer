@@ -454,6 +454,13 @@ export function TypingTest() {
 
   // Initialize test on mount
   useEffect(() => {
+    // Reset test if it's in a completed or failed state (user navigated back from results)
+    if (status === 'complete' || status === 'failed') {
+      console.log('[TypingTest] Resetting completed/failed test on mount');
+      resetTest();
+      return;
+    }
+
     if (status === 'idle' && targetWords.length === 0) {
       console.log('[TypingTest] Initializing test on mount, defaultContentStyle:', defaultContentStyle);
       // Check if benchmark mode is selected
@@ -484,6 +491,40 @@ export function TypingTest() {
           }
         };
         loadBenchmarkContent();
+      } else if (isTimeTrialTest(defaultContentStyle)) {
+        // Check if time trial mode is selected
+        console.log('[TypingTest] Loading time trial content on mount');
+        const loadTimeTrialContent = async () => {
+          try {
+            const testContent = getTestById(defaultContentStyle);
+            if (!testContent) {
+              throw new Error(`Time trial ${defaultContentStyle} not found`);
+            }
+
+            // Time trials always use content-length mode
+            const requiredWords = 100;
+            const words = textToWords(testContent.text, requiredWords);
+
+            // Save test content and get ID
+            const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);
+
+            initializeTest(
+              {
+                duration: 'content-length',
+                testContentId,
+                testContentTitle: testContent.title,
+                testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+                isTimeTrial: true,
+                timeTrialId: defaultContentStyle,
+              },
+              words
+            );
+            console.log('[TypingTest] Time trial test initialized on mount');
+          } catch (error) {
+            console.error('Failed to initialize time trial content:', error);
+          }
+        };
+        loadTimeTrialContent();
       } else {
         const loadStaticContent = async () => {
           try {
@@ -518,7 +559,7 @@ export function TypingTest() {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
