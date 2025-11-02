@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
-import { X, BookOpen, Sparkles, Target, Lock, Award, Trophy } from 'lucide-react';
+import { X, BookOpen, Sparkles, Target, Lock, Award, Trophy, FileText } from 'lucide-react';
 
 interface ContentOptionsModalProps {
   isOpen: boolean;
@@ -11,20 +11,26 @@ interface ContentOptionsModalProps {
   onSave?: () => void; // Callback to regenerate content
 }
 
+type TabType = 'static' | 'ai';
+
 export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsModalProps) {
   const { currentUserId } = useUserStore();
   const {
     defaultContentStyle,
+    customText,
     customPrompt,
     llmModel,
     llmTemperature,
     customSequences,
     setDefaultContentStyle,
+    setCustomText,
     setCustomPrompt,
     setLlmModel,
     setLlmTemperature,
     setCustomSequences,
   } = useSettingsStore();
+
+  const [activeTab, setActiveTab] = useState<TabType>('static');
 
   const staticOptions: { value: ContentStyle; label: string; description: string }[] = [
     { value: 'random', label: 'Random', description: 'Mixed content from library' },
@@ -33,6 +39,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     { value: 'technical', label: 'Technical', description: 'Programming text' },
     { value: 'common', label: 'Common', description: 'Everyday phrases' },
     { value: 'benchmark', label: 'Benchmark', description: 'Standardized test' },
+    { value: 'custom-text', label: 'Custom Text', description: 'Use your own text' },
   ];
 
   const aiOptions: { value: ContentStyle; label: string; description: string }[] = [
@@ -77,6 +84,13 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
       });
     }
   }, [isOpen, currentUserId]);
+
+  // Set initial tab based on current content style
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(isAIContentStyle(defaultContentStyle) ? 'ai' : 'static');
+    }
+  }, [isOpen, defaultContentStyle]);
 
   const modelOptions = [
     { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cheap)' },
@@ -155,129 +169,199 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="border-b border-editor-muted">
+          <div className="flex gap-1 px-6">
+            <button
+              onClick={() => setActiveTab('static')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-all ${
+                activeTab === 'static'
+                  ? 'text-editor-accent border-b-2 border-editor-accent'
+                  : 'text-editor-muted hover:text-editor-fg'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Static
+            </button>
+            <button
+              onClick={() => setActiveTab('ai')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-all ${
+                activeTab === 'ai'
+                  ? 'text-purple-400 border-b-2 border-purple-400'
+                  : 'text-editor-muted hover:text-editor-fg'
+              }`}
+            >
+              <Sparkles className="w-4 h-4" />
+              AI Generated
+            </button>
+          </div>
+        </div>
+
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Static Content Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <BookOpen className="w-4 h-4 text-editor-accent" />
-              <h3 className="font-bold text-sm">Static Content (From Library)</h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {staticOptions.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    setDefaultContentStyle(option.value);
-                    // Static options have no additional config, so apply immediately
-                    handleSave();
-                  }}
-                  className={`p-3 rounded-lg border text-left transition-all ${
-                    defaultContentStyle === option.value
-                      ? 'border-editor-accent bg-editor-accent/10'
-                      : 'border-editor-muted hover:border-editor-accent/50'
-                  }`}
-                >
-                  <div className="font-medium text-sm">{option.label}</div>
-                  <div className="text-xs text-editor-muted mt-1">
-                    {option.description}
+          {/* Static Tab Content */}
+          {activeTab === 'static' && (
+            <>
+              {/* Static Content Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <BookOpen className="w-4 h-4 text-editor-accent" />
+                  <h3 className="font-bold text-sm">Library Content</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {staticOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setDefaultContentStyle(option.value);
+                        // Custom text needs to stay on this screen, others apply immediately
+                        if (option.value !== 'custom-text') {
+                          handleSave();
+                        }
+                      }}
+                      className={`p-3 rounded-lg border text-left transition-all ${
+                        defaultContentStyle === option.value
+                          ? 'border-editor-accent bg-editor-accent/10'
+                          : 'border-editor-muted hover:border-editor-accent/50'
+                      }`}
+                    >
+                      <div className="font-medium text-sm">{option.label}</div>
+                      <div className="text-xs text-editor-muted mt-1">
+                        {option.description}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Text Editor (only show when custom-text is selected) */}
+              {defaultContentStyle === 'custom-text' && (
+                <div className="bg-editor-accent/10 border border-editor-accent/30 rounded-lg p-4 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-editor-accent" />
+                    <h3 className="font-bold text-sm text-editor-accent">Custom Text</h3>
                   </div>
-                </button>
-              ))}
-            </div>
-          </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Paste Your Text
+                    </label>
+                    <textarea
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      placeholder="Paste any text you want to practice typing..."
+                      rows={8}
+                      className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-editor-accent resize-none font-mono text-sm"
+                    />
+                    <p className="text-xs text-editor-muted mt-2">
+                      Your custom text will be used for typing practice. Make sure to paste at least a few sentences for the best experience.
+                    </p>
+                    {customText.trim().length === 0 && (
+                      <p className="text-xs text-red-400 mt-2">
+                        Please paste some text before starting the test.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
 
-          {/* Time Trials Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Trophy className="w-4 h-4 text-yellow-400" />
-              <h3 className="font-bold text-sm">Time Trials</h3>
-              <span className="text-xs text-editor-muted">(Race the clock!)</span>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {timeTrialOptions.map((option) => {
-                const bestTime = bestTimes[option.trialId];
-                const hasBestTime = bestTime !== undefined;
+              {/* Time Trials Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Trophy className="w-4 h-4 text-yellow-400" />
+                  <h3 className="font-bold text-sm">Time Trials</h3>
+                  <span className="text-xs text-editor-muted">(Race the clock!)</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {timeTrialOptions.map((option) => {
+                    const bestTime = bestTimes[option.trialId];
+                    const hasBestTime = bestTime !== undefined;
 
-                return (
-                  <button
-                    key={option.value}
-                    onClick={() => {
-                      setDefaultContentStyle(option.value);
-                      handleSave();
-                    }}
-                    className={`p-3 rounded-lg border text-left transition-all ${
-                      defaultContentStyle === option.value
-                        ? 'border-yellow-400 bg-yellow-600/10'
-                        : 'border-editor-muted hover:border-yellow-400/50'
-                    }`}
-                  >
-                    <div className="font-medium text-sm flex items-center gap-1">
-                      <Trophy className="w-3 h-3 text-yellow-400" />
-                      {option.label}
-                    </div>
-                    <div className="text-xs mt-1">
-                      {isLoadingBestTimes ? (
-                        <span className="text-editor-muted">Loading...</span>
-                      ) : hasBestTime ? (
-                        <span className="text-yellow-400 font-medium">Best: {bestTime.toFixed(1)}s</span>
-                      ) : (
-                        <span className="text-editor-muted">Not Attempted</span>
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => {
+                          setDefaultContentStyle(option.value);
+                          handleSave();
+                        }}
+                        className={`p-3 rounded-lg border text-left transition-all ${
+                          defaultContentStyle === option.value
+                            ? 'border-yellow-400 bg-yellow-600/10'
+                            : 'border-editor-muted hover:border-yellow-400/50'
+                        }`}
+                      >
+                        <div className="font-medium text-sm flex items-center gap-1">
+                          <Trophy className="w-3 h-3 text-yellow-400" />
+                          {option.label}
+                        </div>
+                        <div className="text-xs mt-1">
+                          {isLoadingBestTimes ? (
+                            <span className="text-editor-muted">Loading...</span>
+                          ) : hasBestTime ? (
+                            <span className="text-yellow-400 font-medium">Best: {bestTime.toFixed(1)}s</span>
+                          ) : (
+                            <span className="text-editor-muted">Not Attempted</span>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-editor-muted mt-2">
+                  Time trials use strict mode and content-length duration. Complete the passage as fast as you can!
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* AI Tab Content */}
+          {activeTab === 'ai' && (
+            <>
+              {/* AI Content Section */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="w-4 h-4 text-purple-400" />
+                  <h3 className="font-bold text-sm">AI Content Options</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {aiOptions.map((option) => (
+                    <div key={option.value} className="relative group">
+                      <button
+                        onClick={() => {
+                          if (currentUserId) {
+                            setDefaultContentStyle(option.value);
+                          }
+                        }}
+                        disabled={!currentUserId}
+                        className={`w-full p-3 rounded-lg border text-left transition-all relative ${
+                          defaultContentStyle === option.value
+                            ? 'border-purple-400 bg-purple-600/10'
+                            : currentUserId
+                            ? 'border-editor-muted hover:border-purple-400/50'
+                            : 'border-editor-muted/30 bg-editor-muted/10 cursor-not-allowed'
+                        }`}
+                      >
+                        {!currentUserId && (
+                          <Lock className="absolute top-2 right-2 w-4 h-4 text-editor-muted" />
+                        )}
+                        <div className={`font-medium text-sm ${!currentUserId ? 'text-editor-muted' : ''}`}>
+                          {option.label}
+                        </div>
+                        <div className="text-xs text-editor-muted mt-1">
+                          {option.description}
+                        </div>
+                      </button>
+                      {/* Tooltip for locked items */}
+                      {!currentUserId && (
+                        <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                          Create an account or log in to use AI content
+                        </div>
                       )}
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-xs text-editor-muted mt-2">
-              Time trials use strict mode and content-length duration. Complete the passage as fast as you can!
-            </p>
-          </div>
-
-          {/* AI Content Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <h3 className="font-bold text-sm">AI-Generated Content</h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {aiOptions.map((option) => (
-                <div key={option.value} className="relative group">
-                  <button
-                    onClick={() => {
-                      if (currentUserId) {
-                        setDefaultContentStyle(option.value);
-                      }
-                    }}
-                    disabled={!currentUserId}
-                    className={`w-full p-3 rounded-lg border text-left transition-all relative ${
-                      defaultContentStyle === option.value
-                        ? 'border-purple-400 bg-purple-600/10'
-                        : currentUserId
-                        ? 'border-editor-muted hover:border-purple-400/50'
-                        : 'border-editor-muted/30 bg-editor-muted/10 cursor-not-allowed'
-                    }`}
-                  >
-                    {!currentUserId && (
-                      <Lock className="absolute top-2 right-2 w-4 h-4 text-editor-muted" />
-                    )}
-                    <div className={`font-medium text-sm ${!currentUserId ? 'text-editor-muted' : ''}`}>
-                      {option.label}
-                    </div>
-                    <div className="text-xs text-editor-muted mt-1">
-                      {option.description}
-                    </div>
-                  </button>
-                  {/* Tooltip for locked items */}
-                  {!currentUserId && (
-                    <div className="absolute left-0 top-full mt-2 w-48 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                      Create an account or log in to use AI content
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            </>
+          )}
 
           {/* AI Options (only show when AI style is selected) */}
           {isAISelected && (
@@ -438,7 +522,11 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
         {/* Footer */}
         <div className="sticky bottom-0 bg-editor-bg border-t border-editor-muted p-4 flex justify-between items-center gap-3">
           <p className="text-xs text-editor-muted">
-            {isAISelected ? 'Content will be generated with AI' : 'Content will be loaded from library'}
+            {isAISelected
+              ? 'Content will be generated with AI'
+              : defaultContentStyle === 'custom-text'
+              ? 'Your custom text will be used'
+              : 'Content will be loaded from library'}
           </p>
           <div className="flex gap-3">
             <button
@@ -449,7 +537,8 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
             </button>
             <button
               onClick={handleSave}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              disabled={defaultContentStyle === 'custom-text' && customText.trim().length === 0}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 isAISelected
                   ? 'bg-purple-600 hover:bg-purple-700 text-white'
                   : 'bg-editor-accent hover:bg-editor-accent/80 text-white'
