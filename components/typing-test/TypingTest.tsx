@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTestStore } from '@/store/test-store';
-import { useSettingsStore, isAIContentStyle } from '@/store/settings-store';
+import { useSettingsStore, isAIContentStyle, ContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { TestDisplay } from './TestDisplay';
 import { TestTimer } from './TestTimer';
@@ -205,10 +205,10 @@ export function TypingTest() {
   }, [initializeTest]);
 
   // Handle content generation/loading
-  const handleContentLoad = useCallback(async () => {
-    // Get the current content style from the store to ensure we have the latest value
-    const currentContentStyle = useSettingsStore.getState().defaultContentStyle;
-    console.log('[TypingTest] handleContentLoad called, currentContentStyle:', currentContentStyle);
+  const handleContentLoad = useCallback(async (contentStyle?: ContentStyle) => {
+    // Use passed content style if provided, otherwise get from store
+    const currentContentStyle = contentStyle || useSettingsStore.getState().defaultContentStyle;
+    console.log('[TypingTest] handleContentLoad called, currentContentStyle:', currentContentStyle, 'passed:', contentStyle);
     setGenerationError(null);
     setIsLoadingContent(true);
 
@@ -495,7 +495,9 @@ export function TypingTest() {
       return;
     }
 
-    if (status === 'idle' && targetWords.length === 0) {
+    // Only initialize if we have no content AND we're not in the middle of generating/loading
+    // This prevents the effect from re-running when defaultContentStyle changes (e.g., when selecting custom-text without applying)
+    if (status === 'idle' && targetWords.length === 0 && !isGenerating && !isLoadingContent) {
       console.log('[TypingTest] Initializing test on mount, defaultContentStyle:', defaultContentStyle);
       // Check if benchmark mode is selected
       if (defaultContentStyle === 'benchmark') {
@@ -565,8 +567,8 @@ export function TypingTest() {
         const loadCustomTextContent = async () => {
           try {
             if (!customText || customText.trim().length === 0) {
-              console.error('No custom text provided');
-              setGenerationError('No custom text provided. Please add some text in the content settings.');
+              console.log('[TypingTest] Custom text selected but no text provided yet, skipping initialization');
+              // Don't throw error during initialization - user might be in the process of entering text
               return;
             }
 
@@ -597,7 +599,11 @@ export function TypingTest() {
       } else {
         const loadStaticContent = async () => {
           try {
-            const testContent = getRandomTest();
+            // Respect the selected content style
+            const category = defaultContentStyle === 'random'
+              ? undefined
+              : (defaultContentStyle as 'quote' | 'prose' | 'technical' | 'common');
+            const testContent = getRandomTest(category);
             const requiredWords = defaultDuration === 'content-length'
               ? 100
               : calculateRequiredWords(defaultDuration);
@@ -607,8 +613,8 @@ export function TypingTest() {
             const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);
 
             // Update settings to reflect the actual content loaded (sync settings with reality)
-            // Only update if it's a standard category (not time-trial)
-            if (testContent.category !== 'time-trial') {
+            // Only update if it's a standard category (not time-trial) AND random was selected
+            if (defaultContentStyle === 'random' && testContent.category !== 'time-trial') {
               setDefaultContentStyle(testContent.category);
             }
 
@@ -628,7 +634,7 @@ export function TypingTest() {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {

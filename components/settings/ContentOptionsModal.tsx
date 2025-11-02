@@ -8,7 +8,7 @@ import { X, BookOpen, Sparkles, Target, Lock, Award, Trophy, FileText } from 'lu
 interface ContentOptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: () => void; // Callback to regenerate content
+  onSave?: (contentStyle?: ContentStyle) => void; // Callback to regenerate content, optionally passing the selected style
 }
 
 type TabType = 'static' | 'ai';
@@ -138,9 +138,9 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     }
   };
 
-  const handleSave = () => {
+  const handleSave = (contentStyle?: ContentStyle) => {
     if (onSave) {
-      onSave();
+      onSave(contentStyle);
     }
     onClose();
   };
@@ -218,7 +218,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                         setDefaultContentStyle(option.value);
                         // Custom text needs to stay on this screen, others apply immediately
                         if (option.value !== 'custom-text') {
-                          handleSave();
+                          handleSave(option.value);
                         }
                       }}
                       className={`p-3 rounded-lg border text-left transition-all ${
@@ -316,7 +316,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                         key={option.value}
                         onClick={() => {
                           setDefaultContentStyle(option.value);
-                          handleSave();
+                          handleSave(option.value);
                         }}
                         className={`p-3 rounded-lg border text-left transition-all ${
                           defaultContentStyle === option.value
@@ -571,7 +571,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
               Cancel
             </button>
             <button
-              onClick={handleSave}
+              onClick={() => handleSave(defaultContentStyle)}
               disabled={defaultContentStyle === 'custom-text' && customText.trim().length === 0}
               className={`px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                 isAISelected
