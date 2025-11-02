@@ -13,14 +13,14 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
-import { getRandomTest, textToWords, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
+import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
 export function TypingTest() {
   const router = useRouter();
   const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold } = useSettingsStore();
   const {
     status,
     duration,
@@ -376,6 +376,40 @@ export function TypingTest() {
         console.log('[TypingTest] Setting isLoadingContent to false');
         setIsLoadingContent(false);
       }
+    } else if (currentContentStyle === 'custom-text') {
+      // Handle custom text
+      try {
+        const { customTextRepeat: repeat } = useSettingsStore.getState();
+        
+        if (!customText || customText.trim().length === 0) {
+          throw new Error('No custom text provided. Please add some text in the content settings.');
+        }
+
+        const requiredWords = defaultDuration === 'content-length'
+          ? 100
+          : calculateRequiredWords(defaultDuration);
+        const words = textToWordsWithRepeat(customText, repeat, requiredWords);
+
+        // Save test content and get ID (no sourceId for custom text)
+        const testContentId = await saveOrReuseTestContent(customText, words);
+
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId,
+            testContentTitle: 'Custom Text',
+            testContentCategory: 'Custom',
+          },
+          words
+        );
+      } catch (error) {
+        console.error('Custom text loading error:', error);
+        setGenerationError(
+          error instanceof Error ? error.message : 'Failed to load custom text'
+        );
+      } finally {
+        setIsLoadingContent(false);
+      }
     } else {
       // Load static content
       try {
@@ -440,7 +474,7 @@ export function TypingTest() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [llmModel, llmTemperature, customPrompt, customSequences, defaultDuration, resetTest, initializeTest]);
+  }, [llmModel, llmTemperature, customPrompt, customSequences, customText, customTextRepeat, defaultDuration, resetTest, initializeTest]);
 
   // Manage autoSave based on authentication status
   useEffect(() => {
@@ -525,6 +559,41 @@ export function TypingTest() {
           }
         };
         loadTimeTrialContent();
+      } else if (defaultContentStyle === 'custom-text') {
+        // Check if custom text mode is selected
+        console.log('[TypingTest] Loading custom text content on mount');
+        const loadCustomTextContent = async () => {
+          try {
+            if (!customText || customText.trim().length === 0) {
+              console.error('No custom text provided');
+              setGenerationError('No custom text provided. Please add some text in the content settings.');
+              return;
+            }
+
+            const requiredWords = defaultDuration === 'content-length'
+              ? 100
+              : calculateRequiredWords(defaultDuration);
+            const words = textToWordsWithRepeat(customText, customTextRepeat, requiredWords);
+
+            // Save test content and get ID
+            const testContentId = await saveOrReuseTestContent(customText, words);
+
+            initializeTest(
+              {
+                duration: defaultDuration,
+                testContentId,
+                testContentTitle: 'Custom Text',
+                testContentCategory: 'Custom',
+              },
+              words
+            );
+            console.log('[TypingTest] Custom text test initialized on mount');
+          } catch (error) {
+            console.error('Failed to initialize custom text content:', error);
+            setGenerationError(error instanceof Error ? error.message : 'Failed to load custom text');
+          }
+        };
+        loadCustomTextContent();
       } else {
         const loadStaticContent = async () => {
           try {
@@ -559,7 +628,7 @@ export function TypingTest() {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -570,8 +639,8 @@ export function TypingTest() {
     if (isTimeTrialMode) return;
     
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
-      // If using AI content, regenerate with new duration
-      if (isAIContentStyle(defaultContentStyle)) {
+      // If using AI content or custom text, regenerate with new duration
+      if (isAIContentStyle(defaultContentStyle) || defaultContentStyle === 'custom-text') {
         handleContentLoad();
       } else {
         // For static content, reinitialize the test with new duration but preserve all metadata

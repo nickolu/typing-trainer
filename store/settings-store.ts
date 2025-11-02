@@ -4,12 +4,13 @@ import { useUserStore } from './user-store';
 
 export type TestDuration = 15 | 30 | 60 | 120 | 'content-length';
 // Static content from library
-export type StaticContentStyle = 'random' | 'quote' | 'prose' | 'technical' | 'common' | 'benchmark' | 'time-trial-001' | 'time-trial-002' | 'time-trial-003' | 'time-trial-004' | 'time-trial-005' | 'time-trial-006';
+export type StaticContentStyle = 'random' | 'quote' | 'prose' | 'technical' | 'common' | 'benchmark' | 'custom-text' | 'time-trial-001' | 'time-trial-002' | 'time-trial-003' | 'time-trial-004' | 'time-trial-005' | 'time-trial-006';
 // AI-generated content styles
 export type AIContentStyle = 'ai-prose' | 'ai-quote' | 'ai-technical' | 'ai-common' | 'ai-sequences' | 'ai-custom';
 export type ContentStyle = StaticContentStyle | AIContentStyle;
 
 export type CorrectionMode = 'normal' | 'speed' | 'strict';
+export type CustomTextRepeat = 'once' | 'fill-duration' | number;
 
 interface SettingsState {
   // Test settings
@@ -21,6 +22,8 @@ interface SettingsState {
 
   // Content settings
   defaultContentStyle: ContentStyle;
+  customText: string; // User-provided custom text for typing practice
+  customTextRepeat: CustomTextRepeat; // How many times to repeat custom text
   llmModel: string;
   llmTemperature: number;
   customPrompt: string;
@@ -37,6 +40,8 @@ interface SettingsState {
   setMistakeThreshold: (threshold: number) => void;
   setShowPracticeHighlights: (enabled: boolean) => void;
   setDefaultContentStyle: (style: ContentStyle) => void;
+  setCustomText: (text: string) => void;
+  setCustomTextRepeat: (repeat: CustomTextRepeat) => void;
   setLlmModel: (model: string) => void;
   setLlmTemperature: (temperature: number) => void;
   setCustomPrompt: (prompt: string) => void;
@@ -58,6 +63,8 @@ const defaultSettings = {
   mistakeThreshold: -1, // -1 represents unlimited (instead of Infinity which doesn't serialize)
   showPracticeHighlights: true,
   defaultContentStyle: 'random' as ContentStyle,
+  customText: '',
+  customTextRepeat: 'once' as CustomTextRepeat,
   llmModel: 'gpt-4o-mini',
   llmTemperature: 0.7,
   customPrompt: '',
@@ -89,6 +96,10 @@ export const useSettingsStore = create<SettingsState>()(
       setShowPracticeHighlights: (enabled) => set({ showPracticeHighlights: enabled }),
 
       setDefaultContentStyle: (style) => set({ defaultContentStyle: style }),
+
+      setCustomText: (text) => set({ customText: text }),
+
+      setCustomTextRepeat: (repeat) => set({ customTextRepeat: repeat }),
 
       setLlmModel: (model) => set({ llmModel: model }),
 
