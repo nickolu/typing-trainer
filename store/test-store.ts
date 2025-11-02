@@ -653,10 +653,18 @@ export const useTestStore = create<TestState>((set, get) => ({
           // Don't throw - test is still saved, just WPM update failed
         }
       }
+    }
 
-      // Check if this is a time trial and update best time
-      if (state.isTimeTrial && state.timeTrialId && result.completionTime) {
-        console.log('[TestStore] Time trial completed, updating best time:', result.completionTime);
+    // Check if this is a time trial and update best time
+    // This happens regardless of shouldSave, because time trials are competitive
+    if (state.isTimeTrial && state.timeTrialId && result.completionTime) {
+      console.log('[TestStore] Time trial completed, updating best time:', result.completionTime);
+      
+      // Get current userId from user store
+      const userState = useUserStore.getState();
+      const currentUserId = userState.currentUserId;
+      
+      if (currentUserId) {
         try {
           const { updateTimeTrialBestTime } = await import('@/lib/db/firebase');
           const { isNewBest, previousBest } = await updateTimeTrialBestTime(
@@ -668,10 +676,10 @@ export const useTestStore = create<TestState>((set, get) => ({
           console.log('[TestStore] Is new best time:', isNewBest, 'Previous best:', previousBest);
 
           // Store the previous best time in the result for display
-          result.previousBestTime = previousBest || undefined;
+          result.previousBestTime = previousBest === null ? undefined : previousBest;
         } catch (error) {
           console.error('Failed to update time trial best time:', error);
-          // Don't throw - test is still saved, just best time update failed
+          // Don't throw - continue to show results even if best time update failed
         }
       }
     }
