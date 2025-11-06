@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -46,6 +46,7 @@ export function TypingTest() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isCompletingTest, setIsCompletingTest] = useState(false);
+  const isCompletingRef = useRef(false); // Use ref to prevent effects from interfering during completion
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [shouldShake, setShouldShake] = useState(false);
@@ -184,6 +185,9 @@ export function TypingTest() {
 
   // Handle restart
   const handleRestart = useCallback(() => {
+    // Reset completion state
+    isCompletingRef.current = false;
+    
     // Reset the test state to idle, preserving the current content
     const currentState = useTestStore.getState();
 
@@ -208,10 +212,12 @@ export function TypingTest() {
   const handleContentLoad = useCallback(async (contentStyle?: ContentStyle) => {
     // Use passed content style if provided, otherwise get from store
     const currentContentStyle = contentStyle || useSettingsStore.getState().defaultContentStyle;
-    console.log('[TypingTest] handleContentLoad called, currentContentStyle:', currentContentStyle, 'passed:', contentStyle);
     setGenerationError(null);
     setIsLoadingContent(true);
 
+    // Reset completion state
+    isCompletingRef.current = false;
+    
     // Reset test to clear previous content from button
     resetTest();
 
@@ -343,10 +349,8 @@ export function TypingTest() {
       }
     } else if (currentContentStyle === 'benchmark') {
       // Load benchmark content with special constraints
-      console.log('[TypingTest] Loading benchmark content');
       try {
         const benchmarkContent = getRandomBenchmarkContent();
-        console.log('[TypingTest] Got benchmark content:', benchmarkContent.title);
         const requiredWords = calculateRequiredWords(BENCHMARK_CONFIG.duration);
         const words = textToWords(benchmarkContent.text, requiredWords);
 
@@ -366,14 +370,12 @@ export function TypingTest() {
           },
           words
         );
-        console.log('[TypingTest] Benchmark test initialized');
       } catch (error) {
         console.error('Benchmark content loading error:', error);
         setGenerationError(
           error instanceof Error ? error.message : 'Failed to load benchmark content'
         );
       } finally {
-        console.log('[TypingTest] Setting isLoadingContent to false');
         setIsLoadingContent(false);
       }
     } else if (currentContentStyle === 'custom-text') {
@@ -488,9 +490,17 @@ export function TypingTest() {
 
   // Initialize test on mount
   useEffect(() => {
+    // Don't do anything if we're completing the test - let navigation happen
+    // Check ref to avoid race conditions from re-renders
+    if (isCompletingRef.current) {
+      return;
+    }
+
     // Reset test if it's in a completed or failed state (user navigated back from results)
-    if (status === 'complete' || status === 'failed') {
-      console.log('[TypingTest] Resetting completed/failed test on mount');
+    // BUT don't reset if we just completed in practice mode and want to show results inline
+    const shouldShowResultsInline = status === 'complete' && result && !autoSave;
+    if ((status === 'complete' || status === 'failed') && !shouldShowResultsInline) {
+      isCompletingRef.current = false;
       resetTest();
       return;
     }
@@ -498,10 +508,8 @@ export function TypingTest() {
     // Only initialize if we have no content AND we're not in the middle of generating/loading
     // This prevents the effect from re-running when defaultContentStyle changes (e.g., when selecting custom-text without applying)
     if (status === 'idle' && targetWords.length === 0 && !isGenerating && !isLoadingContent) {
-      console.log('[TypingTest] Initializing test on mount, defaultContentStyle:', defaultContentStyle);
       // Check if benchmark mode is selected
       if (defaultContentStyle === 'benchmark') {
-        console.log('[TypingTest] Loading benchmark content on mount');
         const loadBenchmarkContent = async () => {
           try {
             const benchmarkContent = getRandomBenchmarkContent();
@@ -521,7 +529,6 @@ export function TypingTest() {
               },
               words
             );
-            console.log('[TypingTest] Benchmark test initialized on mount');
           } catch (error) {
             console.error('Failed to initialize benchmark content:', error);
           }
@@ -529,7 +536,6 @@ export function TypingTest() {
         loadBenchmarkContent();
       } else if (isTimeTrialTest(defaultContentStyle)) {
         // Check if time trial mode is selected
-        console.log('[TypingTest] Loading time trial content on mount');
         const loadTimeTrialContent = async () => {
           try {
             const testContent = getTestById(defaultContentStyle);
@@ -555,7 +561,6 @@ export function TypingTest() {
               },
               words
             );
-            console.log('[TypingTest] Time trial test initialized on mount');
           } catch (error) {
             console.error('Failed to initialize time trial content:', error);
           }
@@ -563,11 +568,9 @@ export function TypingTest() {
         loadTimeTrialContent();
       } else if (defaultContentStyle === 'custom-text') {
         // Check if custom text mode is selected
-        console.log('[TypingTest] Loading custom text content on mount');
         const loadCustomTextContent = async () => {
           try {
             if (!customText || customText.trim().length === 0) {
-              console.log('[TypingTest] Custom text selected but no text provided yet, skipping initialization');
               // Don't throw error during initialization - user might be in the process of entering text
               return;
             }
@@ -589,7 +592,6 @@ export function TypingTest() {
               },
               words
             );
-            console.log('[TypingTest] Custom text test initialized on mount');
           } catch (error) {
             console.error('Failed to initialize custom text content:', error);
             setGenerationError(error instanceof Error ? error.message : 'Failed to load custom text');
@@ -634,7 +636,7 @@ export function TypingTest() {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, autoSave]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -681,20 +683,24 @@ export function TypingTest() {
 
   // Handle test completion
   const handleComplete = useCallback(async () => {
+    isCompletingRef.current = true; // Set ref immediately to block effects
     setIsCompletingTest(true);
     try {
       const result = await completeTest(autoSave);
       // Navigate to results page only if we got a valid result AND it was saved
       if (result && autoSave) {
-        router.push(`/results/${result.id}`);
+        await router.push(`/results/${result.id}`);
+        // Note: Component should unmount after navigation, so we don't reset the ref
       } else {
         // If practice mode, show results inline
+        isCompletingRef.current = false;
         setIsCompletingTest(false);
       }
       // If practice mode (autoSave is false), result is stored in test store
       // and will be displayed inline - no navigation needed
     } catch (error) {
       console.error('Failed to complete test:', error);
+      isCompletingRef.current = false;
       setIsCompletingTest(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -702,7 +708,7 @@ export function TypingTest() {
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
-    if (isContentLengthMode && status === 'active' && currentWordIndex >= targetWords.length) {
+    if (isContentLengthMode && status === 'active' && currentWordIndex >= targetWords.length && !isCompletingRef.current) {
       handleComplete();
     }
   }, [isContentLengthMode, status, currentWordIndex, targetWords.length, handleComplete]);
