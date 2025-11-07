@@ -83,58 +83,82 @@ export function ResultsView({ result }: ResultsViewProps) {
 
   // Check for time trial and generate message based on result data
   useEffect(() => {
-    if (result.isTimeTrial && result.timeTrialId && result.completionTime) {
-      const completionTime = result.completionTime;
-      const previousBest = result.previousBestTime;
-      const testContent = getTestById(result.timeTrialId);
-      const trialName = testContent?.title || "Time Trial";
+    async function loadTimeTrialData() {
+      if (result.isTimeTrial && result.timeTrialId && result.completionTime) {
+        const completionTime = result.completionTime;
+        let previousBest = result.previousBestTime;
+        const testContent = getTestById(result.timeTrialId);
+        const trialName = testContent?.title || "Time Trial";
 
-      if (previousBest === undefined) {
-        // This is the first completion
-        setTimeTrialMessage({
-          type: "first",
-          message: `Congratulations on your first completion! You finished ${trialName} in ${completionTime.toFixed(
-            1
-          )} seconds. Try again to beat your time!`,
-        });
-      } else if (completionTime < previousBest) {
-        // New best time!
-        const improvement = previousBest - completionTime;
-        const improvementPercent = ((improvement / previousBest) * 100).toFixed(
-          1
-        );
-        setTimeTrialMessage({
-          type: "new-best",
-          message: `Amazing! You crushed your personal record by ${improvement.toFixed(
-            1
-          )} seconds (${improvementPercent}% faster)! You're on fire!`,
-          improvement,
-          previousBest,
-        });
+        // If previousBestTime is not set in the result (e.g., old results before the fix),
+        // fetch the current best time from Firestore
+        if (previousBest === undefined && result.userId) {
+          try {
+            const { getTimeTrialBestTime } = await import('@/lib/db/firebase');
+            const currentBest = await getTimeTrialBestTime(result.userId, result.timeTrialId);
+            
+            // If there's a current best time and it's different from this completion time,
+            // then this completion had a previous best
+            if (currentBest !== null && currentBest !== completionTime) {
+              previousBest = currentBest;
+            }
+            // If currentBest === completionTime, this might be the first OR a new best
+            // If currentBest === null, definitely first completion
+          } catch (error) {
+            console.error('Failed to fetch time trial best time:', error);
+            // Continue with previousBest as undefined
+          }
+        }
 
-        // Trigger confetti
-        confetti({
-          particleCount: 150,
-          spread: 90,
-          origin: { y: 0.6 },
-          colors: ["#FFD700", "#FFA500", "#FF6347", "#FF1493"],
-        });
-      } else {
-        // Not a new best
-        const difference = completionTime - previousBest;
-        setTimeTrialMessage({
-          type: "not-best",
-          message: `You completed in ${completionTime.toFixed(
+        if (previousBest === undefined) {
+          // This is the first completion
+          setTimeTrialMessage({
+            type: "first",
+            message: `Congratulations on your first completion! You finished ${trialName} in ${completionTime.toFixed(
+              1
+            )} seconds. Try again to beat your time!`,
+          });
+        } else if (completionTime < previousBest) {
+          // New best time!
+          const improvement = previousBest - completionTime;
+          const improvementPercent = ((improvement / previousBest) * 100).toFixed(
             1
-          )} seconds. Your best is ${previousBest.toFixed(
-            1
-          )} seconds (${difference.toFixed(1)}s slower). Keep practicing!`,
-          previousBest,
-        });
+          );
+          setTimeTrialMessage({
+            type: "new-best",
+            message: `Amazing! You crushed your personal record by ${improvement.toFixed(
+              1
+            )} seconds (${improvementPercent}% faster)! You're on fire!`,
+            improvement,
+            previousBest,
+          });
+
+          // Trigger confetti
+          confetti({
+            particleCount: 150,
+            spread: 90,
+            origin: { y: 0.6 },
+            colors: ["#FFD700", "#FFA500", "#FF6347", "#FF1493"],
+          });
+        } else {
+          // Not a new best
+          const difference = completionTime - previousBest;
+          setTimeTrialMessage({
+            type: "not-best",
+            message: `You completed in ${completionTime.toFixed(
+              1
+            )} seconds. Your best is ${previousBest.toFixed(
+              1
+            )} seconds (${difference.toFixed(1)}s slower). Keep practicing!`,
+            previousBest,
+          });
+        }
+
+        setIsLoadingTimeTrialData(false);
       }
-
-      setIsLoadingTimeTrialData(false);
     }
+
+    loadTimeTrialData();
   }, [result]);
 
   // Check if test content is available for retry and fetch targetWords if needed
