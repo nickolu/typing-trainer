@@ -30,6 +30,8 @@ export interface UserProfile {
   wpmScore?: number | null; // Official WPM score from benchmark tests
   wpmLastUpdated?: Date | null; // When the WPM score was last updated
   wpmScoreResetDate?: Date | null; // When the score will reset (6 months from last update)
+  timeTrialContentMigrated?: boolean; // Whether time trial content has been migrated (v1 -> v2)
+  hasSeenTimeTrialResetNotice?: boolean; // Whether user has seen the time trial reset notice
 }
 
 /**
@@ -87,6 +89,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       wpmScore: data.wpmScore ?? null,
       wpmLastUpdated: data.wpmLastUpdated ? convertTimestampToDate(data.wpmLastUpdated) : null,
       wpmScoreResetDate: data.wpmScoreResetDate ? convertTimestampToDate(data.wpmScoreResetDate) : null,
+      timeTrialContentMigrated: data.timeTrialContentMigrated ?? false,
+      hasSeenTimeTrialResetNotice: data.hasSeenTimeTrialResetNotice ?? false,
     };
   } catch (error) {
     console.error('Failed to get user profile:', error);
@@ -1371,6 +1375,79 @@ export async function getWPMScoreStatus(userId: string): Promise<{
     };
   } catch (error) {
     console.error('Failed to get WPM score status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reset all time trial records for a user
+ * This is used when time trial content is updated
+ */
+export async function resetUserTimeTrialRecords(userId: string): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    const bestTimesRef = collection(db, TIME_TRIAL_BEST_TIMES_COLLECTION);
+    const q = query(bestTimesRef, where('userId', '==', userId));
+
+    const snapshot = await getDocs(q);
+
+    // Delete all time trial best times for this user
+    const deletePromises = snapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+
+    console.log(`Reset ${snapshot.docs.length} time trial records for user ${userId}`);
+  } catch (error) {
+    console.error('Failed to reset user time trial records:', error);
+    throw error;
+  }
+}
+
+/**
+ * Migrate user's time trial data to new content version
+ * Resets all time trial records and marks user as migrated
+ */
+export async function migrateUserTimeTrialContent(userId: string): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    const userRef = doc(db, USERS_COLLECTION, userId);
+
+    // Check if already migrated
+    const profile = await getUserProfile(userId);
+    if (profile?.timeTrialContentMigrated) {
+      console.log('User already migrated, skipping');
+      return;
+    }
+
+    // Reset all time trial records
+    await resetUserTimeTrialRecords(userId);
+
+    // Mark as migrated
+    await updateDoc(userRef, {
+      timeTrialContentMigrated: true,
+    });
+
+    console.log(`Migrated time trial content for user ${userId}`);
+  } catch (error) {
+    console.error('Failed to migrate user time trial content:', error);
+    throw error;
+  }
+}
+
+/**
+ * Mark that user has seen the time trial reset notice
+ */
+export async function markTimeTrialResetNoticeSeen(userId: string): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    const userRef = doc(db, USERS_COLLECTION, userId);
+
+    await updateDoc(userRef, {
+      hasSeenTimeTrialResetNotice: true,
+    });
+
+    console.log(`Marked time trial reset notice as seen for user ${userId}`);
+  } catch (error) {
+    console.error('Failed to mark time trial reset notice as seen:', error);
     throw error;
   }
 }

@@ -63,12 +63,12 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
 
   // Time trial options
   const timeTrialOptions: { value: ContentStyle; label: string; trialId: string }[] = [
-    { value: 'time-trial-001', label: 'Speed Sprint - Basic', trialId: 'time-trial-001' },
-    { value: 'time-trial-002', label: 'Speed Sprint - Intermediate', trialId: 'time-trial-002' },
-    { value: 'time-trial-003', label: 'Speed Sprint - Advanced', trialId: 'time-trial-003' },
-    { value: 'time-trial-004', label: 'Precision Challenge', trialId: 'time-trial-004' },
-    { value: 'time-trial-005', label: 'Endurance Test', trialId: 'time-trial-005' },
-    { value: 'time-trial-006', label: 'Ultimate Marathon', trialId: 'time-trial-006' },
+    { value: 'time-trial-001', label: 'Novice Sprint', trialId: 'time-trial-001' },
+    { value: 'time-trial-002', label: 'Intermediate Challenge', trialId: 'time-trial-002' },
+    { value: 'time-trial-003', label: 'Advanced Velocity', trialId: 'time-trial-003' },
+    { value: 'time-trial-004', label: 'Expert Gauntlet', trialId: 'time-trial-004' },
+    { value: 'time-trial-005', label: 'Master Marathon', trialId: 'time-trial-005' },
+    { value: 'time-trial-006', label: 'Grandmaster Crucible', trialId: 'time-trial-006' },
   ];
 
   // Load best times when modal opens

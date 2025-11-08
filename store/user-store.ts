@@ -22,6 +22,10 @@ interface UserState {
   wpmLastUpdated: Date | null;
   wpmScoreResetDate: Date | null;
 
+  // Migration flags
+  timeTrialContentMigrated: boolean;
+  hasSeenTimeTrialResetNotice: boolean;
+
   // Loading states
   isLoading: boolean;
   error: string | null;
@@ -46,6 +50,8 @@ export const useUserStore = create<UserState>()(
       wpmScore: null,
       wpmLastUpdated: null,
       wpmScoreResetDate: null,
+      timeTrialContentMigrated: false,
+      hasSeenTimeTrialResetNotice: false,
       isLoading: false,
       error: null,
 
@@ -84,6 +90,8 @@ export const useUserStore = create<UserState>()(
             wpmScore: null,
             wpmLastUpdated: null,
             wpmScoreResetDate: null,
+            timeTrialContentMigrated: false,
+            hasSeenTimeTrialResetNotice: false,
             isLoading: false,
             error: null,
           });
@@ -135,6 +143,8 @@ export const useUserStore = create<UserState>()(
             wpmScore: profile?.wpmScore ?? null,
             wpmLastUpdated: profile?.wpmLastUpdated ?? null,
             wpmScoreResetDate: profile?.wpmScoreResetDate ?? null,
+            timeTrialContentMigrated: profile?.timeTrialContentMigrated ?? false,
+            hasSeenTimeTrialResetNotice: profile?.hasSeenTimeTrialResetNotice ?? false,
             isAuthenticated: true,
             isLoading: false,
             error: null,
@@ -174,6 +184,8 @@ export const useUserStore = create<UserState>()(
             wpmScore: null,
             wpmLastUpdated: null,
             wpmScoreResetDate: null,
+            timeTrialContentMigrated: false,
+            hasSeenTimeTrialResetNotice: false,
             error: null,
           });
         } catch (error) {
@@ -203,6 +215,8 @@ export const useUserStore = create<UserState>()(
                   wpmScore: profile?.wpmScore ?? null,
                   wpmLastUpdated: profile?.wpmLastUpdated ?? null,
                   wpmScoreResetDate: profile?.wpmScoreResetDate ?? null,
+                  timeTrialContentMigrated: profile?.timeTrialContentMigrated ?? false,
+                  hasSeenTimeTrialResetNotice: profile?.hasSeenTimeTrialResetNotice ?? false,
                   isAuthenticated: true,
                   isLoading: false,
                 });
@@ -215,6 +229,8 @@ export const useUserStore = create<UserState>()(
                   wpmScore: null,
                   wpmLastUpdated: null,
                   wpmScoreResetDate: null,
+                  timeTrialContentMigrated: false,
+                  hasSeenTimeTrialResetNotice: false,
                   isAuthenticated: true,
                   isLoading: false,
                 });
@@ -228,6 +244,8 @@ export const useUserStore = create<UserState>()(
                 wpmScore: null,
                 wpmLastUpdated: null,
                 wpmScoreResetDate: null,
+                timeTrialContentMigrated: false,
+                hasSeenTimeTrialResetNotice: false,
                 isAuthenticated: false,
                 isLoading: false,
               });
@@ -257,6 +275,8 @@ export const useUserStore = create<UserState>()(
               wpmScore: profile.wpmScore ?? null,
               wpmLastUpdated: profile.wpmLastUpdated ?? null,
               wpmScoreResetDate: profile.wpmScoreResetDate ?? null,
+              timeTrialContentMigrated: profile.timeTrialContentMigrated ?? false,
+              hasSeenTimeTrialResetNotice: profile.hasSeenTimeTrialResetNotice ?? false,
             });
           }
         } catch (error) {
