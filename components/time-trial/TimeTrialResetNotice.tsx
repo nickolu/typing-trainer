@@ -63,7 +63,7 @@ export function TimeTrialResetNotice() {
         {/* Content */}
         <div className="space-y-4 mb-6">
           <p className="text-gray-700 dark:text-gray-300">
-            We've completely redesigned the time trial tests with fresh, engaging content that
+            We&apos;ve completely redesigned the time trial tests with fresh, engaging content that
             better serves competitive typing practice!
           </p>
 
@@ -84,7 +84,7 @@ export function TimeTrialResetNotice() {
 
           <div className="space-y-2">
             <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              What's new:
+              What&apos;s new:
             </p>
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1 ml-4">
               <li>• <strong>Novice Sprint</strong> - Perfect for beginners with simple, flowing text</li>
@@ -103,7 +103,7 @@ export function TimeTrialResetNotice() {
           disabled={isMigrating}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
         >
-          {isMigrating ? 'Resetting Records...' : 'Got it! Let's Start Fresh'}
+          {isMigrating ? 'Resetting Records...' : 'Got it! Let&apos;s Start Fresh'}
         </button>
       </div>
     </div>
