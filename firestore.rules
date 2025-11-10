@@ -62,8 +62,8 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       // Allow update if the user owns the document
       allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      // No delete allowed - best times are permanent records
-      allow delete: if false;
+      // Allow delete if the user owns the document (for migration/reset purposes)
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
     }
   }
 }

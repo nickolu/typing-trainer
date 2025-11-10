@@ -103,7 +103,7 @@ export function TimeTrialResetNotice() {
           disabled={isMigrating}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
         >
-          {isMigrating ? 'Resetting Records...' : 'Got it! Let&apos;s Start Fresh'}
+          {isMigrating ? 'Resetting Records...' : 'Got it! Ready to start fresh'}
         </button>
       </div>
     </div>
