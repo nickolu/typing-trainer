@@ -1033,14 +1033,20 @@ export function TypingTest() {
           <h2 className="text-2xl font-bold mb-4">Test Complete!</h2>
 
           {/* Results Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-editor-bg/50 rounded-lg p-4">
               <div className="text-sm text-editor-muted mb-1">WPM</div>
               <div className="text-3xl font-bold">{result.wpm}</div>
             </div>
             <div className="bg-editor-bg/50 rounded-lg p-4">
-              <div className="text-sm text-editor-muted mb-1">Accuracy</div>
+              <div className="text-sm text-editor-muted mb-1">Per-Word Accuracy</div>
               <div className="text-3xl font-bold">{result.accuracy}%</div>
+            </div>
+            <div className="bg-editor-bg/50 rounded-lg p-4">
+              <div className="text-sm text-editor-muted mb-1">Per-Char Accuracy</div>
+              <div className="text-3xl font-bold">
+                {result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : '—'}
+              </div>
             </div>
           </div>
 

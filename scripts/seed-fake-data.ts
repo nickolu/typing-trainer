@@ -221,6 +221,10 @@ function generateFakeTestResult(userId: string, createdAt: Date): TestResult {
     ? [['th', 'he', 'er', 'an', 'in'][Math.floor(Math.random() * 5)]]
     : undefined;
   
+  // Calculate per-character accuracy (usually higher than per-word accuracy)
+  // Character accuracy is typically 2-5% higher than word accuracy
+  const perCharacterAccuracy = Math.min(100, accuracy + (Math.random() * 3 + 2));
+  
   const testResult: TestResult = {
     id: uuidv4(),
     userId,
@@ -232,6 +236,7 @@ function generateFakeTestResult(userId: string, createdAt: Date): TestResult {
     typedWords,
     wpm: Math.round(baseWPM),
     accuracy: Math.round(accuracy * 10) / 10,
+    perCharacterAccuracy: Math.round(perCharacterAccuracy * 10) / 10,
     correctWordCount,
     incorrectWordCount,
     totalWords: targetWords.length,

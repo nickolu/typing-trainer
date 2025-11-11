@@ -17,18 +17,35 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
     // Calculate aggregate statistics
     const totalTests = results.length;
     const avgWPM = results.reduce((sum, r) => sum + r.wpm, 0) / totalTests;
-    const avgAccuracy = results.reduce((sum, r) => sum + r.accuracy, 0) / totalTests;
+    const avgWordAccuracy = results.reduce((sum, r) => sum + r.accuracy, 0) / totalTests;
     const bestWPM = Math.max(...results.map(r => r.wpm));
-    const bestAccuracy = Math.max(...results.map(r => r.accuracy));
+    const bestWordAccuracy = Math.max(...results.map(r => r.accuracy));
+
+    // Calculate per-character accuracy stats (only for results that have it)
+    const resultsWithCharAccuracy = results.filter(r => r.perCharacterAccuracy !== undefined);
+    const avgCharAccuracy = resultsWithCharAccuracy.length > 0
+      ? resultsWithCharAccuracy.reduce((sum, r) => sum + r.perCharacterAccuracy!, 0) / resultsWithCharAccuracy.length
+      : null;
+    const bestCharAccuracy = resultsWithCharAccuracy.length > 0
+      ? Math.max(...resultsWithCharAccuracy.map(r => r.perCharacterAccuracy!))
+      : null;
 
     // Recent performance (last 10 tests)
     const recentTests = results.slice(0, Math.min(10, results.length));
     const recentAvgWPM = recentTests.reduce((sum, r) => sum + r.wpm, 0) / recentTests.length;
-    const recentAvgAccuracy = recentTests.reduce((sum, r) => sum + r.accuracy, 0) / recentTests.length;
+    const recentAvgWordAccuracy = recentTests.reduce((sum, r) => sum + r.accuracy, 0) / recentTests.length;
+    
+    const recentTestsWithCharAccuracy = recentTests.filter(r => r.perCharacterAccuracy !== undefined);
+    const recentAvgCharAccuracy = recentTestsWithCharAccuracy.length > 0
+      ? recentTestsWithCharAccuracy.reduce((sum, r) => sum + r.perCharacterAccuracy!, 0) / recentTestsWithCharAccuracy.length
+      : null;
 
     // Progress indicators
     const wpmImprovement = recentAvgWPM - avgWPM;
-    const accuracyImprovement = recentAvgAccuracy - avgAccuracy;
+    const wordAccuracyImprovement = recentAvgWordAccuracy - avgWordAccuracy;
+    const charAccuracyImprovement = (avgCharAccuracy !== null && recentAvgCharAccuracy !== null)
+      ? recentAvgCharAccuracy - avgCharAccuracy
+      : null;
 
     // Total words typed
     const totalWordsTyped = results.reduce((sum, r) => sum + (r.totalTypedWords || 0), 0);
@@ -37,13 +54,17 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
     return {
       totalTests,
       avgWPM: Math.round(avgWPM),
-      avgAccuracy: Math.round(avgAccuracy * 10) / 10,
+      avgWordAccuracy: Math.round(avgWordAccuracy * 10) / 10,
+      avgCharAccuracy: avgCharAccuracy !== null ? Math.round(avgCharAccuracy * 10) / 10 : null,
       bestWPM: Math.round(bestWPM),
-      bestAccuracy: Math.round(bestAccuracy * 10) / 10,
+      bestWordAccuracy: Math.round(bestWordAccuracy * 10) / 10,
+      bestCharAccuracy: bestCharAccuracy !== null ? Math.round(bestCharAccuracy * 10) / 10 : null,
       recentAvgWPM: Math.round(recentAvgWPM),
-      recentAvgAccuracy: Math.round(recentAvgAccuracy * 10) / 10,
+      recentAvgWordAccuracy: Math.round(recentAvgWordAccuracy * 10) / 10,
+      recentAvgCharAccuracy: recentAvgCharAccuracy !== null ? Math.round(recentAvgCharAccuracy * 10) / 10 : null,
       wpmImprovement: Math.round(wpmImprovement),
-      accuracyImprovement: Math.round(accuracyImprovement * 10) / 10,
+      wordAccuracyImprovement: Math.round(wordAccuracyImprovement * 10) / 10,
+      charAccuracyImprovement: charAccuracyImprovement !== null ? Math.round(charAccuracyImprovement * 10) / 10 : null,
       totalWordsTyped,
       totalCorrectWords,
     };
@@ -95,8 +116,14 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
               <span className="text-2xl font-bold text-blue-400">{analytics.avgWPM}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-editor-muted">Average Accuracy</span>
-              <span className="text-2xl font-bold text-blue-400">{analytics.avgAccuracy}%</span>
+              <span className="text-editor-muted">Avg Word Accuracy</span>
+              <span className="text-2xl font-bold text-blue-400">{analytics.avgWordAccuracy}%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-editor-muted">Avg Char Accuracy</span>
+              <span className="text-2xl font-bold text-blue-400">
+                {analytics.avgCharAccuracy !== null ? `${analytics.avgCharAccuracy}%` : '—'}
+              </span>
             </div>
           </div>
         </div>
@@ -113,8 +140,14 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
               <span className="text-2xl font-bold text-yellow-400">{analytics.bestWPM}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-editor-muted">Best Accuracy</span>
-              <span className="text-2xl font-bold text-yellow-400">{analytics.bestAccuracy}%</span>
+              <span className="text-editor-muted">Best Word Accuracy</span>
+              <span className="text-2xl font-bold text-yellow-400">{analytics.bestWordAccuracy}%</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-editor-muted">Best Char Accuracy</span>
+              <span className="text-2xl font-bold text-yellow-400">
+                {analytics.bestCharAccuracy !== null ? `${analytics.bestCharAccuracy}%` : '—'}
+              </span>
             </div>
           </div>
         </div>
@@ -139,12 +172,25 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
               </div>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-editor-muted">Recent Avg Accuracy</span>
+              <span className="text-editor-muted">Recent Word Acc</span>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-green-400">{analytics.recentAvgAccuracy}%</span>
-                {analytics.accuracyImprovement !== 0 && (
-                  <span className={`text-sm font-mono ${analytics.accuracyImprovement > 0 ? 'text-green-400' : 'text-orange-400'}`}>
-                    {analytics.accuracyImprovement > 0 ? '+' : ''}{analytics.accuracyImprovement}%
+                <span className="text-2xl font-bold text-green-400">{analytics.recentAvgWordAccuracy}%</span>
+                {analytics.wordAccuracyImprovement !== 0 && (
+                  <span className={`text-sm font-mono ${analytics.wordAccuracyImprovement > 0 ? 'text-green-400' : 'text-orange-400'}`}>
+                    {analytics.wordAccuracyImprovement > 0 ? '+' : ''}{analytics.wordAccuracyImprovement}%
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-editor-muted">Recent Char Acc</span>
+              <div className="flex items-center gap-2">
+                <span className="text-2xl font-bold text-green-400">
+                  {analytics.recentAvgCharAccuracy !== null ? `${analytics.recentAvgCharAccuracy}%` : '—'}
+                </span>
+                {analytics.charAccuracyImprovement !== null && analytics.charAccuracyImprovement !== 0 && (
+                  <span className={`text-sm font-mono ${analytics.charAccuracyImprovement > 0 ? 'text-green-400' : 'text-orange-400'}`}>
+                    {analytics.charAccuracyImprovement > 0 ? '+' : ''}{analytics.charAccuracyImprovement}%
                   </span>
                 )}
               </div>
@@ -155,7 +201,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
         {/* Progress Indicator */}
         <div className="bg-editor-bg/50 border border-editor-muted/30 rounded-lg p-5 flex flex-col justify-center">
           <h3 className="text-lg font-semibold mb-4">Progress Trend</h3>
-          {analytics.wpmImprovement > 0 || analytics.accuracyImprovement > 0 ? (
+          {analytics.wpmImprovement > 0 || analytics.wordAccuracyImprovement > 0 ? (
             <div className="text-center">
               <div className="text-4xl mb-2">🚀</div>
               <p className="text-green-400 font-semibold">You&apos;re improving!</p>
@@ -163,7 +209,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
                 Your recent performance is better than your overall average. Keep it up!
               </p>
             </div>
-          ) : analytics.wpmImprovement < 0 || analytics.accuracyImprovement < 0 ? (
+          ) : analytics.wpmImprovement < 0 || analytics.wordAccuracyImprovement < 0 ? (
             <div className="text-center">
               <div className="text-4xl mb-2">📊</div>
               <p className="text-orange-400 font-semibold">Keep practicing!</p>

@@ -471,8 +471,13 @@ export function ResultsView({ result }: ResultsViewProps) {
             icon={<Zap className="w-8 h-8" />}
           />
           <StatsCard
-            label="Accuracy"
+            label="Per-Word Accuracy"
             value={`${result.accuracy}%`}
+            icon={<Target className="w-8 h-8" />}
+          />
+          <StatsCard
+            label="Per-Character Accuracy"
+            value={result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : "—"}
             icon={<Target className="w-8 h-8" />}
           />
         </div>

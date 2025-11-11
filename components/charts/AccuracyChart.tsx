@@ -26,7 +26,8 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
 
     return sorted.map((result) => ({
       date: new Date(result.createdAt),
-      accuracy: result.accuracy,
+      wordAccuracy: result.accuracy,
+      charAccuracy: result.perCharacterAccuracy,
       id: result.id,
     }));
   }, [results]);
@@ -40,11 +41,23 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
   }
 
   // Calculate statistics
-  const avgAccuracy = (
-    chartData.reduce((sum, d) => sum + d.accuracy, 0) / chartData.length
+  const avgWordAccuracy = (
+    chartData.reduce((sum, d) => sum + d.wordAccuracy, 0) / chartData.length
   ).toFixed(1);
-  const maxAccuracy = Math.max(...chartData.map((d) => d.accuracy));
-  const minAccuracy = Math.min(...chartData.map((d) => d.accuracy));
+  const maxWordAccuracy = Math.max(...chartData.map((d) => d.wordAccuracy));
+  const minWordAccuracy = Math.min(...chartData.map((d) => d.wordAccuracy));
+  
+  // Calculate char accuracy stats (only for results that have it)
+  const charAccuracyData = chartData.filter((d) => d.charAccuracy !== undefined);
+  const avgCharAccuracy = charAccuracyData.length > 0
+    ? (charAccuracyData.reduce((sum, d) => sum + d.charAccuracy!, 0) / charAccuracyData.length).toFixed(1)
+    : null;
+  const maxCharAccuracy = charAccuracyData.length > 0
+    ? Math.max(...charAccuracyData.map((d) => d.charAccuracy!))
+    : null;
+  const minCharAccuracy = charAccuracyData.length > 0
+    ? Math.min(...charAccuracyData.map((d) => d.charAccuracy!))
+    : null;
 
   // Helper to get accuracy color
   const getAccuracyColor = (accuracy: number) => {
@@ -53,7 +66,7 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
     return '#f48771'; // red
   };
 
-  const avgColor = getAccuracyColor(parseFloat(avgAccuracy));
+  const avgWordColor = getAccuracyColor(parseFloat(avgWordAccuracy));
 
   return (
     <div className="bg-editor-bg border border-editor-muted rounded-lg p-4">
@@ -62,22 +75,52 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
         <p className="text-editor-muted text-sm mb-3">Your typing accuracy over time</p>
 
         {/* Stats Summary */}
-        <div className="flex gap-4 text-sm">
+        <div className="grid grid-cols-2 gap-4 text-sm mb-2">
           <div>
-            <span className="text-editor-muted">Average: </span>
-            <span className="font-semibold" style={{ color: avgColor }}>
-              {avgAccuracy}%
-            </span>
+            <div className="font-semibold mb-1 text-[#4ec9b0]">Per-Word Accuracy</div>
+            <div className="flex gap-4">
+              <div>
+                <span className="text-editor-muted">Avg: </span>
+                <span className="font-semibold" style={{ color: avgWordColor }}>
+                  {avgWordAccuracy}%
+                </span>
+              </div>
+              <div>
+                <span className="text-editor-muted">Peak: </span>
+                <span className="font-semibold text-editor-success">
+                  {maxWordAccuracy.toFixed(1)}%
+                </span>
+              </div>
+              <div>
+                <span className="text-editor-muted">Low: </span>
+                <span className="font-semibold">{minWordAccuracy.toFixed(1)}%</span>
+              </div>
+            </div>
           </div>
           <div>
-            <span className="text-editor-muted">Peak: </span>
-            <span className="font-semibold text-editor-success">
-              {maxAccuracy.toFixed(1)}%
-            </span>
-          </div>
-          <div>
-            <span className="text-editor-muted">Lowest: </span>
-            <span className="font-semibold">{minAccuracy.toFixed(1)}%</span>
+            <div className="font-semibold mb-1 text-[#ce9178]">Per-Character Accuracy</div>
+            {avgCharAccuracy !== null ? (
+              <div className="flex gap-4">
+                <div>
+                  <span className="text-editor-muted">Avg: </span>
+                  <span className="font-semibold">
+                    {avgCharAccuracy}%
+                  </span>
+                </div>
+                <div>
+                  <span className="text-editor-muted">Peak: </span>
+                  <span className="font-semibold text-editor-success">
+                    {maxCharAccuracy?.toFixed(1)}%
+                  </span>
+                </div>
+                <div>
+                  <span className="text-editor-muted">Low: </span>
+                  <span className="font-semibold">{minCharAccuracy?.toFixed(1)}%</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-editor-muted text-xs">No data available</div>
+            )}
           </div>
         </div>
       </div>
@@ -88,9 +131,13 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
           margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
         >
           <defs>
-            <linearGradient id="colorAccuracy" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colorWordAccuracy" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#4ec9b0" stopOpacity={0.3} />
               <stop offset="95%" stopColor="#4ec9b0" stopOpacity={0} />
+            </linearGradient>
+            <linearGradient id="colorCharAccuracy" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ce9178" stopOpacity={0.3} />
+              <stop offset="95%" stopColor="#ce9178" stopOpacity={0} />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#2d2d2d" />
@@ -119,20 +166,34 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
               padding: '8px 12px',
             }}
             labelStyle={{ color: '#d4d4d4', marginBottom: '4px' }}
-            itemStyle={{ color: '#4ec9b0' }}
             labelFormatter={(date) =>
               format(new Date(date), 'MMM d, yyyy h:mm a')
             }
-            formatter={(value: number) => [`${value.toFixed(1)}%`, 'Accuracy']}
+            formatter={(value: number | undefined, name: string) => {
+              if (value === undefined) return ['—', name];
+              return [`${value.toFixed(1)}%`, name === 'wordAccuracy' ? 'Word Acc' : 'Char Acc'];
+            }}
           />
           <Area
             type="monotone"
-            dataKey="accuracy"
+            dataKey="wordAccuracy"
             stroke="#4ec9b0"
             strokeWidth={2}
-            fill="url(#colorAccuracy)"
+            fill="url(#colorWordAccuracy)"
             dot={{ fill: '#4ec9b0', r: 4 }}
             activeDot={{ r: 6 }}
+            name="Word Accuracy"
+          />
+          <Area
+            type="monotone"
+            dataKey="charAccuracy"
+            stroke="#ce9178"
+            strokeWidth={2}
+            fill="url(#colorCharAccuracy)"
+            dot={{ fill: '#ce9178', r: 4 }}
+            activeDot={{ r: 6 }}
+            name="Char Accuracy"
+            connectNulls
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -174,9 +174,14 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
                           : 'text-editor-error'
                       }`}
                     />
-                    <span className="font-mono font-bold">
-                      {result.accuracy}%
-                    </span>
+                    <div className="text-xs">
+                      <div className="font-mono font-bold">
+                        {result.accuracy}% word
+                      </div>
+                      <div className="font-mono text-editor-muted">
+                        {result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : '—'} char
+                      </div>
+                    </div>
                   </div>
                 </td>
                 <td className="p-3">

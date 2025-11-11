@@ -94,6 +94,9 @@ function generateFakeTestResult(userId: string, createdAt: Date): TestResult {
   const correctWordCount = targetWords.filter((word, i) => word === typedWords[i]).length;
   const keystrokeTimings = generateMinimalKeystrokeEvents(targetWords, typedWords, baseWPM);
   
+  // Calculate per-character accuracy (usually higher than per-word accuracy)
+  const perCharacterAccuracy = Math.min(100, accuracy + (Math.random() * 3 + 2));
+  
   return {
     id: uuidv4(),
     userId,
@@ -105,6 +108,7 @@ function generateFakeTestResult(userId: string, createdAt: Date): TestResult {
     typedWords,
     wpm: Math.round(baseWPM),
     accuracy: Math.round(accuracy * 10) / 10,
+    perCharacterAccuracy: Math.round(perCharacterAccuracy * 10) / 10,
     correctWordCount,
     incorrectWordCount: targetWords.length - correctWordCount,
     totalWords: targetWords.length,

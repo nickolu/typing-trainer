@@ -520,10 +520,16 @@ export const useTestStore = create<TestState>((set, get) => ({
       typedWordsText
     );
 
+    // Determine if strict mode or time trial
+    let correctionMode = state.isTimeTrial ? 'strict' : useSettingsStore.getState().correctionMode;
+    const isStrictOrTimeTrial = correctionMode === 'strict' || state.isTimeTrial;
+
     // Calculate stats
-    const { accuracy, correctCount, incorrectCount, totalTyped } = calculateAccuracy(
+    const { accuracy, perCharacterAccuracy, correctCount, incorrectCount, totalTyped } = calculateAccuracy(
       state.targetWords,
-      normalizedTypedWords
+      normalizedTypedWords,
+      isStrictOrTimeTrial,
+      state.strictModeErrors
     );
 
     const wpm = calculateWPM(
@@ -559,7 +565,7 @@ export const useTestStore = create<TestState>((set, get) => ({
     }
 
     // Correction mode label
-    const correctionMode = useSettingsStore.getState().correctionMode;
+    correctionMode = useSettingsStore.getState().correctionMode;
     autoLabels.push(`correction-mode-${correctionMode}`);
 
     // Content category label (if available)
@@ -604,6 +610,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       typedWords: normalizedTypedWords,
       wpm,
       accuracy,
+      perCharacterAccuracy,
       correctWordCount: correctCount,
       incorrectWordCount: incorrectCount,
       totalWords: state.targetWords.length,

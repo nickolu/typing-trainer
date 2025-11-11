@@ -40,7 +40,8 @@ export function TrialHistory({ history, currentResult }: TrialHistoryProps) {
             <tr className="border-b border-editor-muted">
               <th className="text-left py-2 px-3 font-medium text-editor-muted">Trial</th>
               <th className="text-right py-2 px-3 font-medium text-editor-muted">WPM</th>
-              <th className="text-right py-2 px-3 font-medium text-editor-muted">Accuracy</th>
+              <th className="text-right py-2 px-3 font-medium text-editor-muted">Word Acc</th>
+              <th className="text-right py-2 px-3 font-medium text-editor-muted">Char Acc</th>
               <th className="text-right py-2 px-3 font-medium text-editor-muted">Words</th>
               {currentResult.completionTime !== undefined && (
                 <th className="text-right py-2 px-3 font-medium text-editor-muted">Time</th>
@@ -56,6 +57,9 @@ export function TrialHistory({ history, currentResult }: TrialHistoryProps) {
               const wpmTrend = previousResult ? getTrend(result.wpm, previousResult.wpm) : null;
               const accuracyTrend = previousResult
                 ? getTrend(result.accuracy, previousResult.accuracy)
+                : null;
+              const charAccuracyTrend = previousResult && result.perCharacterAccuracy !== undefined && previousResult.perCharacterAccuracy !== undefined
+                ? getTrend(result.perCharacterAccuracy, previousResult.perCharacterAccuracy)
                 : null;
 
               return (
@@ -128,6 +132,33 @@ export function TrialHistory({ history, currentResult }: TrialHistoryProps) {
                     </div>
                   </td>
                   <td className="py-3 px-3 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="font-mono font-bold">
+                        {result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy.toFixed(1)}%` : '—'}
+                      </span>
+                      {charAccuracyTrend && (
+                        <div
+                          className={`flex items-center gap-1 text-xs ${
+                            charAccuracyTrend.diff > 0
+                              ? 'text-green-400'
+                              : charAccuracyTrend.diff < 0
+                              ? 'text-red-400'
+                              : 'text-editor-muted'
+                          }`}
+                        >
+                          {charAccuracyTrend.diff > 0 ? (
+                            <TrendingUp className="w-3 h-3" />
+                          ) : charAccuracyTrend.diff < 0 ? (
+                            <TrendingDown className="w-3 h-3" />
+                          ) : (
+                            <Minus className="w-3 h-3" />
+                          )}
+                          <span>{charAccuracyTrend.diff > 0 ? '+' : ''}{charAccuracyTrend.diff.toFixed(1)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-3 px-3 text-right">
                     <span className="font-mono">{result.totalTypedWords}</span>
                   </td>
                   {currentResult.completionTime !== undefined && (
@@ -150,7 +181,7 @@ export function TrialHistory({ history, currentResult }: TrialHistoryProps) {
       {/* Summary stats */}
       {history.length > 1 && (
         <div className="mt-4 pt-4 border-t border-editor-muted">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
             <div>
               <div className="text-editor-muted">Best WPM</div>
               <div className="font-mono font-bold text-lg">
@@ -158,9 +189,17 @@ export function TrialHistory({ history, currentResult }: TrialHistoryProps) {
               </div>
             </div>
             <div>
-              <div className="text-editor-muted">Best Accuracy</div>
+              <div className="text-editor-muted">Best Word Acc</div>
               <div className="font-mono font-bold text-lg">
                 {Math.max(...history.map(h => h.accuracy)).toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <div className="text-editor-muted">Best Char Acc</div>
+              <div className="font-mono font-bold text-lg">
+                {history.some(h => h.perCharacterAccuracy !== undefined)
+                  ? Math.max(...history.filter(h => h.perCharacterAccuracy !== undefined).map(h => h.perCharacterAccuracy!)).toFixed(1) + '%'
+                  : '—'}
               </div>
             </div>
             <div>
@@ -170,7 +209,7 @@ export function TrialHistory({ history, currentResult }: TrialHistoryProps) {
               </div>
             </div>
             <div>
-              <div className="text-editor-muted">Avg Accuracy</div>
+              <div className="text-editor-muted">Avg Word Acc</div>
               <div className="font-mono font-bold text-lg">
                 {(history.reduce((sum, h) => sum + h.accuracy, 0) / history.length).toFixed(1)}%
               </div>

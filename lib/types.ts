@@ -41,7 +41,8 @@ export interface TestResult {
 
   // Calculated stats
   wpm: number; // Words per minute
-  accuracy: number; // 0-100%
+  accuracy: number; // Per-word accuracy: 0-100%
+  perCharacterAccuracy?: number; // Per-character accuracy: 0-100% (null for historical data)
   correctWordCount: number;
   incorrectWordCount: number;
   totalWords: number;
