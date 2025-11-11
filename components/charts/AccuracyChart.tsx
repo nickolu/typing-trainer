@@ -23,7 +23,6 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
     const sorted = [...results].sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
-    console.log('sorted', sorted);
 
     return sorted.map((result) => ({
       date: new Date(result.createdAt),
