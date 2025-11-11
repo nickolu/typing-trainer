@@ -169,9 +169,9 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
             labelFormatter={(date) =>
               format(new Date(date), 'MMM d, yyyy h:mm a')
             }
-            formatter={(value: number | undefined, name: string) => {
-              if (value === undefined) return ['—', name];
-              return [`${value.toFixed(1)}%`, name === 'wordAccuracy' ? 'Word Acc' : 'Char Acc'];
+            formatter={(value, name) => {
+              if (value === undefined || value === null) return ['—', name as string];
+              return [`${Number(value).toFixed(1)}%`, name === 'wordAccuracy' ? 'Word Acc' : 'Char Acc'];
             }}
           />
           <Area
