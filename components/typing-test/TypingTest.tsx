@@ -609,7 +609,7 @@ export function TypingTest() {
             const requiredWords = defaultDuration === 'content-length'
               ? 100
               : calculateRequiredWords(defaultDuration);
-            const words = textToWords(testContent.text, requiredWords);
+            const words = textToWords(testContent?.text ?? '', requiredWords);
 
             // Save test content and get ID
             const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);

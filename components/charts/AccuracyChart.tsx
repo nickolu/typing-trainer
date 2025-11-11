@@ -23,6 +23,7 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
     const sorted = [...results].sort(
       (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
+    console.log('sorted', sorted);
 
     return sorted.map((result) => ({
       date: new Date(result.createdAt),
@@ -170,9 +171,8 @@ export function AccuracyChart({ results }: AccuracyChartProps) {
               format(new Date(date), 'MMM d, yyyy h:mm a')
             }
             formatter={(value, name) => {
-              if (value === undefined || value === null) return ['—', name as string];
-              return [`${Number(value).toFixed(1)}%`, name === 'wordAccuracy' ? 'Word Acc' : 'Char Acc'];
-            }}
+              return [value, name as string];
+             }}
           />
           <Area
             type="monotone"

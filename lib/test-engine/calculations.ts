@@ -43,9 +43,8 @@ export function calculateWPM(
  * Calculate typing accuracy (both per-word and per-character)
  * Compares target words with typed words
  * 
- * For strict mode and time trials, accuracy represents error rate:
- * - Per-word: percentage of words that had mistakes blocked
- * - Per-character: percentage of characters that were mistyped (blocked)
+ * Returns actual accuracy percentages for both normal and strict modes.
+ * For strict mode, the error rate can be calculated separately if needed.
  */
 export function calculateAccuracy(
   targetWords: string[],
@@ -61,7 +60,6 @@ export function calculateAccuracy(
 } {
   let correctCount = 0;
   let incorrectCount = 0;
-  let wordsWithMistakes = 0;
 
   // Compare each word
   for (let i = 0; i < targetWords.length; i++) {
@@ -82,35 +80,20 @@ export function calculateAccuracy(
 
   const totalTyped = correctCount + incorrectCount;
   
-  // Calculate per-word accuracy
-  let perWordAccuracy: number;
-  
-  if (isStrictOrTimeTrial) {
-    // For strict mode/time trial: calculate per-word error rate
-    // Estimate words with mistakes: assume each error affected a word, capped at total words
-    // This is an approximation since we don't track per-word mistakes in strict mode
-    if (strictModeErrors > 0 && totalTyped > 0) {
-      // Per-word error rate: approximate as (errors / words), capped at 100%
-      // This assumes roughly one error per word affected
-      const wordsWithErrors = Math.min(strictModeErrors, totalTyped);
-      perWordAccuracy = (wordsWithErrors / totalTyped) * 100;
-    } else {
-      perWordAccuracy = 0; // No errors
-    }
-  } else {
-    // Normal/Speed mode: standard accuracy calculation
-    perWordAccuracy = totalTyped > 0 ? (correctCount / totalTyped) * 100 : 0;
-  }
+  // Calculate per-word accuracy (always as actual accuracy, not error rate)
+  const perWordAccuracy = totalTyped > 0 ? (correctCount / totalTyped) * 100 : 100;
 
   // Calculate per-character accuracy
   let perCharacterAccuracy: number;
   
   if (isStrictOrTimeTrial) {
-    // For strict mode/time trial: error rate based on blocked keystrokes
+    // For strict mode/time trial: calculate accuracy based on blocked keystrokes
+    // Character accuracy = 100% - error rate
     const totalCharactersTyped = typedWords.slice(0, totalTyped).reduce((sum, word) => sum + word.length, 0);
-    perCharacterAccuracy = totalCharactersTyped > 0 
+    const errorRate = totalCharactersTyped > 0 
       ? (strictModeErrors / totalCharactersTyped) * 100 
       : 0;
+    perCharacterAccuracy = 100 - errorRate;
   } else {
     // Normal/Speed mode: compare character by character
     let correctChars = 0;

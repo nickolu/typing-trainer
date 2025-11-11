@@ -1012,9 +1012,9 @@ export function getProblematicWords(results: TestResult[]): ProblematicWord[] {
     }
   }
 
-  // Convert to array and filter for count >= 2, then sort by frequency
+  // Convert to array and filter for count >= 1, then sort by frequency
   return Array.from(wordMistakeMap.entries())
-    .filter(([_, count]) => count >= 2)
+    .filter(([_, count]) => count >= 1)
     .map(([word, count]) => ({ word, count }))
     .sort((a, b) => b.count - a.count);
 }

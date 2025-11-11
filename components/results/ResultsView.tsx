@@ -470,81 +470,16 @@ export function ResultsView({ result }: ResultsViewProps) {
             value={result.wpm}
             icon={<Zap className="w-8 h-8" />}
           />
-          {/* Combined Accuracy Card */}
-          {(() => {
-            const isStrictOrTimeTrial = result.isTimeTrial || result.labels?.includes('correction-mode-strict');
-            
-            if (isStrictOrTimeTrial) {
-              // For strict/time trial: show Accuracy (high) and Error Rate (low)
-              // Calculate actual accuracy from correct/total words
-              const actualAccuracy = result.totalTypedWords > 0 
-                ? ((result.correctWordCount / result.totalTypedWords) * 100).toFixed(1)
-                : '100.0';
-              
-              return (
-                <div className="bg-editor-bg border border-editor-muted rounded-lg p-6 flex flex-col items-center justify-center relative overflow-hidden">
-                  {/* Background decoration */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-editor-accent/5 to-transparent pointer-events-none" />
-                  
-                  <div className="relative z-10 w-full flex flex-col items-center">
-                    <div className="mb-3 text-editor-accent">
-                      <Target className="w-8 h-8" />
-                    </div>
-                    <div className="flex items-center gap-8 mb-3 w-full">
-                      <div className="text-center w-[42%]">
-                        <div className="inline-block bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-2 mb-2">
-                          <div className="text-4xl font-bold font-mono text-green-400">{actualAccuracy}%</div>
-                        </div>
-                        <div className="text-xs font-medium text-editor-muted uppercase tracking-wider">Accuracy</div>
-                      </div>
-                      <div className="h-16 w-px bg-editor-muted/30"></div>
-                      <div className="text-center w-[42%]">
-                        <div className="inline-block bg-orange-500/10 border border-orange-500/30 rounded-lg px-4 py-2 mb-2">
-                          <div className="text-4xl font-bold font-mono text-orange-400">
-                            {result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : '—'}
-                          </div>
-                        </div>
-                        <div className="text-xs font-medium text-editor-muted uppercase tracking-wider">Error Rate</div>
-                      </div>
-                    </div>
-                    <div className="text-xs font-semibold text-editor-accent uppercase tracking-wider">Strict Mode</div>
-                  </div>
-                </div>
-              );
-            } else {
-              // Normal mode: show per-word and per-character accuracy
-              return (
-                <div className="bg-editor-bg border border-editor-muted rounded-lg p-6 flex flex-col items-center justify-center relative overflow-hidden">
-                  {/* Background decoration */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
-                  
-                  <div className="relative z-10 w-full flex flex-col items-center">
-                    <div className="mb-3 text-editor-accent">
-                      <Target className="w-8 h-8" />
-                    </div>
-                    <div className="flex items-center gap-8 mb-3 w-full">
-                      <div className="text-center w-[42%]">
-                        <div className="inline-block bg-blue-500/10 border border-blue-500/30 rounded-lg px-4 py-2 mb-2">
-                          <div className="text-4xl font-bold font-mono text-blue-400">{result.accuracy}%</div>
-                        </div>
-                        <div className="text-xs font-medium text-editor-muted uppercase tracking-wider">Per-Word</div>
-                      </div>
-                      <div className="h-16 w-px bg-editor-muted/30"></div>
-                      <div className="text-center w-[42%]">
-                        <div className="inline-block bg-purple-500/10 border border-purple-500/30 rounded-lg px-4 py-2 mb-2">
-                          <div className="text-4xl font-bold font-mono text-purple-400">
-                            {result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : '—'}
-                          </div>
-                        </div>
-                        <div className="text-xs font-medium text-editor-muted uppercase tracking-wider">Per-Character</div>
-                      </div>
-                    </div>
-                    <div className="text-xs font-semibold text-editor-muted uppercase tracking-wider">Accuracy</div>
-                  </div>
-                </div>
-              );
-            }
-          })()}
+          <StatsCard
+            label="Per-Word Accuracy"
+            value={`${result.accuracy}%`}
+            icon={<Target className="w-8 h-8" />}
+          />
+          <StatsCard
+            label="Per-Character Accuracy"
+            value={result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : "—"}
+            icon={<Target className="w-8 h-8" />}
+          />
         </div>
 
         {/* Time Trial Message */}
