@@ -21,7 +21,7 @@ describe('calculations', () => {
 
     it('should handle no words typed', () => {
       const targetWords = ['test'];
-      const typedWords = [];
+      const typedWords: string[] = [];
       const wpm = calculateWPM(targetWords, typedWords, 60);
       expect(wpm).toBe(0);
     });
