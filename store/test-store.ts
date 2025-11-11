@@ -13,7 +13,7 @@ import {
   normalizeTypedWords,
 } from '@/lib/test-engine/calculations';
 import { analyzeMistakes } from '@/lib/test-engine/mistake-analysis';
-import { saveTestResult, updateUserWPMScore } from '@/lib/db/firebase';
+import { saveTestResult, updateUserWPMScore } from '@/lib/db';
 import { useSettingsStore } from './settings-store';
 import { useUserStore } from './user-store';
 import { BENCHMARK_CONFIG } from '@/lib/benchmark-config';
@@ -589,7 +589,7 @@ export const useTestStore = create<TestState>((set, get) => ({
 
       if (currentUserId) {
         try {
-          const { getNextIterationNumber } = await import('@/lib/db/firebase');
+          const { getNextIterationNumber } = await import('@/lib/db');
           iteration = await getNextIterationNumber(currentUserId, state.testContentId);
           console.log('[TestStore] Iteration number:', iteration);
         } catch (error) {
@@ -638,7 +638,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       
       if (currentUserId) {
         try {
-          const { updateTimeTrialBestTime } = await import('@/lib/db/firebase');
+          const { updateTimeTrialBestTime } = await import('@/lib/db');
           const { isNewBest, previousBest } = await updateTimeTrialBestTime(
             currentUserId,
             state.timeTrialId,
@@ -749,7 +749,7 @@ export const useTestStore = create<TestState>((set, get) => ({
 
     // Fetch test content from Firestore
     try {
-      const { getTestContent } = await import('@/lib/db/firebase');
+      const { getTestContent } = await import('@/lib/db');
       const testContent = await getTestContent(testContentId);
 
       if (!testContent) {

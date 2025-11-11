@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteTestResult, restoreTestResult } from '@/lib/db/firebase';
+import { deleteTestResult, restoreTestResult } from '@/lib/db';
 
 // Force this route to use Node.js runtime (not Edge)
 export const runtime = 'nodejs';

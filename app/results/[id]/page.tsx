@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ResultsView } from '@/components/results/ResultsView';
-import { getTestResult } from '@/lib/db/firebase';
+import { getTestResult } from '@/lib/db';
 import { useUserStore } from '@/store/user-store';
 import { TestResult } from '@/lib/types';
 

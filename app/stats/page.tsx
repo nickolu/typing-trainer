@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { TestResult } from '@/lib/types';
-import { getTestResultsByUser, deleteTestResult, restoreTestResult } from '@/lib/db/firebase';
+import { getTestResultsByUser, deleteTestResult, restoreTestResult } from '@/lib/db';
 import { useUserStore } from '@/store/user-store';
 import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';

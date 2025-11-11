@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { TestResult } from '@/lib/types';
-import { getProblematicWords, ProblematicWord } from '@/lib/db/firebase';
+import { getProblematicWords, ProblematicWord } from '@/lib/db';
 import { AlertTriangle } from 'lucide-react';
 
 interface ProblematicWordsProps {

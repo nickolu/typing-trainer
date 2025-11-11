@@ -8,7 +8,7 @@ import {
   User
 } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase-config';
-import { createUserProfile, getUserProfile } from '@/lib/db/firebase';
+import { createUserProfile, getUserProfile } from '@/lib/db';
 
 interface UserState {
   // Current user

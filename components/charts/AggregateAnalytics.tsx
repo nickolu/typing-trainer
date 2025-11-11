@@ -8,7 +8,7 @@ import {
   getAggregateMistakes,
   AggregateSequence,
   AggregateMistakeData,
-} from '@/lib/db/firebase';
+} from '@/lib/db';
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
