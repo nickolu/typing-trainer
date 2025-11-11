@@ -1,7 +1,7 @@
 'use client';
 
 import { AlertTriangle } from 'lucide-react';
-import { AggregateMistakeData } from '@/lib/db/firebase';
+import { AggregateMistakeData } from '@/lib/db';
 
 interface AggregateMistakeChartProps {
   mistakeData: AggregateMistakeData;

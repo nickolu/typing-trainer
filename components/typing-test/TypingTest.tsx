@@ -72,7 +72,7 @@ export function TypingTest() {
   // Load best time for time trials
   useEffect(() => {
     if (isTimeTrialMode && currentUserId) {
-      import('@/lib/db/firebase').then(({ getTimeTrialBestTime }) => {
+      import('@/lib/db').then(({ getTimeTrialBestTime }) => {
         getTimeTrialBestTime(currentUserId, defaultContentStyle).then((bestTime) => {
           setTimeTrialBestTime(bestTime);
         }).catch((error) => {
@@ -95,7 +95,7 @@ export function TypingTest() {
     if (isAuthenticated && currentUserId) {
       const loadWPMStatus = async () => {
         try {
-          const { getWPMScoreStatus } = await import('@/lib/db/firebase');
+          const { getWPMScoreStatus } = await import('@/lib/db');
           const status = await getWPMScoreStatus(currentUserId);
           setWpmStatus(status);
         } catch (error) {
@@ -134,7 +134,7 @@ export function TypingTest() {
     }
 
     try {
-      const { saveTestContent, findTestContentBySource, findTestContentByHash } = await import('@/lib/db/firebase');
+      const { saveTestContent, findTestContentBySource, findTestContentByHash } = await import('@/lib/db');
       const { v4: uuidv4 } = await import('uuid');
 
       // Try to find existing content
@@ -243,7 +243,7 @@ export function TypingTest() {
           } else {
             // Fallback: Import and get historical slow sequences
             if (currentUserId) {
-              const { getAggregateSlowSequences } = await import('@/lib/db/firebase');
+              const { getAggregateSlowSequences } = await import('@/lib/db');
               sequencesToUse = await getAggregateSlowSequences(currentUserId, 5);
             }
           }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useUserStore } from '@/store/user-store';
 import { X, Trophy, RotateCcw } from 'lucide-react';
-import { migrateUserTimeTrialContent, markTimeTrialResetNoticeSeen } from '@/lib/db/firebase';
+import { migrateUserTimeTrialContent, markTimeTrialResetNoticeSeen } from '@/lib/db';
 
 export function TimeTrialResetNotice() {
   const { currentUserId, timeTrialContentMigrated, hasSeenTimeTrialResetNotice } = useUserStore();

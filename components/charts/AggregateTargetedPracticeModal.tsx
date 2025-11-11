@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { X, Target, Zap, AlertTriangle, Repeat } from 'lucide-react';
-import { AggregateSequence, AggregateMistakeData } from '@/lib/db/firebase';
+import { AggregateSequence, AggregateMistakeData } from '@/lib/db';
 
 interface PracticeOption {
   id: string;

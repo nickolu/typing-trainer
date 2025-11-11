@@ -1,7 +1,7 @@
 'use client';
 
 import { Target } from 'lucide-react';
-import { AggregateSequence } from '@/lib/db/firebase';
+import { AggregateSequence } from '@/lib/db';
 
 interface AggregateSequenceChartProps {
   twoCharSequences: AggregateSequence[];

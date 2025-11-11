@@ -75,7 +75,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
   useEffect(() => {
     if (isOpen && currentUserId) {
       setIsLoadingBestTimes(true);
-      import('@/lib/db/firebase').then(({ getAllTimeTrialBestTimes }) => {
+      import('@/lib/db').then(({ getAllTimeTrialBestTimes }) => {
         getAllTimeTrialBestTimes(currentUserId).then((times) => {
           setBestTimes(times);
           setIsLoadingBestTimes(false);
@@ -123,7 +123,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     setIsLoadingSequences(true);
     setSequenceError(null);
     try {
-      const { getAggregateSlowSequences } = await import('@/lib/db/firebase');
+      const { getAggregateSlowSequences } = await import('@/lib/db');
       const slowSequences = await getAggregateSlowSequences(currentUserId, 5);
       if (slowSequences.length > 0) {
         setCustomSequences(slowSequences);

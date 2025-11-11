@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Tag, Trash2 } from 'lucide-react';
 import { useUserStore } from '@/store/user-store';
-import { getUserLabels, addUserLabel, deleteUserLabel } from '@/lib/db/firebase';
+import { getUserLabels, addUserLabel, deleteUserLabel } from '@/lib/db';
 
 interface LabelSelectorProps {
   selectedLabels: string[];

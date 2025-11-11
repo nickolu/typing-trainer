@@ -94,7 +94,7 @@ export function ResultsView({ result }: ResultsViewProps) {
         // fetch the current best time from Firestore
         if (previousBest === undefined && result.userId) {
           try {
-            const { getTimeTrialBestTime } = await import('@/lib/db/firebase');
+            const { getTimeTrialBestTime } = await import('@/lib/db');
             const currentBest = await getTimeTrialBestTime(result.userId, result.timeTrialId);
             
             // If there's a current best time and it's different from this completion time,
@@ -172,7 +172,7 @@ export function ResultsView({ result }: ResultsViewProps) {
       }
 
       try {
-        const { getTestContent } = await import("@/lib/db/firebase");
+        const { getTestContent } = await import("@/lib/db");
         const testContent = await getTestContent(result.testContentId);
 
         if (testContent) {

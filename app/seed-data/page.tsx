@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useUserStore } from '@/store/user-store';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { saveTestResult } from '@/lib/db/firebase';
+import { saveTestResult } from '@/lib/db';
 import { TestResult, KeystrokeEvent } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
