@@ -86,24 +86,14 @@ export function calculateAccuracy(
   let perWordAccuracy: number;
   
   if (isStrictOrTimeTrial) {
-    // For strict mode/time trial: show error rate as "accuracy"
-    // Since strict mode blocks incorrect input, we need to count attempts that had errors
-    // We'll use a different approach: look at which words had typing mistakes during entry
-    
-    // Count words that had mistakes during typing (even if eventually correct)
-    // This is an approximation - in strict mode, all final words are correct,
-    // but we show the error rate based on blocked keystrokes
-    
-    // If we have strict mode errors, we need to determine which words had issues
-    // For now, we'll calculate based on: (strict errors > 0) means error rate > 0
-    // A more accurate calculation: assume errors distributed across words typed
+    // For strict mode/time trial: calculate per-word error rate
+    // Estimate words with mistakes: assume each error affected a word, capped at total words
+    // This is an approximation since we don't track per-word mistakes in strict mode
     if (strictModeErrors > 0 && totalTyped > 0) {
-      // Calculate what percentage of typing attempts had errors
-      // This is the "error rate" shown as accuracy in strict mode
-      const totalCharactersTyped = typedWords.slice(0, totalTyped).reduce((sum, word) => sum + word.length, 0);
-      perWordAccuracy = totalCharactersTyped > 0 
-        ? (strictModeErrors / totalCharactersTyped) * 100 
-        : 0;
+      // Per-word error rate: approximate as (errors / words), capped at 100%
+      // This assumes roughly one error per word affected
+      const wordsWithErrors = Math.min(strictModeErrors, totalTyped);
+      perWordAccuracy = (wordsWithErrors / totalTyped) * 100;
     } else {
       perWordAccuracy = 0; // No errors
     }
