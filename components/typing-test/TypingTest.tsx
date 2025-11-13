@@ -488,6 +488,9 @@ export function TypingTest() {
     // to respect their preference. They can toggle it manually.
   }, [isAuthenticated, autoSave, setAutoSave]);
 
+  // Use targetWords.length instead of targetWords array to avoid infinite loops from array reference changes
+  const targetWordsLength = targetWords.length;
+
   // Initialize test on mount
   useEffect(() => {
     // Don't do anything if we're completing the test - let navigation happen
@@ -507,7 +510,7 @@ export function TypingTest() {
 
     // Only initialize if we have no content AND we're not in the middle of generating/loading
     // This prevents the effect from re-running when defaultContentStyle changes (e.g., when selecting custom-text without applying)
-    if (status === 'idle' && targetWords.length === 0 && !isGenerating && !isLoadingContent) {
+    if (status === 'idle' && targetWordsLength === 0 && !isGenerating && !isLoadingContent) {
       // Check if benchmark mode is selected
       if (defaultContentStyle === 'benchmark') {
         const loadBenchmarkContent = async () => {
@@ -636,7 +639,7 @@ export function TypingTest() {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, autoSave]);
+  }, [status, targetWordsLength, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, autoSave]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -646,7 +649,7 @@ export function TypingTest() {
     // Skip duration updates for time trial mode (it always uses content-length)
     if (isTimeTrialMode) return;
     
-    if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
+    if (status === 'idle' && targetWordsLength > 0 && duration !== defaultDuration) {
       // If using AI content or custom text, regenerate with new duration
       if (isAIContentStyle(defaultContentStyle) || defaultContentStyle === 'custom-text') {
         handleContentLoad();
@@ -664,11 +667,11 @@ export function TypingTest() {
             practiceSequences,
             userLabels: currentState.userLabels,
           },
-          targetWords
+          currentState.targetWords
         );
       }
     }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, isTimeTrialMode, defaultContentStyle, handleContentLoad]);
+  }, [defaultDuration, status, targetWordsLength, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, isTimeTrialMode, defaultContentStyle, handleContentLoad]);
 
   // Cleanup: Reset test when component unmounts (e.g., navigating away)
   useEffect(() => {
@@ -708,10 +711,10 @@ export function TypingTest() {
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
-    if (isContentLengthMode && status === 'active' && currentWordIndex >= targetWords.length && !isCompletingRef.current) {
+    if (isContentLengthMode && status === 'active' && currentWordIndex >= targetWordsLength && !isCompletingRef.current) {
       handleComplete();
     }
-  }, [isContentLengthMode, status, currentWordIndex, targetWords.length, handleComplete]);
+  }, [isContentLengthMode, status, currentWordIndex, targetWordsLength, handleComplete]);
 
   // Trigger screen shake on strict mode errors (including time trials which force strict mode)
   useEffect(() => {
@@ -825,7 +828,7 @@ export function TypingTest() {
 
   // Show test UI with contextual loading
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-8">
+    <div className="flex flex-col items-center justify-start mt-16 min-h-screen p-8">
       {/* Header with timer */}
       <div className="w-full max-w-4xl mb-4">
         <div className="flex items-center justify-end mb-4">
