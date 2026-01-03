@@ -103,7 +103,7 @@ export function WPMChart({ results }: WPMChartProps) {
             labelFormatter={(date) =>
               format(new Date(date), 'MMM d, yyyy h:mm a')
             }
-            formatter={(value: number) => [`${value} WPM`, 'Speed']}
+            formatter={(value: number | undefined) => value !== undefined ? [`${value} WPM`, 'Speed'] : ['', '']}
           />
           <Line
             type="monotone"
