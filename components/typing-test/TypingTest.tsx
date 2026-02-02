@@ -711,10 +711,17 @@ export function TypingTest() {
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
-    if (isContentLengthMode && status === 'active' && currentWordIndex >= targetWords.length && !isCompletingRef.current) {
+    // Trigger completion when:
+    // 1. All words have been advanced through (space pressed after last word), OR
+    // 2. On the final word and it's fully typed correctly
+    const isOnLastWord = currentWordIndex === targetWords.length - 1;
+    const lastWordFullyTyped = isOnLastWord && currentInput === targetWords[currentWordIndex];
+    const allWordsPassed = currentWordIndex >= targetWords.length;
+
+    if (isContentLengthMode && status === 'active' && (allWordsPassed || lastWordFullyTyped) && !isCompletingRef.current) {
       handleComplete();
     }
-  }, [isContentLengthMode, status, currentWordIndex, targetWords.length, handleComplete]);
+  }, [isContentLengthMode, status, currentWordIndex, currentInput, targetWords, handleComplete]);
 
   // Trigger screen shake on strict mode errors (including time trials which force strict mode)
   useEffect(() => {
