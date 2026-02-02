@@ -60,6 +60,9 @@ export function TypingTest() {
     resetDate: Date | null;
   } | null>(null);
 
+  // Stable temp ID for unauthenticated users to prevent infinite loops
+  const [tempSourceId] = useState(() => 'temp-' + Date.now());
+
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
 
@@ -129,8 +132,8 @@ export function TypingTest() {
     sourceId?: string
   ): Promise<string> => {
     if (!isAuthenticated || !currentUserId) {
-      // For unauthenticated users, return a placeholder ID
-      return sourceId || 'temp-' + Date.now();
+      // For unauthenticated users, return a stable placeholder ID
+      return sourceId || tempSourceId;
     }
 
     try {
@@ -139,7 +142,7 @@ export function TypingTest() {
 
       // Try to find existing content
       let existingContent = null;
-      
+
       if (sourceId) {
         // Static test: look up by sourceId
         existingContent = await findTestContentBySource(currentUserId, sourceId);
@@ -178,16 +181,16 @@ export function TypingTest() {
       return testContentId;
     } catch (error) {
       console.error('Failed to save test content:', error);
-      // Fallback to sourceId or temp ID
-      return sourceId || 'temp-' + Date.now();
+      // Fallback to sourceId or stable temp ID
+      return sourceId || tempSourceId;
     }
-  }, [isAuthenticated, currentUserId]);
+  }, [isAuthenticated, currentUserId, tempSourceId]);
 
   // Handle restart
   const handleRestart = useCallback(() => {
     // Reset completion state
     isCompletingRef.current = false;
-    
+
     // Reset the test state to idle, preserving the current content
     const currentState = useTestStore.getState();
 
@@ -217,7 +220,7 @@ export function TypingTest() {
 
     // Reset completion state
     isCompletingRef.current = false;
-    
+
     // Reset test to clear previous content from button
     resetTest();
 
@@ -382,7 +385,7 @@ export function TypingTest() {
       // Handle custom text
       try {
         const { customTextRepeat: repeat } = useSettingsStore.getState();
-        
+
         if (!customText || customText.trim().length === 0) {
           throw new Error('No custom text provided. Please add some text in the content settings.');
         }
@@ -475,7 +478,7 @@ export function TypingTest() {
         setIsLoadingContent(false);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, customPrompt, customSequences, customText, customTextRepeat, defaultDuration, resetTest, initializeTest]);
 
   // Manage autoSave based on authentication status
@@ -642,10 +645,10 @@ export function TypingTest() {
   useEffect(() => {
     // Skip duration updates for benchmark mode (it has a fixed duration)
     if (isBenchmarkMode) return;
-    
+
     // Skip duration updates for time trial mode (it always uses content-length)
     if (isTimeTrialMode) return;
-    
+
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
       // If using AI content or custom text, regenerate with new duration
       if (isAIContentStyle(defaultContentStyle) || defaultContentStyle === 'custom-text') {
@@ -703,7 +706,7 @@ export function TypingTest() {
       isCompletingRef.current = false;
       setIsCompletingTest(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [completeTest, router, autoSave]);
 
   // Auto-complete test when all words are typed in content-length mode
@@ -1115,11 +1118,9 @@ export function TypingTest() {
       )}
 
       {/* Test display */}
-      <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${
-        isGenerating ? 'opacity-50' : 'opacity-100'
-      } transition-opacity ${status === 'complete' || status === 'failed' ? 'hidden' : ''} ${
-        shouldShake ? 'animate-shake' : ''
-      }`}>
+      <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${isGenerating ? 'opacity-50' : 'opacity-100'
+        } transition-opacity ${status === 'complete' || status === 'failed' ? 'hidden' : ''} ${shouldShake ? 'animate-shake' : ''
+        }`}>
         {isGenerating && (
           <div className="absolute inset-0 flex items-center justify-center bg-editor-bg/80 backdrop-blur-sm z-10">
             <p className="text-editor-muted">Generating new content...</p>
@@ -1155,20 +1156,20 @@ export function TypingTest() {
         </div>
       )}
       {/* Live WPM Speedometer - Only show when test is active and speedometer is enabled */}
-      <div style={{minHeight: showSpeedometer ? '180px' : '0px'}}>
-      <AnimatePresence>
-        {status === 'active' && showSpeedometer && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="w-full max-w-4xl mt-6 flex justify-center"
-          >
-            <WPMSpeedometer wpm={liveWPM} averageWPM={wpmScore} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div style={{ minHeight: showSpeedometer ? '180px' : '0px' }}>
+        <AnimatePresence>
+          {status === 'active' && showSpeedometer && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="w-full max-w-4xl mt-6 flex justify-center"
+            >
+              <WPMSpeedometer wpm={liveWPM} averageWPM={wpmScore} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
 
