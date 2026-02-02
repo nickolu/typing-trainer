@@ -83,6 +83,10 @@ export const useTestStore = create<TestState>((set, get) => ({
         testContentId: config.testContentId,
         isPractice: config.isPractice || false,
         practiceSequences: config.practiceSequences || [],
+        testContentTitle: config.testContentTitle || null,
+        testContentCategory: config.testContentCategory || null,
+        isTimeTrial: config.isTimeTrial || false,
+        timeTrialId: config.timeTrialId || null,
       },
     });
   },
@@ -745,7 +749,16 @@ export const useTestStore = create<TestState>((set, get) => ({
       return null;
     }
 
-    const { duration, testContentId, isPractice, practiceSequences } = state.lastTestConfig;
+    const {
+      duration,
+      testContentId,
+      isPractice,
+      practiceSequences,
+      testContentTitle,
+      testContentCategory,
+      isTimeTrial,
+      timeTrialId,
+    } = state.lastTestConfig;
 
     // Fetch test content from Firestore
     try {
@@ -763,10 +776,12 @@ export const useTestStore = create<TestState>((set, get) => ({
         duration,
         targetWords: testContent.words,
         testContentId,
-        testContentTitle: state.testContentTitle, // Preserve title
-        testContentCategory: state.testContentCategory, // Preserve category
+        testContentTitle,
+        testContentCategory,
         isPractice,
         practiceSequences,
+        isTimeTrial,
+        timeTrialId,
         status: 'idle',
         startTime: null,
         endTime: null,

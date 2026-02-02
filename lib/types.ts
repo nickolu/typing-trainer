@@ -116,6 +116,10 @@ export interface StoredTestConfig {
   // targetWords removed - fetched from testContents collection instead
   isPractice: boolean;
   practiceSequences: string[];
+  testContentTitle: string | null;
+  testContentCategory: string | null;
+  isTimeTrial: boolean;
+  timeTrialId: string | null;
 }
 
 // Completed word metadata
