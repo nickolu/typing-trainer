@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { X, BookOpen, Sparkles, Target, Lock, Award, Trophy, FileText } from 'lucide-react';
+import { TimeTrialLeaderboardModal } from '@/components/time-trial/TimeTrialLeaderboardModal';
 
 interface ContentOptionsModalProps {
   isOpen: boolean;
@@ -60,6 +61,11 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
   // Time trial best times
   const [bestTimes, setBestTimes] = useState<Record<string, number>>({});
   const [isLoadingBestTimes, setIsLoadingBestTimes] = useState(false);
+
+  // Leaderboard modal state
+  const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
+  const [selectedTrialId, setSelectedTrialId] = useState<string>('');
+  const [selectedTrialName, setSelectedTrialName] = useState<string>('');
 
   // Time trial options
   const timeTrialOptions: { value: ContentStyle; label: string; trialId: string }[] = [
@@ -312,32 +318,46 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                     const hasBestTime = bestTime !== undefined;
 
                     return (
-                      <button
-                        key={option.value}
-                        onClick={() => {
-                          setDefaultContentStyle(option.value);
-                          handleSave(option.value);
-                        }}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          defaultContentStyle === option.value
-                            ? 'border-yellow-400 bg-yellow-600/10'
-                            : 'border-editor-muted hover:border-yellow-400/50'
-                        }`}
-                      >
-                        <div className="font-medium text-sm flex items-center gap-1">
-                          <Trophy className="w-3 h-3 text-yellow-400" />
-                          {option.label}
-                        </div>
-                        <div className="text-xs mt-1">
-                          {isLoadingBestTimes ? (
-                            <span className="text-editor-muted">Loading...</span>
-                          ) : hasBestTime ? (
-                            <span className="text-yellow-400 font-medium">Best: {bestTime.toFixed(1)}s</span>
-                          ) : (
-                            <span className="text-editor-muted">Not Attempted</span>
-                          )}
-                        </div>
-                      </button>
+                      <div key={option.value} className="flex flex-col gap-1">
+                        <button
+                          onClick={() => {
+                            setDefaultContentStyle(option.value);
+                            handleSave(option.value);
+                          }}
+                          className={`p-3 rounded-lg border text-left transition-all ${
+                            defaultContentStyle === option.value
+                              ? 'border-yellow-400 bg-yellow-600/10'
+                              : 'border-editor-muted hover:border-yellow-400/50'
+                          }`}
+                        >
+                          <div className="font-medium text-sm flex items-center gap-1">
+                            <Trophy className="w-3 h-3 text-yellow-400" />
+                            {option.label}
+                          </div>
+                          <div className="text-xs mt-1">
+                            {isLoadingBestTimes ? (
+                              <span className="text-editor-muted">Loading...</span>
+                            ) : hasBestTime ? (
+                              <span className="text-yellow-400 font-medium">Best: {bestTime.toFixed(1)}s</span>
+                            ) : (
+                              <span className="text-editor-muted">Not Attempted</span>
+                            )}
+                          </div>
+                        </button>
+                        {currentUserId && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTrialId(option.trialId);
+                              setSelectedTrialName(option.label);
+                              setLeaderboardModalOpen(true);
+                            }}
+                            className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors py-1 px-2 rounded hover:bg-yellow-400/10"
+                          >
+                            🏆 View Rankings
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -584,6 +604,17 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
           </div>
         </div>
       </div>
+
+      {/* Leaderboard Modal */}
+      {leaderboardModalOpen && (
+        <TimeTrialLeaderboardModal
+          isOpen={leaderboardModalOpen}
+          onClose={() => setLeaderboardModalOpen(false)}
+          trialId={selectedTrialId}
+          trialName={selectedTrialName}
+          userId={currentUserId || undefined}
+        />
+      )}
     </div>
   );
 }

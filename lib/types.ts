@@ -180,3 +180,18 @@ export interface TestState {
   retryLastTest: () => Promise<string[] | null>;
   setUserLabels: (labels: string[]) => void;
 }
+
+// Time trial leaderboard types
+export interface LeaderboardEntry {
+  rank: number;
+  userId: string;
+  displayName: string;
+  bestTime: number;
+  isCurrentUser: boolean;
+}
+
+export interface TimeTrialRank {
+  rank: number;
+  totalEntries: number;
+  bestTime: number;
+}

@@ -12,6 +12,8 @@ import {
   deleteDoc,
   query,
   where,
+  orderBy,
+  limit as firestoreLimit,
   Timestamp,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase-config';
@@ -20,6 +22,7 @@ import {
   USERS_COLLECTION,
 } from './shared';
 import { getUserProfile } from './users';
+import { LeaderboardEntry, TimeTrialRank } from '@/lib/types';
 
 /**
  * Get best time for a specific time trial
@@ -64,12 +67,17 @@ export async function updateTimeTrialBestTime(
     const bestTimeRef = doc(db, TIME_TRIAL_BEST_TIMES_COLLECTION, docId);
     const bestTimeDoc = await getDoc(bestTimeRef);
 
+    // Fetch user's display name for leaderboard
+    const profile = await getUserProfile(userId);
+    const displayName = profile?.displayName || 'Anonymous';
+
     // If no existing best time, set this as the best
     if (!bestTimeDoc.exists()) {
       await setDoc(bestTimeRef, {
         userId,
         trialId,
         bestTime: completionTime,
+        displayName,
         testResultId,
         updatedAt: Timestamp.now(),
       });
@@ -82,6 +90,7 @@ export async function updateTimeTrialBestTime(
     if (completionTime < currentBest) {
       await updateDoc(bestTimeRef, {
         bestTime: completionTime,
+        displayName,
         testResultId,
         updatedAt: Timestamp.now(),
       });
@@ -193,6 +202,143 @@ export async function markTimeTrialResetNoticeSeen(userId: string): Promise<void
     console.log(`Marked time trial reset notice as seen for user ${userId}`);
   } catch (error) {
     console.error('Failed to mark time trial reset notice as seen:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get leaderboard for a specific time trial
+ * Returns top 100 entries sorted by best time
+ */
+export async function getTimeTrialLeaderboard(
+  trialId: string,
+  limit: number = 100,
+  currentUserId?: string
+): Promise<LeaderboardEntry[]> {
+  try {
+    const db = getFirebaseDb();
+    const bestTimesRef = collection(db, TIME_TRIAL_BEST_TIMES_COLLECTION);
+    const q = query(
+      bestTimesRef,
+      where('trialId', '==', trialId),
+      orderBy('bestTime', 'asc'),
+      firestoreLimit(limit)
+    );
+
+    const snapshot = await getDocs(q);
+    const entries: LeaderboardEntry[] = [];
+    let currentRank = 1;
+    let previousTime: number | null = null;
+    let sameRankCount = 0;
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+
+      // Handle ties: if same time as previous, use same rank
+      if (previousTime !== null && data.bestTime === previousTime) {
+        sameRankCount++;
+      } else if (previousTime !== null) {
+        currentRank += sameRankCount + 1;
+        sameRankCount = 0;
+      }
+
+      entries.push({
+        rank: currentRank,
+        userId: data.userId,
+        displayName: data.displayName || 'Anonymous',
+        bestTime: data.bestTime,
+        isCurrentUser: currentUserId === data.userId,
+      });
+
+      previousTime = data.bestTime;
+    });
+
+    return entries;
+  } catch (error) {
+    console.error('Failed to get time trial leaderboard:', error);
+    return [];
+  }
+}
+
+/**
+ * Get user's rank for a specific time trial
+ * Returns null if user has no best time for this trial
+ */
+export async function getUserTimeTrialRank(
+  trialId: string,
+  userId: string
+): Promise<TimeTrialRank | null> {
+  try {
+    const db = getFirebaseDb();
+
+    // Get user's best time
+    const userBestTime = await getTimeTrialBestTime(userId, trialId);
+    if (userBestTime === null) {
+      return null;
+    }
+
+    // Count how many entries have better times (lower is better)
+    const bestTimesRef = collection(db, TIME_TRIAL_BEST_TIMES_COLLECTION);
+    const betterTimesQuery = query(
+      bestTimesRef,
+      where('trialId', '==', trialId),
+      where('bestTime', '<', userBestTime)
+    );
+
+    const betterTimesSnapshot = await getDocs(betterTimesQuery);
+
+    // Get total entries for this trial
+    const allEntriesQuery = query(
+      bestTimesRef,
+      where('trialId', '==', trialId)
+    );
+    const allEntriesSnapshot = await getDocs(allEntriesQuery);
+
+    // Rank is number of better times + 1
+    const rank = betterTimesSnapshot.size + 1;
+    const totalEntries = allEntriesSnapshot.size;
+
+    return {
+      rank,
+      totalEntries,
+      bestTime: userBestTime,
+    };
+  } catch (error) {
+    console.error('Failed to get user time trial rank:', error);
+    return null;
+  }
+}
+
+/**
+ * Backfill displayName for existing time trial records
+ * This is a one-time migration function
+ */
+export async function backfillLeaderboardDisplayNames(): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    const bestTimesRef = collection(db, TIME_TRIAL_BEST_TIMES_COLLECTION);
+    const snapshot = await getDocs(bestTimesRef);
+
+    console.log(`Starting backfill for ${snapshot.size} records...`);
+
+    let updatedCount = 0;
+    const updates = snapshot.docs.map(async (docSnapshot) => {
+      const data = docSnapshot.data();
+      if (!data.displayName) {
+        const profile = await getUserProfile(data.userId);
+        if (profile) {
+          await updateDoc(docSnapshot.ref, {
+            displayName: profile.displayName || 'Anonymous'
+          });
+          updatedCount++;
+        }
+      }
+    });
+
+    await Promise.all(updates);
+    console.log(`Backfill complete: updated ${updatedCount} records`);
+  } catch (error) {
+    console.error('Failed to backfill leaderboard display names:', error);
     throw error;
   }
 }

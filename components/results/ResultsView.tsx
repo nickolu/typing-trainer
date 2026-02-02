@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import { TestResult } from "@/lib/types";
+import { TestResult, TimeTrialRank } from "@/lib/types";
 import { StatsCard } from "./StatsCard";
 import { SequenceAnalysis } from "./SequenceAnalysis";
 import { MistakeAnalysis } from "./MistakeAnalysis";
@@ -28,6 +28,7 @@ import {
   getTimeTrialBestTime,
   getTestResultsByContent,
 } from "@/lib/db/firebase";
+import { getUserTimeTrialRank } from "@/lib/db/time-trials";
 import {
   getRandomTest,
   textToWords,
@@ -39,6 +40,8 @@ import {
   analyzeMistakes,
   getMistakeSequencesForPractice,
 } from "@/lib/test-engine/mistake-analysis";
+import { UserRankBadge } from "@/components/time-trial/UserRankBadge";
+import { TimeTrialLeaderboardModal } from "@/components/time-trial/TimeTrialLeaderboardModal";
 
 interface ResultsViewProps {
   result: TestResult;
@@ -76,6 +79,10 @@ export function ResultsView({ result }: ResultsViewProps) {
     previousBest?: number;
   } | null>(null);
   const [isLoadingTimeTrialData, setIsLoadingTimeTrialData] = useState(false);
+
+  // Leaderboard state
+  const [userTimeTrialRank, setUserTimeTrialRank] = useState<TimeTrialRank | null>(null);
+  const [leaderboardModalOpen, setLeaderboardModalOpen] = useState(false);
 
   // Trial history state
   const [trialHistory, setTrialHistory] = useState<TestResult[]>([]);
@@ -152,6 +159,16 @@ export function ResultsView({ result }: ResultsViewProps) {
             )} seconds (${difference.toFixed(1)}s slower). Keep practicing!`,
             previousBest,
           });
+        }
+
+        // Fetch user's rank if authenticated
+        if (result.userId) {
+          try {
+            const rank = await getUserTimeTrialRank(result.timeTrialId, result.userId);
+            setUserTimeTrialRank(rank);
+          } catch (error) {
+            console.error('Failed to fetch user time trial rank:', error);
+          }
         }
 
         setIsLoadingTimeTrialData(false);
@@ -531,40 +548,59 @@ export function ResultsView({ result }: ResultsViewProps) {
                   {timeTrialMessage.message}
                 </p>
                 {result.completionTime && (
-                  <div className="mt-4 flex gap-6 text-sm">
-                    <div>
-                      <span className="text-editor-muted">Your Time: </span>
-                      <span
-                        className={`font-bold text-xl ${
-                          timeTrialMessage.type === "new-best"
-                            ? "text-yellow-400"
-                            : "text-green-400"
-                        }`}
-                      >
-                        {result.completionTime.toFixed(1)}s
-                      </span>
-                    </div>
-                    {timeTrialMessage.previousBest && (
-                      <>
-                        <div>
-                          <span className="text-editor-muted">
-                            Previous Best:{" "}
-                          </span>
-                          <span className="font-bold text-lg">
-                            {timeTrialMessage.previousBest.toFixed(1)}s
-                          </span>
-                        </div>
-                        {timeTrialMessage.improvement && (
+                  <div className="mt-4 space-y-4">
+                    <div className="flex gap-6 text-sm">
+                      <div>
+                        <span className="text-editor-muted">Your Time: </span>
+                        <span
+                          className={`font-bold text-xl ${
+                            timeTrialMessage.type === "new-best"
+                              ? "text-yellow-400"
+                              : "text-green-400"
+                          }`}
+                        >
+                          {result.completionTime.toFixed(1)}s
+                        </span>
+                      </div>
+                      {timeTrialMessage.previousBest && (
+                        <>
                           <div>
                             <span className="text-editor-muted">
-                              Improvement:{" "}
+                              Previous Best:{" "}
                             </span>
-                            <span className="font-bold text-lg text-green-400">
-                              -{timeTrialMessage.improvement.toFixed(1)}s
+                            <span className="font-bold text-lg">
+                              {timeTrialMessage.previousBest.toFixed(1)}s
                             </span>
                           </div>
-                        )}
-                      </>
+                          {timeTrialMessage.improvement && (
+                            <div>
+                              <span className="text-editor-muted">
+                                Improvement:{" "}
+                              </span>
+                              <span className="font-bold text-lg text-green-400">
+                                -{timeTrialMessage.improvement.toFixed(1)}s
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* User Rank and Leaderboard Button */}
+                    {isAuthenticated && userTimeTrialRank && (
+                      <div className="flex items-center gap-4 pt-2 border-t border-gray-700/50">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-400">Your Rank:</span>
+                          <UserRankBadge rank={userTimeTrialRank} size="md" />
+                        </div>
+                        <button
+                          onClick={() => setLeaderboardModalOpen(true)}
+                          className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-yellow-400/10"
+                        >
+                          <Trophy className="w-4 h-4" />
+                          View Full Leaderboard
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -698,6 +734,17 @@ export function ResultsView({ result }: ResultsViewProps) {
         targetWords={targetWords}
         onGeneratePractice={handleGenerateTargetedPractice}
       />
+
+      {/* Leaderboard Modal */}
+      {result.isTimeTrial && result.timeTrialId && leaderboardModalOpen && (
+        <TimeTrialLeaderboardModal
+          isOpen={leaderboardModalOpen}
+          onClose={() => setLeaderboardModalOpen(false)}
+          trialId={result.timeTrialId}
+          trialName={getTestById(result.timeTrialId)?.title || 'Time Trial'}
+          userId={currentUserId || undefined}
+        />
+      )}
     </div>
   );
 }
