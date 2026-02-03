@@ -46,6 +46,9 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     { value: 'bigrams', label: 'Bigrams', description: '2-char sequences' },
     { value: 'trigrams', label: 'Trigrams', description: '3-char sequences' },
     { value: 'tetragrams', label: 'Tetragrams', description: '4-char sequences' },
+    { value: 'special-chars', label: 'Special Characters', description: 'Practice symbols' },
+    { value: 'code-typescript', label: 'Code: TypeScript', description: 'TypeScript snippets' },
+    { value: 'code-python', label: 'Code: Python', description: 'Python snippets' },
   ];
 
   const aiOptions: { value: ContentStyle; label: string; description: string }[] = [

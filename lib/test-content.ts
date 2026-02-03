@@ -339,6 +339,117 @@ export const staticTests: TestContent[] = [
     text: 'Home is where the heart is most comfortable. This beautiful sentiment captures the emotional essence of what makes a place truly feel like home. While a house is simply a physical structure, a home is created through love, memories, and the people who inhabit it. The heart finds comfort not in luxurious surroundings or perfect conditions, but in the sense of belonging, acceptance, and unconditional love that a true home provides. This phrase reminds us that home can be found anywhere we feel safe, loved, and accepted for who we are. It celebrates the importance of creating emotional sanctuary wherever we are, whether in a grand mansion or a modest apartment. The most beautiful homes are those filled with laughter, warmth, and the people we hold dear.',
   },
 
+  // Special Characters (5)
+  {
+    id: 'special-001',
+    category: 'special-chars',
+    title: 'Common Symbols',
+    text: 'Practice typing common symbols like @, #, $, %, &, *, (, ), [, ], {, }, <, >, /, \\, |, -, _, +, =, ~, `, \', ", :, ;, ?, !, ., and ,. These characters appear frequently in emails, code, and formatted text. Mastering them improves your typing fluency across different contexts.',
+    source: 'Special Characters',
+  },
+  {
+    id: 'special-002',
+    category: 'special-chars',
+    title: 'Email and Web',
+    text: 'Email addresses like user@example.com and URLs like https://www.website.com/path?param=value&other=data require special characters. Practice typing john.doe@company.org, admin@site.co.uk, and https://github.com/user/repo to improve your accuracy with @ symbols, dots, slashes, and hyphens.',
+    source: 'Special Characters',
+  },
+  {
+    id: 'special-003',
+    category: 'special-chars',
+    title: 'Math and Logic',
+    text: 'Mathematical expressions use symbols: 2 + 2 = 4, 10 - 3 = 7, 5 * 6 = 30, 20 / 4 = 5, x^2 + y^2 = z^2, a >= b, c <= d, e != f, g == h. Logical operators include &&, ||, !, ==, !=, <, >, <=, >=. Practice these symbols to type formulas faster.',
+    source: 'Special Characters',
+  },
+  {
+    id: 'special-004',
+    category: 'special-chars',
+    title: 'Brackets and Quotes',
+    text: 'Different bracket types serve different purposes: (parentheses), [square brackets], {curly braces}, and <angle brackets>. Quotes include "double quotes", \'single quotes\', and `backticks`. Practice nesting: {key: [1, 2, 3]}, function(arg1, arg2), and <div class="container">.',
+    source: 'Special Characters',
+  },
+  {
+    id: 'special-005',
+    category: 'special-chars',
+    title: 'Advanced Symbols',
+    text: 'Less common but important symbols: tilde ~, pipe |, backslash \\, caret ^, underscore _, backtick `, at @, hash #, dollar $, percent %, ampersand &. File paths use slashes: /usr/local/bin or C:\\Program Files\\App. Environment variables: $HOME, %USERPROFILE%, ${VAR_NAME}.',
+    source: 'Special Characters',
+  },
+
+  // Code - TypeScript (5)
+  {
+    id: 'code-ts-001',
+    category: 'code-typescript',
+    title: 'Interface Definition',
+    text: 'interface User { id: number; name: string; email: string; isActive: boolean; createdAt: Date; } This interface defines the structure of a User object with typed properties. TypeScript interfaces provide compile-time type checking and improve code documentation. Use interfaces to define contracts for objects, ensuring consistency across your codebase.',
+    source: 'TypeScript',
+  },
+  {
+    id: 'code-ts-002',
+    category: 'code-typescript',
+    title: 'Function Types',
+    text: 'function calculateTotal(price: number, quantity: number): number { return price * quantity; } const formatName = (first: string, last: string): string => `${first} ${last}`; async function fetchData(): Promise<Response> { return await fetch("/api/data"); } TypeScript function signatures specify parameter types and return types for better type safety.',
+    source: 'TypeScript',
+  },
+  {
+    id: 'code-ts-003',
+    category: 'code-typescript',
+    title: 'Generic Types',
+    text: 'function identity<T>(arg: T): T { return arg; } interface Box<T> { value: T; } class Container<T> { private items: T[] = []; add(item: T): void { this.items.push(item); } } Generics enable writing reusable, type-safe code that works with multiple types while maintaining type information.',
+    source: 'TypeScript',
+  },
+  {
+    id: 'code-ts-004',
+    category: 'code-typescript',
+    title: 'Type Guards',
+    text: 'function isString(value: unknown): value is string { return typeof value === "string"; } if (isString(input)) { console.log(input.toUpperCase()); } Type guards narrow types within conditional blocks, allowing TypeScript to infer more specific types and provide better autocomplete and type checking.',
+    source: 'TypeScript',
+  },
+  {
+    id: 'code-ts-005',
+    category: 'code-typescript',
+    title: 'Utility Types',
+    text: 'type Partial<T> = { [P in keyof T]?: T[P]; }; type Readonly<T> = { readonly [P in keyof T]: T[P]; }; type Pick<T, K extends keyof T> = { [P in K]: T[P]; }; type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>; Utility types transform existing types to create new ones.',
+    source: 'TypeScript',
+  },
+
+  // Code - Python (5)
+  {
+    id: 'code-py-001',
+    category: 'code-python',
+    title: 'Function Definition',
+    text: 'def calculate_sum(numbers: list[int]) -> int: total = 0 for num in numbers: total += num return total result = calculate_sum([1, 2, 3, 4, 5]) print(f"The sum is: {result}") Python functions use def keyword, type hints improve code clarity, and f-strings format output elegantly.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-002',
+    category: 'code-python',
+    title: 'List Comprehension',
+    text: 'squares = [x**2 for x in range(10)] even_numbers = [n for n in range(20) if n % 2 == 0] matrix = [[i*j for j in range(5)] for i in range(5)] filtered = [item.upper() for item in words if len(item) > 3] List comprehensions provide concise syntax for creating lists based on existing iterables.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-003',
+    category: 'code-python',
+    title: 'Class Definition',
+    text: 'class Person: def __init__(self, name: str, age: int): self.name = name self.age = age def greet(self) -> str: return f"Hello, I\'m {self.name}" def birthday(self): self.age += 1 person = Person("Alice", 30) print(person.greet()) Classes encapsulate data and behavior in object-oriented programming.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-004',
+    category: 'code-python',
+    title: 'Dictionary Operations',
+    text: 'user = {"name": "John", "age": 25, "email": "john@example.com"} user["city"] = "New York" for key, value in user.items(): print(f"{key}: {value}") merged = {**dict1, **dict2} filtered = {k: v for k, v in data.items() if v > 10} Dictionaries store key-value pairs with flexible access patterns.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-005',
+    category: 'code-python',
+    title: 'Exception Handling',
+    text: 'try: result = int(input("Enter a number: ")) / divisor except ValueError: print("Invalid input") except ZeroDivisionError: print("Cannot divide by zero") except Exception as e: print(f"Error: {e}") finally: print("Cleanup") Exception handling ensures robust error management in Python programs.',
+    source: 'Python',
+  },
+
   // Time Trials (6)
   {
     id: 'time-trial-001',

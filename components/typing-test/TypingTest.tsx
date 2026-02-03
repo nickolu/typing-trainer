@@ -482,11 +482,11 @@ export function TypingTest() {
         } else {
           // Load regular content
           // Extract category from content style
-          // At this point, we know currentContentStyle is one of: 'random' | 'quote' | 'prose' | 'technical' | 'common'
+          // At this point, we know currentContentStyle is one of: 'random' | 'quote' | 'prose' | 'technical' | 'common' | 'special-chars' | 'code-typescript' | 'code-python'
           // (AI styles and benchmark were handled above, time-trials were handled in if block)
           const category = currentContentStyle === 'random'
             ? undefined
-            : (currentContentStyle as 'quote' | 'prose' | 'technical' | 'common');
+            : (currentContentStyle as 'quote' | 'prose' | 'technical' | 'common' | 'special-chars' | 'code-typescript' | 'code-python');
           testContent = getRandomTest(category);
         }
 

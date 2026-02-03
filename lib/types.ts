@@ -73,7 +73,7 @@ export interface TestResult {
 // Static test content
 export interface TestContent {
   id: string;
-  category: 'quote' | 'prose' | 'technical' | 'common' | 'time-trial';
+  category: 'quote' | 'prose' | 'technical' | 'common' | 'time-trial' | 'special-chars' | 'code-typescript' | 'code-python';
   title: string; // Display name for the test content
   text: string;
   source?: string; // Attribution
