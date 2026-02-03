@@ -425,29 +425,33 @@ export function TypingTest() {
         let words: string[];
         let title: string;
         let category: string;
+        let sourceId: string;
 
         if (currentContentStyle === 'bigrams') {
           const { generateBigrams } = await import('@/lib/test-content');
           words = generateBigrams(requiredWords);
           title = 'Bigrams Practice';
           category = 'Bigrams';
+          sourceId = `bigrams-${defaultDuration}`;
         } else if (currentContentStyle === 'trigrams') {
           const { generateTrigrams } = await import('@/lib/test-content');
           words = generateTrigrams(requiredWords);
           title = 'Trigrams Practice';
           category = 'Trigrams';
+          sourceId = `trigrams-${defaultDuration}`;
         } else {
           const { generateTetragrams } = await import('@/lib/test-content');
           words = generateTetragrams(requiredWords);
           title = 'Tetragrams Practice';
           category = 'Tetragrams';
+          sourceId = `tetragrams-${defaultDuration}`;
         }
 
         // Create text from words for saving
         const text = words.join(' ');
 
-        // Save test content and get ID
-        const testContentId = await saveOrReuseTestContent(text, words);
+        // Save test content and get ID (with sourceId to prevent creating new entries)
+        const testContentId = await saveOrReuseTestContent(text, words, sourceId);
 
         initializeTest(
           {
@@ -701,8 +705,14 @@ export function TypingTest() {
     if (isTimeTrialMode) return;
 
     if (status === 'idle' && targetWords.length > 0 && duration !== defaultDuration) {
-      // If using AI content or custom text, regenerate with new duration
-      if (isAIContentStyle(defaultContentStyle) || defaultContentStyle === 'custom-text') {
+      // If using AI content, custom text, or n-grams, regenerate with new duration
+      if (
+        isAIContentStyle(defaultContentStyle) ||
+        defaultContentStyle === 'custom-text' ||
+        defaultContentStyle === 'bigrams' ||
+        defaultContentStyle === 'trigrams' ||
+        defaultContentStyle === 'tetragrams'
+      ) {
         handleContentLoad();
       } else {
         // For static content, reinitialize the test with new duration but preserve all metadata
