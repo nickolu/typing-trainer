@@ -375,8 +375,43 @@ export const staticTests: TestContent[] = [
     text: 'Less common but important symbols: tilde ~, pipe |, backslash \\, caret ^, underscore _, backtick `, at @, hash #, dollar $, percent %, ampersand &. File paths use slashes: /usr/local/bin or C:\\Program Files\\App. Environment variables: $HOME, %USERPROFILE%, ${VAR_NAME}.',
     source: 'Special Characters',
   },
+  {
+    id: 'special-006',
+    category: 'special-chars',
+    title: 'SQL Queries and Database Syntax',
+    text: 'SQL statements: SELECT * FROM users WHERE id = 1; INSERT INTO products (name, price) VALUES (\'Widget\', 29.99); UPDATE orders SET status = \'shipped\' WHERE order_id IN (100, 101, 102); DELETE FROM sessions WHERE created_at < NOW() - INTERVAL \'7 days\'; Joins: SELECT u.name, o.total FROM users u INNER JOIN orders o ON u.id = o.user_id; Aggregates: SELECT COUNT(*), AVG(price), SUM(quantity) FROM products GROUP BY category HAVING COUNT(*) > 10; Subqueries: SELECT * FROM (SELECT id FROM items WHERE price <= 50) AS affordable; Comments: -- single line, /* multi line */.',
+    source: 'Special Characters Practice',
+  },
+  {
+    id: 'special-007',
+    category: 'special-chars',
+    title: 'CSS Selectors and Properties',
+    text: 'Selectors: div.class-name, #unique-id, element[attr="value"], parent > child, sibling ~ sibling, a:hover, input:focus, ::before, ::after. Complex: .container .item:nth-child(2n+1), form input[type="text"]:not(.disabled). Properties: margin: 10px 20px 10px 20px; padding: 1rem 2rem; background: linear-gradient(45deg, #ff0000, #0000ff); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); transform: translateX(50%) rotate(45deg) scale(1.5); Grid: grid-template-columns: repeat(3, 1fr); gap: 1rem; Flex: display: flex; justify-content: space-between; align-items: center; Variables: var(--primary-color, #333); calc(100% - 20px);',
+    source: 'Special Characters Practice',
+  },
+  {
+    id: 'special-008',
+    category: 'special-chars',
+    title: 'Markdown and Documentation Syntax',
+    text: 'Headers: # H1, ## H2, ### H3, #### H4. Emphasis: *italic*, **bold**, ***bold-italic***, ~~strikethrough~~. Links: [text](https://example.com "title"), [reference][1], ![image](path/to/img.png). Lists: - item, * item, + item, 1. ordered. Code: `inline code`, ```python code block```. Blockquotes: > quote, >> nested. Tables: | Header | Header |, |--------|--------| , | Cell | Cell |. Task lists: - [x] done, - [ ] todo. Horizontal rule: ---, ***, ___. Escape characters: \\*, \\_, \\#, \\[, \\]. Footnotes: [^1], [^1]: definition. HTML: <kbd>Ctrl</kbd>, <sup>2</sup>, <sub>x</sub>.',
+    source: 'Special Characters Practice',
+  },
+  {
+    id: 'special-009',
+    category: 'special-chars',
+    title: 'Network and System Paths',
+    text: 'Unix paths: /usr/local/bin, ~/.bashrc, ../parent/file.txt, ./current/dir, ~/Documents/file.pdf. Windows: C:\\Windows\\System32, D:\\Users\\Name\\Desktop, \\\\server\\share\\folder. URLs: https://api.example.com:8080/v1/users?filter=active&sort=desc#section. FTP: ftp://user:pass@ftp.site.com:21/pub/files. SSH: ssh://user@host:22/path. Email: mailto:user@domain.com?subject=Hello&body=Message. File extensions: .js, .tsx, .py, .rb, .go, .rs, .cpp, .hpp, .json, .yaml, .md, .txt. Glob patterns: *.js, **/*.test.ts, src/**/[a-z]*.{js,jsx}, !node_modules/**. IP addresses: 192.168.1.1, 10.0.0.0/8, fe80::1%lo0.',
+    source: 'Special Characters Practice',
+  },
+  {
+    id: 'special-010',
+    category: 'special-chars',
+    title: 'Mathematical and Scientific Notation',
+    text: 'Basic operations: 2 + 2 = 4, 10 - 5 = 5, 3 × 4 = 12, 15 ÷ 3 = 5, 2^8 = 256, √16 = 4. Algebra: x² + 2x + 1 = 0, y = mx + b, f(x) = x³ - 3x² + 2x - 1. Calculus: ∫(x²)dx, dy/dx, ∂f/∂x, lim(x→∞). Greek letters: α, β, γ, δ, θ, λ, μ, π, σ, ω. Sets: A ∪ B, A ∩ B, A ⊂ B, x ∈ S, ∅, |A|. Logic: p ∧ q, p ∨ q, ¬p, p → q, ∀x, ∃y. Comparison: x ≈ y, a ≠ b, c ≤ d, e ≥ f, x ∝ y. Special: ∞, ±, ×, ÷, ≡, ≠, ≤, ≥.',
+    source: 'Special Characters Practice',
+  },
 
-  // Code - TypeScript (5)
+  // Code - TypeScript (10)
   {
     id: 'code-ts-001',
     category: 'code-typescript',
@@ -412,8 +447,43 @@ export const staticTests: TestContent[] = [
     text: 'type Partial<T> = { [P in keyof T]?: T[P]; }; type Readonly<T> = { readonly [P in keyof T]: T[P]; }; type Pick<T, K extends keyof T> = { [P in K]: T[P]; }; type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>; Utility types transform existing types to create new ones.',
     source: 'TypeScript',
   },
+  {
+    id: 'code-ts-006',
+    category: 'code-typescript',
+    title: 'Advanced Generics with Constraints',
+    text: 'function merge<T extends object, U extends object>(obj1: T, obj2: U): T & U { return { ...obj1, ...obj2 }; } interface Lengthwise { length: number; } function logLength<T extends Lengthwise>(arg: T): T { console.log(arg.length); return arg; } class DataStore<T extends { id: string }> { private data: T[] = []; add(item: T) { this.data.push(item); } } Generic constraints ensure type parameters meet specific requirements. The extends keyword restricts acceptable types, enabling better type safety. This allows creation of flexible, reusable functions that work with multiple types while maintaining compile-time guarantees. Constraints prevent invalid type usage, catching errors during development rather than runtime. The intersection type T & U combines properties from both types.',
+    source: 'TypeScript Practice',
+  },
+  {
+    id: 'code-ts-007',
+    category: 'code-typescript',
+    title: 'Conditional and Mapped Types',
+    text: 'type IsString<T> = T extends string ? true : false; type NonNullable<T> = T extends null | undefined ? never : T; type ReadonlyProps<T> = { readonly [K in keyof T]: T[K]; }; type Optional<T> = { [K in keyof T]?: T[K]; }; type Extract<T, U> = T extends U ? T : never; type Exclude<T, U> = T extends U ? never : T; Conditional types select types based on conditions, enabling sophisticated type transformations. Mapped types iterate over properties, transforming each systematically. These powerful features enable creation of utility types that derive new types from existing ones. The extends keyword tests type relationships, while never represents impossible types. Together, they provide compile-time type manipulation for building robust, type-safe applications.',
+    source: 'TypeScript Practice',
+  },
+  {
+    id: 'code-ts-008',
+    category: 'code-typescript',
+    title: 'Async Await with Promises',
+    text: 'async function fetchUser(id: string): Promise<User> { const response = await fetch(`/api/users/${id}`); if (!response.ok) throw new Error("Failed to fetch"); return await response.json(); } async function getMultipleUsers(ids: string[]): Promise<User[]> { const promises = ids.map(id => fetchUser(id)); return await Promise.all(promises); } try { const user = await fetchUser("123"); console.log(user.name); } catch (error) { console.error("Error fetching user:", error); } Async functions return promises automatically. The await keyword pauses execution until promises resolve. Promise.all executes multiple async operations concurrently, improving performance. Proper error handling with try-catch blocks ensures robust async code. Type annotations on async functions specify the resolved value type.',
+    source: 'TypeScript Practice',
+  },
+  {
+    id: 'code-ts-009',
+    category: 'code-typescript',
+    title: 'React Component with TypeScript',
+    text: 'interface Props { title: string; count: number; onIncrement: () => void; optional?: boolean; } const Counter: React.FC<Props> = ({ title, count, onIncrement, optional = false }) => { const [state, setState] = useState<number>(0); const [data, setData] = useState<string | null>(null); useEffect(() => { console.log("Count changed:", count); }, [count]); const handleClick = (): void => { setState(prev => prev + 1); onIncrement(); }; return <div><h2>{title}</h2><p>Count: {count}</p><button onClick={handleClick}>Increment</button></div>; }; Type-safe React components prevent runtime errors and improve developer experience with autocomplete. Props interfaces define component contracts. Generic hooks like useState require explicit type parameters for complex types. UseEffect dependencies are type-checked for correctness.',
+    source: 'TypeScript Practice',
+  },
+  {
+    id: 'code-ts-010',
+    category: 'code-typescript',
+    title: 'Decorators and Metadata',
+    text: 'function LogMethod(target: any, key: string, descriptor: PropertyDescriptor) { const original = descriptor.value; descriptor.value = function(...args: any[]) { console.log(`Calling ${key} with`, args); const result = original.apply(this, args); console.log(`Result:`, result); return result; }; return descriptor; } class ApiService { @LogMethod async fetchData(id: string): Promise<Data> { const response = await fetch(`/api/data/${id}`); return await response.json(); } } Decorators provide declarative metadata and modify class behavior at design time. They enable aspect-oriented programming patterns like logging, validation, and caching. Method decorators receive target, property key, and descriptor, allowing behavior augmentation. Experimental decorator support requires enabling in tsconfig. They reduce boilerplate by centralizing cross-cutting concerns.',
+    source: 'TypeScript Practice',
+  },
 
-  // Code - Python (5)
+  // Code - Python (10)
   {
     id: 'code-py-001',
     category: 'code-python',
@@ -449,8 +519,78 @@ export const staticTests: TestContent[] = [
     text: 'try: result = int(input("Enter a number: ")) / divisor except ValueError: print("Invalid input") except ZeroDivisionError: print("Cannot divide by zero") except Exception as e: print(f"Error: {e}") finally: print("Cleanup") Exception handling ensures robust error management in Python programs.',
     source: 'Python',
   },
+  {
+    id: 'code-py-006',
+    category: 'code-python',
+    title: 'Decorators & Context Managers',
+    text: 'def timer(func): import time def wrapper(*args, **kwargs): start = time.time() result = func(*args, **kwargs) print(f"Took {time.time() - start:.2f}s") return result return wrapper @timer def process_data(): pass with open("file.txt", "r") as f: data = f.read() Decorators enhance functions while context managers handle resources safely.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-007',
+    category: 'code-python',
+    title: 'Generators & Iterators',
+    text: 'def fibonacci(n): a, b = 0, 1 for _ in range(n): yield a a, b = b, a + b def infinite_counter(start=0): while True: yield start start += 1 numbers = (x**2 for x in range(10)) for num in fibonacci(10): print(num) Generators produce values lazily, saving memory for large sequences.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-008',
+    category: 'code-python',
+    title: 'Async/Await with Asyncio',
+    text: 'import asyncio async def fetch_data(url: str) -> dict: await asyncio.sleep(1) return {"data": url} async def main(): tasks = [fetch_data(f"url-{i}") for i in range(5)] results = await asyncio.gather(*tasks) print(results) asyncio.run(main()) Async functions enable concurrent execution for I/O-bound operations without blocking.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-009',
+    category: 'code-python',
+    title: 'Dataclasses & Type Annotations',
+    text: 'from dataclasses import dataclass, field from typing import Optional @dataclass class Product: name: str price: float quantity: int = 0 tags: list[str] = field(default_factory=list) def total_value(self) -> float: return self.price * self.quantity item = Product("Laptop", 999.99, 5) Dataclasses reduce boilerplate for classes storing data.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-010',
+    category: 'code-python',
+    title: 'Lambda & Functional Programming',
+    text: 'from functools import reduce square = lambda x: x**2 numbers = [1, 2, 3, 4, 5] squared = list(map(lambda x: x**2, numbers)) filtered = list(filter(lambda x: x % 2 == 0, numbers)) total = reduce(lambda a, b: a + b, numbers) sorted_data = sorted(items, key=lambda x: x["score"]) Lambda functions create anonymous inline functions for functional programming patterns.',
+    source: 'Python',
+  },
+  {
+    id: 'code-py-011',
+    category: 'code-python',
+    title: 'Decorators and Context Managers',
+    text: 'def timer_decorator(func): from time import perf_counter def wrapper(*args, **kwargs): start = perf_counter() result = func(*args, **kwargs) elapsed = perf_counter() - start print(f"{func.__name__} took {elapsed:.4f} seconds") return result return wrapper @timer_decorator def slow_function(n): return sum(i**2 for i in range(n)) class FileManager: def __init__(self, filename, mode): self.filename = filename self.mode = mode def __enter__(self): self.file = open(self.filename, self.mode) return self.file def __exit__(self, exc_type, exc_val, exc_tb): self.file.close() return False with FileManager("data.txt", "w") as f: f.write("content") result = slow_function(1000000) Decorators elegantly wrap functions to add functionality, while context managers ensure proper resource cleanup using enter and exit methods. They improve code reusability and maintainability.',
+    source: 'Python Practice',
+  },
+  {
+    id: 'code-py-012',
+    category: 'code-python',
+    title: 'Generators and Iterators',
+    text: 'def fibonacci_generator(limit): a, b = 0, 1 count = 0 while count < limit: yield a a, b = b, a + b count += 1 def infinite_sequence(): num = 0 while True: yield num num += 1 class CounterIterator: def __init__(self, max_value): self.max = max_value self.current = 0 def __iter__(self): return self def __next__(self): if self.current >= self.max: raise StopIteration value = self.current self.current += 1 return value squares = (x**2 for x in range(10)) for num in fibonacci_generator(8): print(num) Generators yield values one at a time, conserving memory for large datasets. Iterator protocol uses iter and next methods for custom iteration behavior.',
+    source: 'Python Practice',
+  },
+  {
+    id: 'code-py-013',
+    category: 'code-python',
+    title: 'Async Await with Asyncio',
+    text: 'import asyncio import aiohttp async def fetch_url(session, url): async with session.get(url) as response: return await response.text() async def fetch_multiple(urls): async with aiohttp.ClientSession() as session: tasks = [fetch_url(session, url) for url in urls] results = await asyncio.gather(*tasks, return_exceptions=True) return results async def process_with_timeout(data): try: result = await asyncio.wait_for(slow_operation(data), timeout=5.0) return result except asyncio.TimeoutError: print("Operation timed out") return None async def main(): urls = ["https://example.com", "https://example.org"] data = await fetch_multiple(urls) for content in data: print(len(content)) asyncio.run(main()) Async functions enable efficient non-blocking I/O operations for improved performance. The gather function runs multiple coroutines concurrently, while wait_for adds timeout protection to prevent hanging operations.',
+    source: 'Python Practice',
+  },
+  {
+    id: 'code-py-014',
+    category: 'code-python',
+    title: 'Dataclasses and Type Annotations',
+    text: 'from dataclasses import dataclass, field, asdict from typing import List, Optional, Dict, Union from datetime import datetime @dataclass class Address: street: str city: str state: str zip_code: str @dataclass class Person: name: str age: int email: str addresses: List[Address] = field(default_factory=list) metadata: Dict[str, Union[str, int]] = field(default_factory=dict) created_at: datetime = field(default_factory=datetime.now) def add_address(self, address: Address) -> None: self.addresses.append(address) def to_dict(self) -> dict: return asdict(self) person = Person("Alice", 30, "alice@example.com") home = Address("123 Main St", "Boston", "MA", "02101") person.add_address(home) Dataclasses automatically generate init, repr, and equality methods. Type annotations improve code clarity and enable static type checking with tools like mypy.',
+    source: 'Python Practice',
+  },
+  {
+    id: 'code-py-015',
+    category: 'code-python',
+    title: 'Lambda Functions and Functional Programming',
+    text: 'from functools import reduce, partial from operator import add, mul numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] squared = list(map(lambda x: x**2, numbers)) evens = list(filter(lambda x: x % 2 == 0, numbers)) product = reduce(lambda x, y: x * y, numbers, 1) sum_all = reduce(add, numbers, 0) multiply_by_two = partial(mul, 2) doubled = list(map(multiply_by_two, numbers)) people = [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}] sorted_by_age = sorted(people, key=lambda p: p["age"]) names = [p["name"] for p in people if p["age"] > 26] compose = lambda f, g: lambda x: f(g(x)) add_ten = lambda x: x + 10 times_two = lambda x: x * 2 combined = compose(add_ten, times_two) Functional programming uses immutable data and pure functions. Map applies functions to sequences, filter selects elements, and reduce combines them.',
+    source: 'Python Practice',
+  },
 
-  // Time Trials (6)
+  // Time Trials (12)
   {
     id: 'time-trial-001',
     category: 'time-trial',
@@ -491,6 +631,48 @@ export const staticTests: TestContent[] = [
     category: 'time-trial',
     title: 'Grandmaster Crucible',
     text: 'Cryptographic protocols underpin modern secure communication through mathematical principles involving prime factorization, elliptic curve discrete logarithms, and lattice-based hard problems. Zero-knowledge proofs enable verification without revealing underlying information, while homomorphic encryption permits computation on encrypted data without decryption. Post-quantum cryptography research anticipates threats from quantum algorithms like Shor\'s algorithm, developing resistant alternatives using code-based, hash-based, and multivariate polynomial approaches to ensure long-term security.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-007',
+    category: 'time-trial',
+    title: 'Novice Sprint',
+    text: 'The morning sun brings new light to the quiet town. Birds sing sweet songs from tall trees. People walk to work with fresh coffee in hand. Shops open their doors to welcome friends. The day begins with hope and joy for all who live here.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-008',
+    category: 'time-trial',
+    title: 'Intermediate Challenge',
+    text: 'Morning coffee rituals vary across cultures and continents. Some prefer traditional espresso shots, while others enjoy elaborate pour-over techniques. The aroma awakens dormant senses, preparing minds for productive days ahead. Whether savoring French press richness or embracing modern cold brew methods, each approach offers unique characteristics. Enthusiasts debate optimal temperatures, grinding consistencies, and brewing durations endlessly. Yet ultimately, personal preference guides these daily decisions. Coffee remains humanity\'s beloved companion, fueling creativity and conversation throughout countless generations worldwide.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-009',
+    category: 'time-trial',
+    title: 'Advanced Velocity',
+    text: 'Quantum mechanics revolutionizes our understanding of subatomic particles through probabilistic wave functions and superposition states. Heisenberg\'s uncertainty principle fundamentally limits simultaneous measurement precision of complementary variables. The double-slit experiment demonstrates wave-particle duality, revealing light\'s enigmatic nature. Schrodinger\'s equation governs quantum systems mathematically, enabling predictions about energy levels and orbital configurations. Entanglement creates mysterious correlations between distant particles, defying classical intuition about locality and causality. These phenomena underpin emerging technologies including quantum computing, cryptography, and sensing applications. Theoretical physicists continue exploring interpretations ranging from Copenhagen to many-worlds hypotheses, seeking deeper comprehension of reality\'s fabric at microscopic scales.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-010',
+    category: 'time-trial',
+    title: 'Expert Gauntlet',
+    text: 'Quantum entanglement manifests peculiar phenomena whereby particle pairs exhibit instantaneous correlations regardless of spatial separation, challenging classical intuitions about causality and locality. Einstein\'s skepticism regarding "spooky action at distance" precipitated decades of philosophical debate until Bell\'s inequality theorem provided experimentally verifiable predictions. Contemporary implementations leverage entangled photons for quantum cryptography protocols, ensuring theoretically unbreakable encryption through measurement collapse properties. Decoherence remains the primary obstacle preventing large-scale quantum computation, as environmental interactions destroy superposition states necessary for parallel processing advantages. Research focuses on error correction algorithms and topological qubits utilizing anyonic braiding operations, promising fault-tolerant architectures capable of solving previously intractable computational problems in chemistry, optimization, and cryptanalysis.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-011',
+    category: 'time-trial',
+    title: 'Master Marathon',
+    text: 'Quantum entanglement manifests through nonlocal correlations defying classical intuition, whereby measurement outcomes exhibit instantaneous statistical dependencies regardless of spatial separation. Einstein\'s "spooky action" paradox illuminated fundamental tensions between locality principles and quantum mechanical predictions, ultimately resolved through Bell\'s inequality violations and subsequent experimental confirmations. Contemporary quantum information theory exploits entanglement for revolutionary applications: quantum teleportation protocols enable state transfer without physical transmission; superdense coding doubles classical channel capacity; quantum cryptographic key distribution guarantees unconditional security through measurement disturbance principles. Decoherence phenomena, arising from environmental interactions, pose formidable obstacles to maintaining coherent superposition states necessary for quantum computational advantage. Researchers pursue diverse physical implementations—trapped ions, superconducting circuits, topological anyons, photonic systems—each offering distinct trade-offs concerning coherence times, gate fidelities, and scalability prospects. Quantum error correction schemes, requiring substantial qubit overhead, promise fault-tolerant computation by encoding logical qubits across multiple physical substrates, enabling threshold theorems guaranteeing arbitrary precision given sufficient resources.',
+    source: 'Time Trial',
+  },
+  {
+    id: 'time-trial-012',
+    category: 'time-trial',
+    title: 'Grandmaster Crucible',
+    text: 'Epistemological paradigms undergirding contemporary hermeneutics demand rigorous phenomenological scrutiny when interrogating ontological presuppositions inherent within poststructuralist discourse. The dialectical interplay between hegemonic metanarratives and subaltern counternarratives necessitates a polyvalent framework capable of accommodating multifarious interpretive horizons while simultaneously acknowledging the intrinsic contingency of knowledge production itself. Deconstructionist methodologies, when juxtaposed against teleological assumptions pervading Enlightenment rationality, reveal the problematic nature of essentialist categorizations that have historically obfuscated the heterogeneous multiplicity of human experience. Furthermore, the recursive dynamics of autopoietic systems demonstrate how self-referential organizational principles generate emergent properties irreducible to constituent elements, thereby challenging reductionist approaches to understanding complex adaptive phenomena. Transdisciplinary synthesis remains paramount when navigating the labyrinthine complexities of postmodern intellectual landscapes, where perspectival relativism coexists tensionally with universalist aspirations. The commodification of scholarly discourse within neoliberal academic structures paradoxically intensifies while simultaneously undermining the emancipatory potential of critical theory, creating dialectical contradictions that reflect broader sociopolitical tensions characterizing late capitalism. Ultimately, intellectual humility regarding epistemic limitations proves indispensable for meaningful engagement with humanity\'s most recalcitrant philosophical quandaries.',
     source: 'Time Trial',
   },
 ];
