@@ -53,8 +53,14 @@ export function LeaderboardTable({
             <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">
               Name
             </th>
-            <th className="text-right py-3 px-4 text-sm font-medium text-gray-400 w-32">
+            <th className="text-right py-3 px-4 text-sm font-medium text-gray-400 w-24">
               Time
+            </th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-gray-400 w-20">
+              WPM
+            </th>
+            <th className="text-right py-3 px-4 text-sm font-medium text-gray-400 w-24">
+              Errors
             </th>
           </tr>
         </thead>
@@ -103,6 +109,24 @@ export function LeaderboardTable({
                     }`}
                   >
                     {formatTimeTrialTime(entry.bestTime)}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-right">
+                  <span
+                    className={`font-mono ${
+                      entry.isCurrentUser ? 'text-yellow-400' : 'text-gray-300'
+                    }`}
+                  >
+                    {entry.wpm}
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-right">
+                  <span
+                    className={`font-mono ${
+                      entry.isCurrentUser ? 'text-yellow-400' : 'text-gray-300'
+                    }`}
+                  >
+                    {entry.errorCount}
                   </span>
                 </td>
               </tr>

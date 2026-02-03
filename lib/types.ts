@@ -187,6 +187,8 @@ export interface LeaderboardEntry {
   userId: string;
   displayName: string;
   bestTime: number;
+  wpm: number;
+  errorCount: number;
   isCurrentUser: boolean;
 }
 

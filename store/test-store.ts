@@ -647,7 +647,9 @@ export const useTestStore = create<TestState>((set, get) => ({
             currentUserId,
             state.timeTrialId,
             result.completionTime,
-            result.id
+            result.id,
+            result.wpm,
+            result.mistakeCount || 0
           );
           console.log('[TestStore] Is new best time:', isNewBest, 'Previous best:', previousBest);
 

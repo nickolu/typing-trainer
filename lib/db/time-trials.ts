@@ -59,7 +59,9 @@ export async function updateTimeTrialBestTime(
   userId: string,
   trialId: string,
   completionTime: number,
-  testResultId: string
+  testResultId: string,
+  wpm: number,
+  errorCount: number
 ): Promise<{ isNewBest: boolean; previousBest: number | null }> {
   try {
     const db = getFirebaseDb();
@@ -77,11 +79,13 @@ export async function updateTimeTrialBestTime(
         userId,
         trialId,
         bestTime: completionTime,
+        wpm,
+        errorCount,
         displayName,
         testResultId,
         updatedAt: Timestamp.now(),
       });
-      console.log('[Firebase] Set first best time for', trialId, ':', completionTime);
+      console.log('[Firebase] Set first best time for', trialId, ':', completionTime, 'WPM:', wpm, 'Errors:', errorCount);
       return { isNewBest: true, previousBest: null };
     }
 
@@ -90,11 +94,13 @@ export async function updateTimeTrialBestTime(
     if (completionTime < currentBest) {
       await updateDoc(bestTimeRef, {
         bestTime: completionTime,
+        wpm,
+        errorCount,
         displayName,
         testResultId,
         updatedAt: Timestamp.now(),
       });
-      console.log('[Firebase] New best time for', trialId, ':', completionTime, '(previous:', currentBest, ')');
+      console.log('[Firebase] New best time for', trialId, ':', completionTime, '(previous:', currentBest, ') WPM:', wpm, 'Errors:', errorCount);
       return { isNewBest: true, previousBest: currentBest };
     }
 
@@ -247,6 +253,8 @@ export async function getTimeTrialLeaderboard(
         userId: data.userId,
         displayName: data.displayName || 'Anonymous',
         bestTime: data.bestTime,
+        wpm: data.wpm || 0,
+        errorCount: data.errorCount || 0,
         isCurrentUser: currentUserId === data.userId,
       });
 
