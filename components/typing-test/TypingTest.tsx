@@ -656,13 +656,64 @@ export function TypingTest() {
           }
         };
         loadCustomTextContent();
+      } else if (defaultContentStyle === 'bigrams' || defaultContentStyle === 'trigrams' || defaultContentStyle === 'tetragrams') {
+        // Check if n-grams mode is selected
+        const loadNGramContent = async () => {
+          try {
+            const requiredWords = defaultDuration === 'content-length'
+              ? 100
+              : calculateRequiredWords(defaultDuration);
+
+            let words: string[];
+            let title: string;
+            let category: string;
+            let sourceId: string;
+
+            if (defaultContentStyle === 'bigrams') {
+              const { generateBigrams } = await import('@/lib/test-content');
+              words = generateBigrams(requiredWords);
+              title = 'Bigrams Practice';
+              category = 'Bigrams';
+              sourceId = `bigrams-${defaultDuration}`;
+            } else if (defaultContentStyle === 'trigrams') {
+              const { generateTrigrams } = await import('@/lib/test-content');
+              words = generateTrigrams(requiredWords);
+              title = 'Trigrams Practice';
+              category = 'Trigrams';
+              sourceId = `trigrams-${defaultDuration}`;
+            } else {
+              const { generateTetragrams } = await import('@/lib/test-content');
+              words = generateTetragrams(requiredWords);
+              title = 'Tetragrams Practice';
+              category = 'Tetragrams';
+              sourceId = `tetragrams-${defaultDuration}`;
+            }
+
+            const text = words.join(' ');
+            const testContentId = await saveOrReuseTestContent(text, words, sourceId);
+
+            initializeTest(
+              {
+                duration: defaultDuration,
+                testContentId,
+                testContentTitle: title,
+                testContentCategory: category,
+              },
+              words
+            );
+          } catch (error) {
+            console.error('Failed to initialize n-gram content:', error);
+            setGenerationError(error instanceof Error ? error.message : 'Failed to load n-grams');
+          }
+        };
+        loadNGramContent();
       } else {
         const loadStaticContent = async () => {
           try {
             // Respect the selected content style
             const category = defaultContentStyle === 'random'
               ? undefined
-              : (defaultContentStyle as 'quote' | 'prose' | 'technical' | 'common');
+              : (defaultContentStyle as 'quote' | 'prose' | 'technical' | 'common' | 'special-chars' | 'code-typescript' | 'code-python');
             const testContent = getRandomTest(category);
             const requiredWords = defaultDuration === 'content-length'
               ? 100
