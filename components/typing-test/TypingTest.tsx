@@ -601,9 +601,8 @@ export function TypingTest() {
               throw new Error(`Time trial ${defaultContentStyle} not found`);
             }
 
-            // Time trials always use content-length mode
-            const requiredWords = 100;
-            const words = textToWords(testContent.text, requiredWords);
+            // Time trials always use content-length mode with actual content length (no repetition)
+            const words = textToWordsWithRepeat(testContent.text, 'once');
 
             // Save test content and get ID
             const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);
