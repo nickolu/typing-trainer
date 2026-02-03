@@ -415,6 +415,57 @@ export function TypingTest() {
       } finally {
         setIsLoadingContent(false);
       }
+    } else if (currentContentStyle === 'bigrams' || currentContentStyle === 'trigrams' || currentContentStyle === 'tetragrams') {
+      // Handle n-grams (bigrams, trigrams, tetragrams)
+      try {
+        const requiredWords = defaultDuration === 'content-length'
+          ? 100
+          : calculateRequiredWords(defaultDuration);
+
+        let words: string[];
+        let title: string;
+        let category: string;
+
+        if (currentContentStyle === 'bigrams') {
+          const { generateBigrams } = await import('@/lib/test-content');
+          words = generateBigrams(requiredWords);
+          title = 'Bigrams Practice';
+          category = 'Bigrams';
+        } else if (currentContentStyle === 'trigrams') {
+          const { generateTrigrams } = await import('@/lib/test-content');
+          words = generateTrigrams(requiredWords);
+          title = 'Trigrams Practice';
+          category = 'Trigrams';
+        } else {
+          const { generateTetragrams } = await import('@/lib/test-content');
+          words = generateTetragrams(requiredWords);
+          title = 'Tetragrams Practice';
+          category = 'Tetragrams';
+        }
+
+        // Create text from words for saving
+        const text = words.join(' ');
+
+        // Save test content and get ID
+        const testContentId = await saveOrReuseTestContent(text, words);
+
+        initializeTest(
+          {
+            duration: defaultDuration,
+            testContentId,
+            testContentTitle: title,
+            testContentCategory: category,
+          },
+          words
+        );
+      } catch (error) {
+        console.error('N-gram generation error:', error);
+        setGenerationError(
+          error instanceof Error ? error.message : 'Failed to generate n-grams'
+        );
+      } finally {
+        setIsLoadingContent(false);
+      }
     } else {
       // Load static content
       try {

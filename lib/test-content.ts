@@ -472,3 +472,67 @@ export function getTimeTrialTests(): TestContent[] {
 export function isTimeTrialTest(contentId: string): boolean {
   return contentId.startsWith('time-trial-');
 }
+
+// Helper function to generate random n-grams (bigrams, trigrams, tetragrams)
+// Characters to use for generating n-grams (common letters, some punctuation)
+const NGRAM_CHARS = 'abcdefghijklmnopqrstuvwxyz';
+
+/**
+ * Generates random n-grams where each unique n-gram is repeated a specified number of times
+ * @param n - Length of each n-gram (2 for bigrams, 3 for trigrams, 4 for tetragrams)
+ * @param count - Number of unique n-grams to generate
+ * @param repeatTimes - Number of times to repeat each n-gram (default: 4)
+ * @returns Array of words where each n-gram is repeated
+ */
+function generateNGrams(n: number, count: number, repeatTimes: number = 4): string[] {
+  const ngrams: string[] = [];
+
+  for (let i = 0; i < count; i++) {
+    // Generate a random n-gram
+    let ngram = '';
+    for (let j = 0; j < n; j++) {
+      const randomIndex = Math.floor(Math.random() * NGRAM_CHARS.length);
+      ngram += NGRAM_CHARS[randomIndex];
+    }
+
+    // Repeat this n-gram the specified number of times
+    for (let r = 0; r < repeatTimes; r++) {
+      ngrams.push(ngram);
+    }
+  }
+
+  return ngrams;
+}
+
+/**
+ * Generates bigrams (2-character sequences) content
+ * @param minWords - Minimum number of words needed
+ * @returns Array of bigrams, each repeated 4 times
+ */
+export function generateBigrams(minWords: number = 150): string[] {
+  const bigramsPerRepeat = 4; // Each bigram appears 4 times
+  const uniqueBigramsNeeded = Math.ceil(minWords / bigramsPerRepeat);
+  return generateNGrams(2, uniqueBigramsNeeded, bigramsPerRepeat);
+}
+
+/**
+ * Generates trigrams (3-character sequences) content
+ * @param minWords - Minimum number of words needed
+ * @returns Array of trigrams, each repeated 4 times
+ */
+export function generateTrigrams(minWords: number = 150): string[] {
+  const trigramsPerRepeat = 4; // Each trigram appears 4 times
+  const uniqueTrigramsNeeded = Math.ceil(minWords / trigramsPerRepeat);
+  return generateNGrams(3, uniqueTrigramsNeeded, trigramsPerRepeat);
+}
+
+/**
+ * Generates tetragrams (4-character sequences) content
+ * @param minWords - Minimum number of words needed
+ * @returns Array of tetragrams, each repeated 4 times
+ */
+export function generateTetragrams(minWords: number = 150): string[] {
+  const tetragramsPerRepeat = 4; // Each tetragram appears 4 times
+  const uniqueTetragramsNeeded = Math.ceil(minWords / tetragramsPerRepeat);
+  return generateNGrams(4, uniqueTetragramsNeeded, tetragramsPerRepeat);
+}

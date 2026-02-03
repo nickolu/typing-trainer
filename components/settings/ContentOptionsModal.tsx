@@ -43,6 +43,9 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
     { value: 'common', label: 'Common', description: 'Everyday phrases' },
     { value: 'benchmark', label: 'Benchmark', description: 'Standardized test' },
     { value: 'custom-text', label: 'Custom Text', description: 'Use your own text' },
+    { value: 'bigrams', label: 'Bigrams', description: '2-char sequences' },
+    { value: 'trigrams', label: 'Trigrams', description: '3-char sequences' },
+    { value: 'tetragrams', label: 'Tetragrams', description: '4-char sequences' },
   ];
 
   const aiOptions: { value: ContentStyle; label: string; description: string }[] = [
