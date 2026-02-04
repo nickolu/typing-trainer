@@ -12,7 +12,7 @@ interface ContentOptionsModalProps {
   onSave?: (contentStyle?: ContentStyle) => void; // Callback to regenerate content, optionally passing the selected style
 }
 
-type TabType = 'static' | 'ai';
+type TabType = 'static' | 'time-trials' | 'ai';
 
 export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsModalProps) {
   const { currentUserId } = useUserStore();
@@ -102,7 +102,13 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
   // Set initial tab based on current content style
   useEffect(() => {
     if (isOpen) {
-      setActiveTab(isAIContentStyle(defaultContentStyle) ? 'ai' : 'static');
+      if (isAIContentStyle(defaultContentStyle)) {
+        setActiveTab('ai');
+      } else if (defaultContentStyle.startsWith('time-trial-')) {
+        setActiveTab('time-trials');
+      } else {
+        setActiveTab('static');
+      }
     }
   }, [isOpen, defaultContentStyle]);
 
@@ -196,6 +202,17 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
             >
               <BookOpen className="w-4 h-4" />
               Static
+            </button>
+            <button
+              onClick={() => setActiveTab('time-trials')}
+              className={`flex items-center gap-2 px-4 py-3 font-medium transition-all ${
+                activeTab === 'time-trials'
+                  ? 'text-yellow-400 border-b-2 border-yellow-400'
+                  : 'text-editor-muted hover:text-editor-fg'
+              }`}
+            >
+              <Trophy className="w-4 h-4" />
+              Time Trials
             </button>
             <button
               onClick={() => setActiveTab('ai')}
@@ -310,7 +327,12 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
                   </div>
                 </div>
               )}
+            </>
+          )}
 
+          {/* Time Trials Tab Content */}
+          {activeTab === 'time-trials' && (
+            <>
               {/* Time Trials Section */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
