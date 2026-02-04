@@ -160,7 +160,25 @@ export function TypingTest() {
       }
 
       if (existingContent) {
-        console.log('[TypingTest] Reusing existing testContent:', existingContent.id);
+        // Check if the content needs to be updated (e.g., word count changed for time trials)
+        const needsUpdate = existingContent.words.length !== words.length ||
+                            existingContent.text !== text;
+
+        if (needsUpdate) {
+          console.log('[TypingTest] Updating cached testContent:', existingContent.id);
+          await saveTestContent(
+            {
+              id: existingContent.id,
+              userId: currentUserId,
+              text,
+              words,
+              sourceId,
+            },
+            currentUserId
+          );
+        } else {
+          console.log('[TypingTest] Reusing existing testContent:', existingContent.id);
+        }
         return existingContent.id;
       }
 
