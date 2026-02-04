@@ -494,13 +494,14 @@ export function TypingTest() {
           testContent = getRandomTest(category);
         }
 
-        // For time trials, use content-length mode
+        // For time trials, use content-length mode with actual content length (no repetition)
         // For regular content, use user's duration preference
         const testDuration = isTimeTrial ? 'content-length' : defaultDuration;
-        const requiredWords = testDuration === 'content-length'
-          ? 100
-          : calculateRequiredWords(testDuration);
-        const words = textToWords(testContent.text, requiredWords);
+        const words = isTimeTrial
+          ? textToWordsWithRepeat(testContent.text, 'once')
+          : testDuration === 'content-length'
+            ? textToWordsWithRepeat(testContent.text, 'once')
+            : textToWords(testContent.text, calculateRequiredWords(testDuration));
 
         // Save test content and get ID (reuse if exists for this sourceId)
         const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);
@@ -714,10 +715,9 @@ export function TypingTest() {
               ? undefined
               : (defaultContentStyle as 'quote' | 'prose' | 'technical' | 'common' | 'special-chars' | 'code-typescript' | 'code-python');
             const testContent = getRandomTest(category);
-            const requiredWords = defaultDuration === 'content-length'
-              ? 100
-              : calculateRequiredWords(defaultDuration);
-            const words = textToWords(testContent?.text ?? '', requiredWords);
+            const words = defaultDuration === 'content-length'
+              ? textToWordsWithRepeat(testContent?.text ?? '', 'once')
+              : textToWords(testContent?.text ?? '', calculateRequiredWords(defaultDuration));
 
             // Save test content and get ID
             const testContentId = await saveOrReuseTestContent(testContent.text, words, testContent.id);
