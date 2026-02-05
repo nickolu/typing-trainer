@@ -27,7 +27,8 @@ export function TestProgressBar({ progress, status }: TestProgressBarProps) {
 
   return (
     <div
-      className="absolute top-0 left-0 right-0 h-[3px] overflow-hidden rounded-t-lg z-20"
+      className="absolute top-0 left-0 right-0 h-[3px] overflow-hidden z-20"
+      style={{ borderRadius: '8px 8px 0 0' }}
       role="progressbar"
       aria-valuenow={progress}
       aria-valuemin={0}

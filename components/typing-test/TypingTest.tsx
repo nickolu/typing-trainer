@@ -1281,24 +1281,26 @@ export function TypingTest() {
       )}
 
       {/* Test display */}
-      <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${isGenerating ? 'opacity-50' : 'opacity-100'
-        } transition-opacity ${status === 'complete' || status === 'failed' ? 'hidden' : ''} ${shouldShake ? 'animate-shake' : ''
-        }`}>
+      <div className={`w-full max-w-4xl relative ${status === 'complete' || status === 'failed' ? 'hidden' : ''}`}>
         <TestProgressBar progress={progressPercentage} status={status} />
-        {isGenerating && (
-          <div className="absolute inset-0 flex items-center justify-center bg-editor-bg/80 backdrop-blur-sm z-10">
-            <p className="text-editor-muted">Generating new content...</p>
+        <div className={`bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${isGenerating ? 'opacity-50' : 'opacity-100'
+          } transition-opacity ${shouldShake ? 'animate-shake' : ''
+          }`}>
+          {isGenerating && (
+            <div className="absolute inset-0 flex items-center justify-center bg-editor-bg/80 backdrop-blur-sm z-10">
+              <p className="text-editor-muted">Generating new content...</p>
+            </div>
+          )}
+          <div className="h-48 p-8">
+            <TestDisplay
+              targetWords={targetWords}
+              completedWords={completedWords}
+              currentInput={currentInput}
+              currentWordIndex={currentWordIndex}
+              practiceSequences={isPractice ? practiceSequences : []}
+              showHighlights={showPracticeHighlights}
+            />
           </div>
-        )}
-        <div className="h-48 p-8">
-          <TestDisplay
-            targetWords={targetWords}
-            completedWords={completedWords}
-            currentInput={currentInput}
-            currentWordIndex={currentWordIndex}
-            practiceSequences={isPractice ? practiceSequences : []}
-            showHighlights={showPracticeHighlights}
-          />
         </div>
       </div>
       {/* Tips Banner */}
