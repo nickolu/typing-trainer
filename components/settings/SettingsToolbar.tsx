@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
 import { isTimeTrialTest } from '@/lib/test-content';
-import { Save, BookOpen, Highlighter, Clock, RotateCcw } from 'lucide-react';
+import { Save, BookOpen, Highlighter, Clock, RotateCcw, Keyboard } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 import { LabelSelector } from './LabelSelector';
 import { TimeSelector } from './TimeSelector';
@@ -32,6 +33,7 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
     mistakeThreshold,
     showPracticeHighlights,
     defaultContentStyle,
+    currentKeyboard,
     setDefaultDuration,
     setAutoSave,
     setCorrectionMode,
@@ -235,14 +237,40 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
           </div>
         </div>
       </div>
-      {/* Content Display */}
-      <div className="flex items-center gap-2 text-editor-fg pb-2 justify-end ">
 
-        <div className="text-right min-w-0 flex items-center gap-2">
-          <div className="text-xs text-editor-muted">{contentDisplay.category}</div>
-          <div className="text-sm font-medium truncate max-w-[200px]">{contentDisplay.title}</div>
+      {/* Bottom Row: Keyboard Display (left) and Content Display (right) */}
+      <div className="flex items-center justify-between gap-4 pb-2">
+        {/* Keyboard Display - Left side */}
+        <div className="flex items-center gap-2 text-editor-fg">
+          <Keyboard className="w-5 h-5 text-editor-accent flex-shrink-0" />
+          <div className="text-sm font-medium whitespace-nowrap">
+            {currentKeyboard ? (
+              <>
+                <span className="text-xs text-editor-muted mr-1">Current Keyboard:</span>
+                <span>{currentKeyboard.replace('keyboard-', '')}</span>
+              </>
+            ) : (
+              <>
+                <span className="text-xs text-editor-muted mr-1">Current Keyboard:</span>
+                <Link
+                  href="/settings"
+                  className="text-editor-accent hover:text-editor-accent/80 underline"
+                >
+                  none (set one)
+                </Link>
+              </>
+            )}
+          </div>
         </div>
-        <BookOpen className="w-5 h-5 text-editor-accent flex-shrink-0" />
+
+        {/* Content Display - Right side */}
+        <div className="flex items-center gap-2 text-editor-fg justify-end">
+          <div className="text-right min-w-0 flex items-center gap-2">
+            <div className="text-xs text-editor-muted">{contentDisplay.category}</div>
+            <div className="text-sm font-medium truncate max-w-[200px]">{contentDisplay.title}</div>
+          </div>
+          <BookOpen className="w-5 h-5 text-editor-accent flex-shrink-0" />
+        </div>
       </div>
 
 

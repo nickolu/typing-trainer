@@ -21,7 +21,7 @@ import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 export function TypingTest() {
   const router = useRouter();
   const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold, currentKeyboard } = useSettingsStore();
   const {
     status,
     duration,
@@ -64,6 +64,17 @@ export function TypingTest() {
 
   // Stable temp ID for unauthenticated users to prevent infinite loops
   const [tempSourceId] = useState(() => 'temp-' + Date.now());
+
+  // Helper function to add keyboard label to userLabels
+  const getTestLabels = useCallback((baseLabels: string[] = []): string[] => {
+    if (currentKeyboard) {
+      // Add keyboard label if not already present
+      return baseLabels.includes(currentKeyboard)
+        ? baseLabels
+        : [...baseLabels, currentKeyboard];
+    }
+    return baseLabels;
+  }, [currentKeyboard]);
 
   // Check if we're in benchmark mode
   const isBenchmarkMode = defaultContentStyle === 'benchmark';
@@ -248,13 +259,13 @@ export function TypingTest() {
         testContentCategory: currentState.testContentCategory || undefined,
         isPractice: currentState.isPractice,
         practiceSequences: currentState.practiceSequences,
-        userLabels: currentState.userLabels,
+        userLabels: getTestLabels(currentState.userLabels),
         isTimeTrial: currentState.isTimeTrial,
         timeTrialId: currentState.timeTrialId || undefined,
       },
       currentState.targetWords
     );
-  }, [initializeTest]);
+  }, [initializeTest, getTestLabels]);
 
   // Handle content generation/loading
   const handleContentLoad = useCallback(async (contentStyle?: ContentStyle) => {
@@ -339,6 +350,7 @@ export function TypingTest() {
               testContentCategory: 'AI Character Sequence',
               isPractice: true,
               practiceSequences: sequencesToUse,
+              userLabels: getTestLabels(),
             },
             words
           );
@@ -382,6 +394,7 @@ export function TypingTest() {
               testContentId,
               testContentTitle: result.title || 'Generated Content',
               testContentCategory: `AI ${apiStyle.charAt(0).toUpperCase() + apiStyle.slice(1)}`,
+              userLabels: getTestLabels(),
             },
             words
           );
@@ -414,7 +427,7 @@ export function TypingTest() {
             testContentId,
             testContentTitle: benchmarkContent.title,
             testContentCategory: 'Benchmark',
-            userLabels: [...currentUserLabels, BENCHMARK_CONFIG.label],
+            userLabels: getTestLabels([...currentUserLabels, BENCHMARK_CONFIG.label]),
           },
           words
         );
@@ -449,6 +462,7 @@ export function TypingTest() {
             testContentId,
             testContentTitle: 'Custom Text',
             testContentCategory: 'Custom',
+            userLabels: getTestLabels(),
           },
           words
         );
@@ -504,6 +518,7 @@ export function TypingTest() {
             testContentId,
             testContentTitle: title,
             testContentCategory: category,
+            userLabels: getTestLabels(),
           },
           words
         );
@@ -567,6 +582,7 @@ export function TypingTest() {
             testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
             isTimeTrial: isTimeTrial,
             timeTrialId: isTimeTrial ? currentContentStyle : undefined,
+            userLabels: getTestLabels(),
           },
           words
         );
@@ -629,7 +645,7 @@ export function TypingTest() {
                 testContentId,
                 testContentTitle: benchmarkContent.title,
                 testContentCategory: 'Benchmark',
-                userLabels: [BENCHMARK_CONFIG.label],
+                userLabels: getTestLabels([BENCHMARK_CONFIG.label]),
               },
               words
             );
@@ -661,6 +677,7 @@ export function TypingTest() {
                 testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
                 isTimeTrial: true,
                 timeTrialId: defaultContentStyle,
+                userLabels: getTestLabels(),
               },
               words
             );
@@ -692,6 +709,7 @@ export function TypingTest() {
                 testContentId,
                 testContentTitle: 'Custom Text',
                 testContentCategory: 'Custom',
+                userLabels: getTestLabels(),
               },
               words
             );
@@ -743,6 +761,7 @@ export function TypingTest() {
                 testContentId,
                 testContentTitle: title,
                 testContentCategory: category,
+                userLabels: getTestLabels(),
               },
               words
             );
@@ -779,6 +798,7 @@ export function TypingTest() {
                 testContentId,
                 testContentTitle: testContent.title,
                 testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+                userLabels: getTestLabels(),
               },
               words
             );
@@ -789,7 +809,7 @@ export function TypingTest() {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, autoSave]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, autoSave, getTestLabels]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -821,13 +841,13 @@ export function TypingTest() {
             testContentCategory: currentState.testContentCategory || undefined,
             isPractice,
             practiceSequences,
-            userLabels: currentState.userLabels,
+            userLabels: getTestLabels(currentState.userLabels),
           },
           targetWords
         );
       }
     }
-  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, isTimeTrialMode, defaultContentStyle, handleContentLoad]);
+  }, [defaultDuration, status, targetWords, duration, initializeTest, isPractice, practiceSequences, isBenchmarkMode, isTimeTrialMode, defaultContentStyle, handleContentLoad, getTestLabels]);
 
   // Cleanup: Reset test when component unmounts (e.g., navigating away)
   useEffect(() => {

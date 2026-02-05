@@ -33,6 +33,9 @@ interface SettingsState {
   showSpeedometer: boolean;
   showWPMOnSpeedometer: boolean;
 
+  // Keyboard setting
+  currentKeyboard: string | null; // Full label with "keyboard-" prefix, or null
+
   // Actions
   setDefaultDuration: (duration: TestDuration) => void;
   setAutoSave: (autoSave: boolean) => void;
@@ -48,6 +51,7 @@ interface SettingsState {
   setCustomSequences: (sequences: string[]) => void;
   setShowSpeedometer: (enabled: boolean) => void;
   setShowWPMOnSpeedometer: (enabled: boolean) => void;
+  setCurrentKeyboard: (keyboard: string | null) => void;
   resetSettings: () => void;
 }
 
@@ -71,6 +75,7 @@ const defaultSettings = {
   customSequences: [] as string[],
   showSpeedometer: true,
   showWPMOnSpeedometer: true,
+  currentKeyboard: null,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -112,6 +117,8 @@ export const useSettingsStore = create<SettingsState>()(
       setShowSpeedometer: (enabled) => set({ showSpeedometer: enabled }),
 
       setShowWPMOnSpeedometer: (enabled) => set({ showWPMOnSpeedometer: enabled }),
+
+      setCurrentKeyboard: (keyboard) => set({ currentKeyboard: keyboard }),
 
       resetSettings: () => set(defaultSettings),
     }),
