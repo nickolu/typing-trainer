@@ -9,6 +9,7 @@ import { useSettingsStore, isAIContentStyle, ContentStyle } from '@/store/settin
 import { useUserStore } from '@/store/user-store';
 import { TestDisplay } from './TestDisplay';
 import { TestTimer } from './TestTimer';
+import { TestProgressBar } from './TestProgressBar';
 import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
@@ -59,6 +60,7 @@ export function TypingTest() {
     updateAllowedDate: Date | null;
     resetDate: Date | null;
   } | null>(null);
+  const [progressPercentage, setProgressPercentage] = useState(0);
 
   // Stable temp ID for unauthenticated users to prevent infinite loops
   const [tempSourceId] = useState(() => 'temp-' + Date.now());
@@ -110,6 +112,31 @@ export function TypingTest() {
       setWpmStatus(null);
     }
   }, [isAuthenticated, currentUserId]);
+
+  // Calculate progress percentage for progress bar
+  useEffect(() => {
+    if (status !== 'active') {
+      setProgressPercentage(status === 'complete' ? 100 : 0);
+      return;
+    }
+
+    if (duration === 'content-length') {
+      // Word-based progress
+      const progress = targetWords.length > 0
+        ? (currentWordIndex / targetWords.length) * 100
+        : 0;
+      setProgressPercentage(Math.min(100, progress));
+    } else if (startTime) {
+      // Time-based progress with continuous updates
+      const interval = setInterval(() => {
+        const elapsed = performance.now() - startTime;
+        const progress = (elapsed / (duration * 1000)) * 100;
+        setProgressPercentage(Math.min(100, progress));
+      }, 100); // Update every 100ms for smooth animation
+
+      return () => clearInterval(interval);
+    }
+  }, [status, duration, currentWordIndex, targetWords.length, startTime]);
 
   // Generate tooltip message based on WPM status
   const getWpmTooltipMessage = () => {
@@ -1257,6 +1284,7 @@ export function TypingTest() {
       <div className={`w-full max-w-4xl bg-editor-bg border border-editor-muted rounded-lg relative overflow-hidden ${isGenerating ? 'opacity-50' : 'opacity-100'
         } transition-opacity ${status === 'complete' || status === 'failed' ? 'hidden' : ''} ${shouldShake ? 'animate-shake' : ''
         }`}>
+        <TestProgressBar progress={progressPercentage} status={status} />
         {isGenerating && (
           <div className="absolute inset-0 flex items-center justify-center bg-editor-bg/80 backdrop-blur-sm z-10">
             <p className="text-editor-muted">Generating new content...</p>
