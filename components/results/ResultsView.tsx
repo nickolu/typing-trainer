@@ -32,6 +32,7 @@ import { getUserTimeTrialRank } from "@/lib/db/time-trials";
 import {
   getRandomTest,
   textToWords,
+  textToWordsWithRepeat,
   calculateRequiredWords,
   getTestById,
 } from "@/lib/test-content";
@@ -284,16 +285,18 @@ export function ResultsView({ result }: ResultsViewProps) {
   const handleNewTest = () => {
     // Initialize a new test and go to home
     const testContent = getRandomTest();
-    const requiredWords =
-      defaultDuration === "content-length"
-        ? 100
-        : calculateRequiredWords(defaultDuration);
-    const words = textToWords(testContent.text, requiredWords);
+    const words = defaultDuration === "content-length"
+      ? textToWordsWithRepeat(testContent.text, 'once')
+      : textToWords(testContent.text, calculateRequiredWords(defaultDuration));
 
     initializeTest(
       {
         duration: defaultDuration,
         testContentId: testContent.id,
+        testContentTitle: testContent.title,
+        testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
+        isTimeTrial: false,
+        timeTrialId: undefined,
       },
       words
     );
