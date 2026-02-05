@@ -247,7 +247,12 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
             {currentKeyboard ? (
               <>
                 <span className="text-xs text-editor-muted mr-1">Current Keyboard:</span>
-                <span>{currentKeyboard.replace('keyboard-', '')}</span>
+                <Link
+                  href="/settings"
+                  className="text-editor-fg hover:text-editor-accent underline decoration-editor-muted hover:decoration-editor-accent transition-colors"
+                >
+                  {currentKeyboard.replace('keyboard-', '')}
+                </Link>
               </>
             ) : (
               <>

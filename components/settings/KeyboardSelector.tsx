@@ -18,6 +18,7 @@ export function KeyboardSelector({ selectedKeyboard, onKeyboardChange, disabled 
   const [isAddingKeyboard, setIsAddingKeyboard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
 
   // Load keyboards (labels starting with "keyboard-")
   useEffect(() => {
@@ -50,6 +51,10 @@ export function KeyboardSelector({ selectedKeyboard, onKeyboardChange, disabled 
 
   const handleSelectKeyboard = (keyboard: string | null) => {
     onKeyboardChange(keyboard);
+
+    // Show saved feedback
+    setShowSaved(true);
+    setTimeout(() => setShowSaved(false), 2000);
   };
 
   const handleAddKeyboard = async () => {
@@ -81,6 +86,10 @@ export function KeyboardSelector({ selectedKeyboard, onKeyboardChange, disabled 
         setNewKeyboard('');
         // Auto-select the newly added keyboard
         onKeyboardChange(fullLabel);
+
+        // Show saved feedback
+        setShowSaved(true);
+        setTimeout(() => setShowSaved(false), 2000);
       } else {
         setError('Keyboard already exists');
       }
@@ -117,6 +126,14 @@ export function KeyboardSelector({ selectedKeyboard, onKeyboardChange, disabled 
 
   return (
     <div className={`w-full ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+      {/* Saved Feedback */}
+      {showSaved && (
+        <div className="mb-3 p-3 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400 flex items-center gap-2">
+          <span className="text-base">✓</span>
+          <span>Saved!</span>
+        </div>
+      )}
+
       {/* Error Display */}
       {error && (
         <div className="mb-3 p-3 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">

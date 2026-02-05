@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { KeyboardSelector } from '@/components/settings/KeyboardSelector';
@@ -7,6 +8,13 @@ import { KeyboardSelector } from '@/components/settings/KeyboardSelector';
 export default function SettingsPage() {
   const { showSpeedometer, showWPMOnSpeedometer, setShowSpeedometer, setShowWPMOnSpeedometer, currentKeyboard, setCurrentKeyboard } = useSettingsStore();
   const { isAuthenticated } = useUserStore();
+  const [showSaved, setShowSaved] = React.useState(false);
+
+  const handleSettingChange = (setter: (value: boolean) => void, value: boolean) => {
+    setter(value);
+    setShowSaved(true);
+    setTimeout(() => setShowSaved(false), 2000);
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8">
@@ -18,7 +26,15 @@ export default function SettingsPage() {
 
         {/* Settings Card */}
         <div className="bg-editor-bg border border-editor-muted rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-6">Settings</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Settings</h2>
+            {showSaved && (
+              <div className="px-3 py-1 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400 flex items-center gap-2">
+                <span className="text-base">✓</span>
+                <span>Saved!</span>
+              </div>
+            )}
+          </div>
 
           <div className="space-y-6">
             {/* Keyboard Setting */}
@@ -56,7 +72,7 @@ export default function SettingsPage() {
                   id="show-speedometer"
                   type="checkbox"
                   checked={showSpeedometer}
-                  onChange={(e) => setShowSpeedometer(e.target.checked)}
+                  onChange={(e) => handleSettingChange(setShowSpeedometer, e.target.checked)}
                   className="w-5 h-5 rounded border-editor-muted bg-editor-bg-alt text-editor-accent focus:ring-2 focus:ring-editor-accent focus:ring-offset-0 cursor-pointer"
                 />
               </div>
@@ -77,7 +93,7 @@ export default function SettingsPage() {
                   id="show-wpm-score"
                   type="checkbox"
                   checked={showWPMOnSpeedometer}
-                  onChange={(e) => setShowWPMOnSpeedometer(e.target.checked)}
+                  onChange={(e) => handleSettingChange(setShowWPMOnSpeedometer, e.target.checked)}
                   disabled={!showSpeedometer}
                   className="w-5 h-5 rounded border-editor-muted bg-editor-bg-alt text-editor-accent focus:ring-2 focus:ring-editor-accent focus:ring-offset-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 />
