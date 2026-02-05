@@ -78,21 +78,12 @@
   }
 
   /* Progress bar animations */
-  @keyframes progress-shimmer {
-    0% {
-      background-position: -200% center;
-    }
-    100% {
-      background-position: 200% center;
-    }
-  }
-
-  @keyframes progress-pulse {
+  @keyframes progress-glow {
     0%, 100% {
-      box-shadow: 0 0 8px rgba(0, 122, 204, 0.6);
+      box-shadow: 0 0 4px rgba(0, 122, 204, 0.3);
     }
     50% {
-      box-shadow: 0 0 16px rgba(0, 122, 204, 0.9);
+      box-shadow: 0 0 8px rgba(0, 122, 204, 0.5);
     }
   }
 
@@ -107,7 +98,7 @@
   }
 
   .progress-bar-active {
-    animation: progress-shimmer 3s linear infinite, progress-pulse 2s ease-in-out infinite;
+    animation: progress-glow 3s ease-in-out infinite;
   }
 
   .progress-bar-flash {
