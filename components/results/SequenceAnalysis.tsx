@@ -1,13 +1,15 @@
-import { SequenceTiming } from '@/lib/test-engine/calculations';
+import { NgramStats, getTopSlowNgrams } from '@/lib/db/ngram-stats';
 
 interface SequenceAnalysisProps {
-  twoCharSequences: SequenceTiming[];
-  threeCharSequences: SequenceTiming[];
+  ngramStats: NgramStats | null;
+  isLoading?: boolean;
+  onPracticeNgrams?: (ngrams: string[]) => void;
 }
 
 export function SequenceAnalysis({
-  twoCharSequences,
-  threeCharSequences,
+  ngramStats,
+  isLoading,
+  onPracticeNgrams,
 }: SequenceAnalysisProps) {
   const renderSequence = (seq: string) => {
     return seq.split('').map((char, idx) => {
@@ -22,96 +24,105 @@ export function SequenceAnalysis({
     });
   };
 
-  if (twoCharSequences.length === 0 && threeCharSequences.length === 0) {
+  if (isLoading) {
     return (
       <div className="bg-editor-bg border border-editor-muted rounded-lg p-6">
-        <h2 className="text-xl font-bold mb-4">Character Sequence Analysis</h2>
+        <h2 className="text-xl font-bold mb-4">Ngram Speed Tracker</h2>
         <p className="text-editor-muted text-center py-4">
-          Not enough data to analyze character sequences. Type more words to see your slowest sequences!
+          Updating your ngram stats...
         </p>
       </div>
     );
   }
 
-  return (
-    <div className="bg-editor-bg border border-editor-muted rounded-lg p-6">
-      <h2 className="text-xl font-bold mb-4">Slowest Character Sequences</h2>
-      <p className="text-editor-muted mb-6 text-sm">
-        These sequences take you the longest to type. Practice them to improve your speed!
-      </p>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 2-Character Sequences */}
-        {twoCharSequences.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-3 text-editor-accent">
-              2-Character Sequences
-            </h3>
-            <div className="space-y-2">
-              {twoCharSequences.map((seq, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-editor-bg/50 border border-editor-muted/30 rounded p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-editor-muted font-mono text-sm w-6">
-                      #{index + 1}
-                    </span>
-                    <span className="font-mono text-lg font-bold">
-                      &quot;{renderSequence(seq.sequence)}&quot;
-                    </span>
-                    <span className="text-editor-muted text-sm">
-                      ({seq.occurrences}x)
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-editor-error">
-                    {seq.averageTime}ms
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 3-Character Sequences */}
-        {threeCharSequences.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold mb-3 text-editor-accent">
-              3-Character Sequences
-            </h3>
-            <div className="space-y-2">
-              {threeCharSequences.map((seq, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-editor-bg/50 border border-editor-muted/30 rounded p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-editor-muted font-mono text-sm w-6">
-                      #{index + 1}
-                    </span>
-                    <span className="font-mono text-lg font-bold">
-                      &quot;{renderSequence(seq.sequence)}&quot;
-                    </span>
-                    <span className="text-editor-muted text-sm">
-                      ({seq.occurrences}x)
-                    </span>
-                  </div>
-                  <span className="font-mono font-bold text-editor-error">
-                    {seq.averageTime}ms
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="mt-6 p-4 bg-editor-accent/10 border border-editor-accent/30 rounded">
-        <p className="text-sm text-editor-muted">
-          <strong className="text-editor-fg">Tip:</strong> Focus on practicing these slow sequences to improve your overall typing speed.
-          Lower times are better!
+  if (!ngramStats) {
+    return (
+      <div className="bg-editor-bg border border-editor-muted rounded-lg p-6">
+        <h2 className="text-xl font-bold mb-4">Ngram Speed Tracker</h2>
+        <p className="text-editor-muted text-center py-4">
+          Sign in to track your slowest bigrams, trigrams, and tetragrams across sessions.
         </p>
       </div>
+    );
+  }
+
+  const bigrams = getTopSlowNgrams(ngramStats, 'bigrams', 10, 3);
+  const trigrams = getTopSlowNgrams(ngramStats, 'trigrams', 10, 3);
+  const tetragrams = getTopSlowNgrams(ngramStats, 'tetragrams', 10, 3);
+
+  const hasData = bigrams.length > 0 || trigrams.length > 0 || tetragrams.length > 0;
+
+  if (!hasData) {
+    return (
+      <div className="bg-editor-bg border border-editor-muted rounded-lg p-6">
+        <h2 className="text-xl font-bold mb-4">Ngram Speed Tracker</h2>
+        <p className="text-editor-muted text-center py-4">
+          Complete more tests to build up ngram data (sequences need at least 3 occurrences).
+        </p>
+      </div>
+    );
+  }
+
+  const renderSection = (
+    title: string,
+    items: Array<{ sequence: string; avgTime: number; count: number }>
+  ) => {
+    if (items.length === 0) return null;
+    return (
+      <div>
+        <h3 className="text-base font-semibold mb-3 text-editor-accent">{title}</h3>
+        <div className="space-y-1.5">
+          {items.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between bg-editor-bg/50 border border-editor-muted/30 rounded px-3 py-2"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-editor-muted font-mono text-xs w-5">
+                  #{index + 1}
+                </span>
+                <span className="font-mono text-base font-bold">
+                  &quot;{renderSequence(item.sequence)}&quot;
+                </span>
+                <span className="text-editor-muted text-xs">
+                  ({item.count}x)
+                </span>
+              </div>
+              <span className="font-mono font-bold text-editor-error text-sm">
+                {item.avgTime}ms
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const top5Tetragrams = getTopSlowNgrams(ngramStats, 'tetragrams', 5, 3).map(t => t.sequence);
+
+  return (
+    <div className="bg-editor-bg border border-editor-muted rounded-lg p-6">
+      <h2 className="text-xl font-bold mb-2">Ngram Speed Tracker</h2>
+      <p className="text-editor-muted mb-6 text-sm">
+        Your slowest typing sequences across all sessions. Lower is better!
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {renderSection('Bigrams', bigrams)}
+        {renderSection('Trigrams', trigrams)}
+        {renderSection('Tetragrams', tetragrams)}
+      </div>
+
+      {top5Tetragrams.length > 0 && onPracticeNgrams && (
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={() => onPracticeNgrams(top5Tetragrams)}
+            className="px-5 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors text-sm"
+          >
+            Practice Slowest Tetragrams
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -10,3 +10,4 @@ export * from './test-results';
 export * from './analytics';
 export * from './time-trials';
 export * from './labels';
+export * from './ngram-stats';

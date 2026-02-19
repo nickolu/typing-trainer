@@ -6,7 +6,7 @@ import { analyzeMistakes } from '@/lib/test-engine/mistake-analysis';
 
 interface PracticeOption {
   id: string;
-  type: 'slow-2char' | 'slow-3char' | 'mistake-seq' | 'char-confusion' | 'mistyped-word';
+  type: 'slow-2char' | 'slow-3char' | 'slow-4char' | 'mistake-seq' | 'char-confusion' | 'mistyped-word';
   label: string;
   subLabel?: string;
   value: string;
@@ -52,6 +52,18 @@ export function TargetedPracticeModal({
       opts.push({
         id: `slow-3-${idx}`,
         type: 'slow-3char',
+        label: seq.sequence,
+        subLabel: `${seq.averageTime}ms avg`,
+        value: seq.sequence,
+      });
+    });
+
+    // Slow 4-char sequences
+    const fourCharSeqs = calculateSequenceTimings(result.keystrokeTimings, targetWords, 4, 10);
+    fourCharSeqs.forEach((seq, idx) => {
+      opts.push({
+        id: `slow-4-${idx}`,
+        type: 'slow-4char',
         label: seq.sequence,
         subLabel: `${seq.averageTime}ms avg`,
         value: seq.sequence,
@@ -110,6 +122,7 @@ export function TargetedPracticeModal({
     return {
       'slow-2char': options.filter(o => o.type === 'slow-2char'),
       'slow-3char': options.filter(o => o.type === 'slow-3char'),
+      'slow-4char': options.filter(o => o.type === 'slow-4char'),
       'mistake-seq': options.filter(o => o.type === 'mistake-seq'),
       'char-confusion': options.filter(o => o.type === 'char-confusion'),
       'mistyped-word': options.filter(o => o.type === 'mistyped-word'),
@@ -223,6 +236,11 @@ export function TargetedPracticeModal({
         description: 'Master longer sequences to boost fluency',
         color: 'text-yellow-400'
       },
+      'slow-4char': {
+        icon: Zap,
+        description: 'Drill 4-character patterns to unlock next-level speed',
+        color: 'text-yellow-400'
+      },
       'mistake-seq': {
         icon: AlertTriangle,
         description: 'Fix accuracy issues on sequences you often mistype',
@@ -309,7 +327,7 @@ export function TargetedPracticeModal({
           <div className="flex items-center gap-3">
             <Target className="w-6 h-6 text-purple-400" />
             <div>
-              <h2 className="text-xl font-bold">Generate Targeted Practice</h2>
+              <h2 className="text-xl font-bold">Targeted Practice</h2>
               <p className="text-sm text-editor-muted">
                 Practice these patterns to increase your speed and accuracy
               </p>
@@ -341,6 +359,7 @@ export function TargetedPracticeModal({
 
           {renderCategory('Slow 2-Character Sequences', 'slow-2char', 'No slow 2-character sequences found')}
           {renderCategory('Slow 3-Character Sequences', 'slow-3char', 'No slow 3-character sequences found')}
+          {renderCategory('Slow 4-Character Sequences', 'slow-4char', 'No slow 4-character sequences found')}
           {renderCategory('Problem Sequences (Mistakes)', 'mistake-seq', 'No mistake sequences found')}
           {renderCategory('Character Confusions', 'char-confusion', 'No character confusions found')}
           {renderCategory('Commonly Mistyped Words', 'mistyped-word', 'No mistyped words found')}
@@ -371,7 +390,7 @@ export function TargetedPracticeModal({
               className="px-6 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
             >
               <Target className="w-4 h-4" />
-              Generate Practice ({selectedIds.size})
+              Start Practice ({selectedIds.size})
             </button>
           </div>
         </div>

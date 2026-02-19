@@ -48,6 +48,12 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // Ngram stats - users can only access their own stats
+    match /ngramStats/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
     // Time trial best times - users can only access their own best times
     // Document ID format: userId_trialId
     match /timeTrialBestTimes/{bestTimeId} {
