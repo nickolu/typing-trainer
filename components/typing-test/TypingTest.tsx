@@ -14,6 +14,8 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
+import { Award, HelpCircle } from 'lucide-react';
+import { BenchmarkInfoDialog } from '@/components/benchmark/BenchmarkInfoDialog';
 import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
@@ -61,6 +63,7 @@ export function TypingTest() {
     resetDate: Date | null;
   } | null>(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
+  const [showBenchmarkInfo, setShowBenchmarkInfo] = useState(false);
 
   // Stable temp ID for unauthenticated users to prevent infinite loops
   const [tempSourceId] = useState(() => 'temp-' + Date.now());
@@ -865,9 +868,11 @@ export function TypingTest() {
     isCompletingRef.current = true; // Set ref immediately to block effects
     setIsCompletingTest(true);
     try {
-      const result = await completeTest(autoSave);
+      const isBenchmark = defaultContentStyle === 'benchmark';
+      const shouldSave = autoSave || (isBenchmark && isAuthenticated);
+      const result = await completeTest(shouldSave);
       // Navigate to results page only if we got a valid result AND it was saved
-      if (result && autoSave) {
+      if (result && shouldSave) {
         await router.push(`/results/${result.id}`);
         // Note: Component should unmount after navigation, so we don't reset the ref
       } else {
@@ -883,7 +888,7 @@ export function TypingTest() {
       setIsCompletingTest(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completeTest, router, autoSave]);
+  }, [completeTest, router, autoSave, defaultContentStyle, isAuthenticated]);
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
@@ -1027,6 +1032,26 @@ export function TypingTest() {
                   remainingWords={remainingWords}
                   bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
+                <button
+                  onClick={() => {
+                    if (status === 'active') resetTest();
+                    setDefaultContentStyle('benchmark');
+                  }}
+                  className="flex items-center gap-1 text-xs text-editor-accent hover:text-editor-accent/70 transition-colors"
+                  title="Run benchmark test"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Benchmark</span>
+                </button>
+                {isBenchmarkMode && (
+                  <button
+                    onClick={() => setShowBenchmarkInfo(true)}
+                    className="p-2 hover:bg-editor-muted/30 rounded-lg transition-colors text-editor-muted hover:text-editor-fg"
+                    title="Benchmark info"
+                  >
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                )}
                 <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} />
               </>
             ) : (
@@ -1040,6 +1065,22 @@ export function TypingTest() {
                   remainingWords={remainingWords}
                   bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1 text-xs text-editor-accent hover:text-editor-accent/70 transition-colors"
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Track your WPM</span>
+                </Link>
+                {isBenchmarkMode && (
+                  <button
+                    onClick={() => setShowBenchmarkInfo(true)}
+                    className="p-2 hover:bg-editor-muted/30 rounded-lg transition-colors text-editor-muted hover:text-editor-fg"
+                    title="Benchmark info"
+                  >
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                )}
                 <Link
                   href="/login"
                   className="px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
@@ -1371,6 +1412,15 @@ export function TypingTest() {
           By Nickolus Cunningham
         </a>
       </div>
+
+      {/* Benchmark Info Dialog */}
+      {showBenchmarkInfo && (
+        <BenchmarkInfoDialog
+          isOpen={showBenchmarkInfo}
+          onClose={() => setShowBenchmarkInfo(false)}
+          wpmStatus={wpmStatus}
+        />
+      )}
     </div>
   );
 }
