@@ -44,6 +44,10 @@
     @apply text-editor-fg;
   }
 
+  .test-char-error-marker {
+    @apply text-editor-error/70 border-b-2 border-editor-error/50;
+  }
+
   /* Smooth cursor animation */
   @keyframes cursor-slide {
     0% {

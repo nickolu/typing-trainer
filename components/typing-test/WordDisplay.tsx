@@ -8,9 +8,10 @@ interface WordDisplayProps {
   state: WordState;
   wasSkipped?: boolean;
   highlightIndices?: Set<number>;
+  errorIndices?: Set<number>;
 }
 
-export function WordDisplay({ word, typed, state, wasSkipped = false, highlightIndices = new Set() }: WordDisplayProps) {
+export function WordDisplay({ word, typed, state, wasSkipped = false, highlightIndices = new Set(), errorIndices = new Set() }: WordDisplayProps) {
   // Helper to render a character with potential highlighting
   const renderChar = (char: string, index: number, isTargeted: boolean) => {
     // Special handling for spaces when highlighted
@@ -43,6 +44,17 @@ export function WordDisplay({ word, typed, state, wasSkipped = false, highlightI
       <span className="test-word-correct inline-block">
         {word.split('').map((char, index) => {
           const isTargeted = highlightIndices.has(index);
+          const hadError = errorIndices.has(index);
+          if (hadError) {
+            return (
+              <span
+                key={index}
+                className={cn('test-char-error-marker', isTargeted && 'bg-purple-500/20 rounded')}
+              >
+                {char}
+              </span>
+            );
+          }
           return renderChar(char, index, isTargeted);
         })}
       </span>
@@ -124,14 +136,15 @@ export function WordDisplay({ word, typed, state, wasSkipped = false, highlightI
       <span className="test-word-current inline-block relative">
         {comparison.map((charComp, index) => {
           const isTargeted = highlightIndices.has(index);
+          const hadError = errorIndices.has(index);
           const isSpace = charComp.char === ' ';
 
           // Special styling for highlighted spaces
           const baseClassName = cn(
             'relative inline-block',
-            charComp.status === 'correct' && 'test-char-correct',
+            charComp.status === 'correct' && (hadError ? 'test-char-error-marker' : 'test-char-correct'),
             charComp.status === 'incorrect' && 'test-char-incorrect',
-            charComp.status === 'pending' && 'test-char-pending'
+            charComp.status === 'pending' && (hadError ? 'test-char-error-marker' : 'test-char-pending')
           );
 
           // Apply different highlight style for spaces

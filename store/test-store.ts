@@ -42,6 +42,7 @@ export const useTestStore = create<TestState>((set, get) => ({
   result: null,
   strictModeErrors: 0, // Track mistakes in strict mode
   inputBlocked: false, // Track if input is temporarily blocked
+  strictModeErrorPositions: new Map(), // Track where strict mode errors occurred
   failedReason: null, // Reason for test failure
   // Store last test configuration for "try again" functionality
   lastTestConfig: null,
@@ -75,6 +76,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       keystrokes: [],
       strictModeErrors: 0,
       inputBlocked: false,
+      strictModeErrorPositions: new Map(),
       failedReason: null,
       result: null,
       // Store configuration for "try again"
@@ -147,11 +149,18 @@ export const useTestStore = create<TestState>((set, get) => ({
             isBackspace: false,
           };
 
+          // Track the error position
+          const newErrorPositions = new Map(state.strictModeErrorPositions);
+          const wordErrors = new Set(newErrorPositions.get(state.currentWordIndex) || []);
+          wordErrors.add(state.currentInput.length);
+          newErrorPositions.set(state.currentWordIndex, wordErrors);
+
           // Block input temporarily
           set({
             strictModeErrors: newErrorCount,
             keystrokes: [...state.keystrokes, keystroke],
             inputBlocked: true,
+            strictModeErrorPositions: newErrorPositions,
           });
 
           // Unblock input after delay
@@ -182,7 +191,7 @@ export const useTestStore = create<TestState>((set, get) => ({
 
           return;
         }
-        
+
         // Complete the word (not skipped)
         const completedWord: CompletedWord = {
           text: state.currentInput,
@@ -313,11 +322,18 @@ export const useTestStore = create<TestState>((set, get) => ({
         isBackspace: false,
       };
 
+      // Track the error position
+      const newErrorPositions = new Map(state.strictModeErrorPositions);
+      const wordErrors = new Set(newErrorPositions.get(state.currentWordIndex) || []);
+      wordErrors.add(state.currentInput.length);
+      newErrorPositions.set(state.currentWordIndex, wordErrors);
+
       // Block input temporarily
       set({
         strictModeErrors: newErrorCount,
         keystrokes: [...state.keystrokes, keystroke],
         inputBlocked: true,
+        strictModeErrorPositions: newErrorPositions,
       });
 
       // Unblock input after delay
@@ -732,6 +748,7 @@ export const useTestStore = create<TestState>((set, get) => ({
       keystrokes: [],
       strictModeErrors: 0,
       inputBlocked: false,
+      strictModeErrorPositions: new Map(),
       failedReason: null,
       result: null,
       // Preserve lastTestConfig so "try again" works

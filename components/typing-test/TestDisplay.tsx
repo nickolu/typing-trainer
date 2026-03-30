@@ -4,6 +4,7 @@ import { TypingCursor } from './TypingCursor';
 import { WordState, CompletedWord } from '@/lib/types';
 import { useHighlightedData } from './useHighlightedData';
 import { TargetWordWrapper } from './TargetWordWrapper';
+import { useTestStore } from '@/store/test-store';
 
 interface TestDisplayProps {
   targetWords: string[];
@@ -24,7 +25,7 @@ export function TestDisplay({
 }: TestDisplayProps) {
   const currentWordRef = useRef<HTMLDivElement>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
-
+  const strictModeErrorPositions = useTestStore((s) => s.strictModeErrorPositions);
 
   const highlightData = useHighlightedData(targetWords, practiceSequences, showHighlights);
 
@@ -61,6 +62,7 @@ export function TestDisplay({
                     state={state}
                     wasSkipped={wasSkipped}
                     highlightIndices={highlightData.wordHighlights.get(index) || new Set()}
+                    errorIndices={strictModeErrorPositions.get(index) || new Set()}
                   />
                 );
               }}

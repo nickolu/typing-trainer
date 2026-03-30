@@ -159,6 +159,7 @@ export interface TestState {
   // Strict mode mistake tracking
   strictModeErrors: number;
   inputBlocked: boolean; // Temporarily blocks input after a mistake in strict mode
+  strictModeErrorPositions: Map<number, Set<number>>; // wordIndex → Set of charIndex where errors occurred
 
   // Failure tracking
   failedReason: string | null; // Reason for test failure (e.g., "Too many mistakes")
