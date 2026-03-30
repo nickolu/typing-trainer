@@ -14,6 +14,7 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
+import { BenchmarkInfoDialog } from '@/components/benchmark/BenchmarkInfoDialog';
 import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
@@ -61,6 +62,7 @@ export function TypingTest() {
     resetDate: Date | null;
   } | null>(null);
   const [progressPercentage, setProgressPercentage] = useState(0);
+  const [showBenchmarkInfo, setShowBenchmarkInfo] = useState(false);
 
   // Stable temp ID for unauthenticated users to prevent infinite loops
   const [tempSourceId] = useState(() => 'temp-' + Date.now());
@@ -865,9 +867,11 @@ export function TypingTest() {
     isCompletingRef.current = true; // Set ref immediately to block effects
     setIsCompletingTest(true);
     try {
-      const result = await completeTest(autoSave);
+      const isBenchmark = defaultContentStyle === 'benchmark';
+      const shouldSave = autoSave || (isBenchmark && isAuthenticated);
+      const result = await completeTest(shouldSave);
       // Navigate to results page only if we got a valid result AND it was saved
-      if (result && autoSave) {
+      if (result && shouldSave) {
         await router.push(`/results/${result.id}`);
         // Note: Component should unmount after navigation, so we don't reset the ref
       } else {
@@ -883,7 +887,7 @@ export function TypingTest() {
       setIsCompletingTest(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completeTest, router, autoSave]);
+  }, [completeTest, router, autoSave, defaultContentStyle, isAuthenticated]);
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
@@ -1027,7 +1031,7 @@ export function TypingTest() {
                   remainingWords={remainingWords}
                   bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
-                <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} />
+                <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} onWpmClick={() => setShowBenchmarkInfo(true)} />
               </>
             ) : (
               <>
@@ -1157,6 +1161,7 @@ export function TypingTest() {
           showHighlightToggle={isPractice && practiceSequences.length > 0}
           isLoadingContent={isLoadingContent}
           onRestart={handleRestart}
+          onBenchmarkSelected={() => setShowBenchmarkInfo(true)}
         />
         {generationError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
@@ -1371,6 +1376,19 @@ export function TypingTest() {
           By Nickolus Cunningham
         </a>
       </div>
+
+      {/* Benchmark Info Dialog */}
+      {showBenchmarkInfo && (
+        <BenchmarkInfoDialog
+          isOpen={showBenchmarkInfo}
+          onClose={() => setShowBenchmarkInfo(false)}
+          wpmStatus={wpmStatus}
+          onStartBenchmark={() => {
+            if (status === 'active') resetTest();
+            setDefaultContentStyle('benchmark');
+          }}
+        />
+      )}
     </div>
   );
 }

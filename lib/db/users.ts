@@ -20,7 +20,7 @@ export interface UserProfile {
   createdAt: Date;
   wpmScore?: number | null; // Official WPM score from benchmark tests
   wpmLastUpdated?: Date | null; // When the WPM score was last updated
-  wpmScoreResetDate?: Date | null; // When the score will reset (6 months from last update)
+  wpmScoreResetDate?: Date | null; // When the score will reset (30 days from last update)
   timeTrialContentMigrated?: boolean; // Whether time trial content has been migrated (v1 -> v2)
   hasSeenTimeTrialResetNotice?: boolean; // Whether user has seen the time trial reset notice
 }
@@ -93,7 +93,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
  * Update a user's official WPM score from a benchmark test
  * Rules:
  * - First test: Set score directly
- * - Score reset (after 6 months): Set score directly
+ * - Score reset (after 30 days): Set score directly
  * - Too soon (<30 days): Return existing score without updating
  * - After 30+ days: Average old and new score
  */
@@ -112,8 +112,8 @@ export async function updateUserWPMScore(
 
     const profile = userDoc.data();
     const now = new Date();
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+    const thirtyDaysFromNow = new Date(now);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
     let newScore: number;
     let lastUpdated = profile.wpmLastUpdated
@@ -133,7 +133,7 @@ export async function updateUserWPMScore(
       await updateDoc(userRef, {
         wpmScore: newScore,
         wpmLastUpdated: Timestamp.fromDate(now),
-        wpmScoreResetDate: Timestamp.fromDate(sixMonthsFromNow),
+        wpmScoreResetDate: Timestamp.fromDate(thirtyDaysFromNow),
       });
       return newScore;
     }
@@ -154,7 +154,7 @@ export async function updateUserWPMScore(
     await updateDoc(userRef, {
       wpmScore: newScore,
       wpmLastUpdated: Timestamp.fromDate(now),
-      wpmScoreResetDate: Timestamp.fromDate(sixMonthsFromNow),
+      wpmScoreResetDate: Timestamp.fromDate(thirtyDaysFromNow),
     });
 
     return newScore;

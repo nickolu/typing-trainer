@@ -6,9 +6,10 @@ import { LogOut, User, Settings } from 'lucide-react';
 
 interface LogoutButtonProps {
   wpmStatusMessage?: string | null;
+  onWpmClick?: () => void;
 }
 
-export function LogoutButton({ wpmStatusMessage }: LogoutButtonProps) {
+export function LogoutButton({ wpmStatusMessage, onWpmClick }: LogoutButtonProps) {
   const router = useRouter();
   const { displayName, wpmScore, logout } = useUserStore();
 
@@ -25,15 +26,28 @@ export function LogoutButton({ wpmStatusMessage }: LogoutButtonProps) {
     <div className="flex items-center gap-4">
       {/* Display Name with optional WPM Score */}
       <div className="relative group">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-editor-muted/30 rounded-lg">
-          <User className="w-4 h-4 text-editor-accent" />
-          <span className="text-sm font-medium text-editor-fg">
-            {displayName}
-            {wpmScore !== null && (
-              <span className="ml-2 text-editor-accent font-bold">{wpmScore} WPM</span>
-            )}
-          </span>
-        </div>
+        {onWpmClick ? (
+          <button
+            onClick={onWpmClick}
+            className="flex items-center gap-2 px-3 py-1.5 bg-editor-muted/30 rounded-lg hover:bg-editor-muted/50 transition-colors cursor-pointer"
+          >
+            <User className="w-4 h-4 text-editor-accent" />
+            <span className="text-sm font-medium text-editor-fg">{displayName}</span>
+            <span className="text-sm text-editor-accent font-bold">
+              {wpmScore !== null ? `${wpmScore} WPM` : 'Set WPM'}
+            </span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-editor-muted/30 rounded-lg">
+            <User className="w-4 h-4 text-editor-accent" />
+            <span className="text-sm font-medium text-editor-fg">
+              {displayName}
+              {wpmScore !== null && (
+                <span className="ml-2 text-editor-accent font-bold">{wpmScore} WPM</span>
+              )}
+            </span>
+          </div>
+        )}
 
         {/* Tooltip for WPM status */}
         {wpmStatusMessage && (

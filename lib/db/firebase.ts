@@ -29,7 +29,7 @@ export interface UserProfile {
   createdAt: Date;
   wpmScore?: number | null; // Official WPM score from benchmark tests
   wpmLastUpdated?: Date | null; // When the WPM score was last updated
-  wpmScoreResetDate?: Date | null; // When the score will reset (6 months from last update)
+  wpmScoreResetDate?: Date | null; // When the score will reset (30 days from last update)
   timeTrialContentMigrated?: boolean; // Whether time trial content has been migrated (v1 -> v2)
   hasSeenTimeTrialResetNotice?: boolean; // Whether user has seen the time trial reset notice
 }
@@ -1249,8 +1249,8 @@ export async function updateUserWPMScore(
 
     const profile = userDoc.data();
     const now = new Date();
-    const sixMonthsFromNow = new Date(now);
-    sixMonthsFromNow.setMonth(sixMonthsFromNow.getMonth() + 6);
+    const thirtyDaysFromNow = new Date(now);
+    thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
     let newScore: number;
     let lastUpdated = profile.wpmLastUpdated
@@ -1270,7 +1270,7 @@ export async function updateUserWPMScore(
       await updateDoc(userRef, {
         wpmScore: newScore,
         wpmLastUpdated: Timestamp.fromDate(now),
-        wpmScoreResetDate: Timestamp.fromDate(sixMonthsFromNow),
+        wpmScoreResetDate: Timestamp.fromDate(thirtyDaysFromNow),
       });
       return newScore;
     }
@@ -1291,7 +1291,7 @@ export async function updateUserWPMScore(
     await updateDoc(userRef, {
       wpmScore: newScore,
       wpmLastUpdated: Timestamp.fromDate(now),
-      wpmScoreResetDate: Timestamp.fromDate(sixMonthsFromNow),
+      wpmScoreResetDate: Timestamp.fromDate(thirtyDaysFromNow),
     });
 
     return newScore;

@@ -19,9 +19,10 @@ interface SettingsToolbarProps {
   showHighlightToggle?: boolean; // Only show in targeted practice mode
   isLoadingContent?: boolean; // Whether content is currently loading
   onRestart?: () => void; // Callback when restart is clicked
+  onBenchmarkSelected?: () => void; // Callback when benchmark mode is selected from content menu
 }
 
-export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false, onRestart }: SettingsToolbarProps) {
+export function SettingsToolbar({ disabled = false, onContentChange, showHighlightToggle = false, isLoadingContent = false, onRestart, onBenchmarkSelected }: SettingsToolbarProps) {
   const { isAuthenticated } = useUserStore();
 
   // Detect if user is on Mac
@@ -284,6 +285,7 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
         isOpen={showContentOptions}
         onClose={() => setShowContentOptions(false)}
         onSave={handleContentChange}
+        onBenchmarkSelected={onBenchmarkSelected}
       />
     </>
   );
