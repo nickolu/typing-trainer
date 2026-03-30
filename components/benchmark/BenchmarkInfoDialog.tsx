@@ -7,10 +7,13 @@ interface BenchmarkInfoDialogProps {
   isOpen: boolean;
   onClose: () => void;
   wpmStatus: WPMStatus | null;
+  onStartBenchmark: () => void;
 }
 
-export function BenchmarkInfoDialog({ isOpen, onClose, wpmStatus }: BenchmarkInfoDialogProps) {
+export function BenchmarkInfoDialog({ isOpen, onClose, wpmStatus, onStartBenchmark }: BenchmarkInfoDialogProps) {
   if (!isOpen) return null;
+
+  const canTakeBenchmark = !wpmStatus || !wpmStatus.hasScore || wpmStatus.canUpdate;
 
   return (
     <div
@@ -28,7 +31,7 @@ export function BenchmarkInfoDialog({ isOpen, onClose, wpmStatus }: BenchmarkInf
         <div className="sticky top-0 bg-editor-bg border-b border-editor-muted p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Award className="w-5 h-5 text-editor-accent" />
-            <h2 className="text-xl font-bold text-editor-fg">Benchmark Test</h2>
+            <h2 className="text-xl font-bold text-editor-fg">Set your WPM with a Benchmark Test</h2>
           </div>
           <button
             onClick={onClose}
@@ -89,9 +92,22 @@ export function BenchmarkInfoDialog({ isOpen, onClose, wpmStatus }: BenchmarkInf
               <h3 className="font-semibold text-editor-fg">Score Reset</h3>
             </div>
             <p className="text-sm text-editor-muted leading-relaxed">
-              Scores reset after 6 months of inactivity. Each new benchmark extends the reset date by 6 months.
+              Scores reset after 30 days. Take a new benchmark to keep your score current.
             </p>
           </div>
+
+          {/* CTA */}
+          <button
+            onClick={() => {
+              onStartBenchmark();
+              onClose();
+            }}
+            disabled={!canTakeBenchmark}
+            className="w-full py-3 px-4 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-editor-accent"
+          >
+            <Award className="w-5 h-5" />
+            {canTakeBenchmark ? 'Start Benchmark Test' : `Score locked — ${wpmStatus?.daysUntilUpdate} day${wpmStatus?.daysUntilUpdate === 1 ? '' : 's'} until next update`}
+          </button>
 
           {/* Personalized Status */}
           {wpmStatus && (

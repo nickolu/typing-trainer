@@ -10,11 +10,12 @@ interface ContentOptionsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave?: (contentStyle?: ContentStyle) => void; // Callback to regenerate content, optionally passing the selected style
+  onBenchmarkSelected?: () => void; // Callback to show benchmark info dialog when benchmark is chosen
 }
 
 type TabType = 'static' | 'time-trials' | 'ai';
 
-export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsModalProps) {
+export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelected }: ContentOptionsModalProps) {
   const { currentUserId } = useUserStore();
   const {
     defaultContentStyle,
@@ -161,6 +162,10 @@ export function ContentOptionsModal({ isOpen, onClose, onSave }: ContentOptionsM
       onSave(contentStyle);
     }
     onClose();
+    // Show benchmark info dialog when benchmark mode is selected
+    if ((contentStyle ?? defaultContentStyle) === 'benchmark' && onBenchmarkSelected) {
+      onBenchmarkSelected();
+    }
   };
 
   if (!isOpen) return null;

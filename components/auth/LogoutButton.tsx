@@ -6,9 +6,10 @@ import { LogOut, User, Settings } from 'lucide-react';
 
 interface LogoutButtonProps {
   wpmStatusMessage?: string | null;
+  onWpmClick?: () => void;
 }
 
-export function LogoutButton({ wpmStatusMessage }: LogoutButtonProps) {
+export function LogoutButton({ wpmStatusMessage, onWpmClick }: LogoutButtonProps) {
   const router = useRouter();
   const { displayName, wpmScore, logout } = useUserStore();
 
@@ -29,8 +30,17 @@ export function LogoutButton({ wpmStatusMessage }: LogoutButtonProps) {
           <User className="w-4 h-4 text-editor-accent" />
           <span className="text-sm font-medium text-editor-fg">
             {displayName}
-            {wpmScore !== null && (
-              <span className="ml-2 text-editor-accent font-bold">{wpmScore} WPM</span>
+            {onWpmClick ? (
+              <button
+                onClick={onWpmClick}
+                className="ml-2 text-editor-accent font-bold hover:text-editor-accent/70 transition-colors cursor-pointer"
+              >
+                {wpmScore !== null ? `${wpmScore} WPM` : 'Set WPM'}
+              </button>
+            ) : (
+              wpmScore !== null && (
+                <span className="ml-2 text-editor-accent font-bold">{wpmScore} WPM</span>
+              )
             )}
           </span>
         </div>

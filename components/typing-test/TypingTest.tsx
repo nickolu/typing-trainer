@@ -14,7 +14,6 @@ import { WPMSpeedometer } from './WPMSpeedometer';
 import { TipsBanner } from './TipsBanner';
 import { SettingsToolbar } from '@/components/settings/SettingsToolbar';
 import { LogoutButton } from '@/components/auth/LogoutButton';
-import { Award, HelpCircle } from 'lucide-react';
 import { BenchmarkInfoDialog } from '@/components/benchmark/BenchmarkInfoDialog';
 import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
@@ -1032,27 +1031,7 @@ export function TypingTest() {
                   remainingWords={remainingWords}
                   bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
-                <button
-                  onClick={() => {
-                    if (status === 'active') resetTest();
-                    setDefaultContentStyle('benchmark');
-                  }}
-                  className="flex items-center gap-1 text-xs text-editor-accent hover:text-editor-accent/70 transition-colors"
-                  title="Run benchmark test"
-                >
-                  <Award className="w-3.5 h-3.5" />
-                  <span>Benchmark</span>
-                </button>
-                {isBenchmarkMode && (
-                  <button
-                    onClick={() => setShowBenchmarkInfo(true)}
-                    className="p-2 hover:bg-editor-muted/30 rounded-lg transition-colors text-editor-muted hover:text-editor-fg"
-                    title="Benchmark info"
-                  >
-                    <HelpCircle className="w-5 h-5" />
-                  </button>
-                )}
-                <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} />
+                <LogoutButton wpmStatusMessage={getWpmTooltipMessage()} onWpmClick={() => setShowBenchmarkInfo(true)} />
               </>
             ) : (
               <>
@@ -1065,22 +1044,6 @@ export function TypingTest() {
                   remainingWords={remainingWords}
                   bestTime={isTimeTrialMode ? timeTrialBestTime : undefined}
                 />
-                <Link
-                  href="/login"
-                  className="flex items-center gap-1 text-xs text-editor-accent hover:text-editor-accent/70 transition-colors"
-                >
-                  <Award className="w-3.5 h-3.5" />
-                  <span>Track your WPM</span>
-                </Link>
-                {isBenchmarkMode && (
-                  <button
-                    onClick={() => setShowBenchmarkInfo(true)}
-                    className="p-2 hover:bg-editor-muted/30 rounded-lg transition-colors text-editor-muted hover:text-editor-fg"
-                    title="Benchmark info"
-                  >
-                    <HelpCircle className="w-5 h-5" />
-                  </button>
-                )}
                 <Link
                   href="/login"
                   className="px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
@@ -1198,6 +1161,7 @@ export function TypingTest() {
           showHighlightToggle={isPractice && practiceSequences.length > 0}
           isLoadingContent={isLoadingContent}
           onRestart={handleRestart}
+          onBenchmarkSelected={() => setShowBenchmarkInfo(true)}
         />
         {generationError && (
           <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
@@ -1419,6 +1383,10 @@ export function TypingTest() {
           isOpen={showBenchmarkInfo}
           onClose={() => setShowBenchmarkInfo(false)}
           wpmStatus={wpmStatus}
+          onStartBenchmark={() => {
+            if (status === 'active') resetTest();
+            setDefaultContentStyle('benchmark');
+          }}
         />
       )}
     </div>
