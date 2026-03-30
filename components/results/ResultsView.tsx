@@ -10,7 +10,6 @@ import { SequenceAnalysis } from "./SequenceAnalysis";
 import { MistakeAnalysis } from "./MistakeAnalysis";
 import { TargetedPracticeModal } from "./TargetedPracticeModal";
 import { TrialHistory } from "./TrialHistory";
-import { ErrorHighlight } from "./ErrorHighlight";
 import {
   Zap,
   Target,
@@ -655,16 +654,6 @@ export function ResultsView({ result }: ResultsViewProps) {
             </div>
           </div>
         </div>
-
-        {/* Error Highlight — strict mode and time trial only */}
-        {(result.isTimeTrial || currentLabels?.includes('correction-mode-strict')) && (
-          <div className="mb-8">
-            <ErrorHighlight
-              targetWords={targetWords}
-              typedWords={result.typedWords}
-            />
-          </div>
-        )}
 
         {/* Sequence Analysis */}
         <div className="mb-8">
