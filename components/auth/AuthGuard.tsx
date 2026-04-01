@@ -33,7 +33,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
     // Public paths that don't require authentication
     const publicPaths = ['/login', '/'];
-    if (publicPaths.includes(pathname)) {
+    if (publicPaths.includes(pathname) || pathname.startsWith('/results/') || pathname.startsWith('/challenge/')) {
       return;
     }
 
@@ -57,7 +57,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   // Public paths that don't require authentication
   const publicPaths = ['/login', '/'];
-  if (publicPaths.includes(pathname)) {
+  if (publicPaths.includes(pathname) || pathname.startsWith('/results/') || pathname.startsWith('/challenge/')) {
     return <>{children}</>;
   }
 

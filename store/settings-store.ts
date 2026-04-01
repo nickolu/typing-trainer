@@ -13,6 +13,10 @@ export type CorrectionMode = 'normal' | 'speed' | 'strict';
 export type CustomTextRepeat = 'once' | 'fill-duration' | number;
 
 interface SettingsState {
+  // Challenge mode - locks test settings when active
+  challengeMode: boolean;
+  setChallengeMode: (enabled: boolean) => void;
+
   // Test settings
   defaultDuration: TestDuration;
   autoSave: boolean;
@@ -61,6 +65,7 @@ export const isAIContentStyle = (style: ContentStyle): style is AIContentStyle =
 };
 
 const defaultSettings = {
+  challengeMode: false,
   defaultDuration: 30 as TestDuration,
   autoSave: true,
   correctionMode: 'normal' as CorrectionMode,
@@ -80,10 +85,15 @@ const defaultSettings = {
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...defaultSettings,
 
-      setDefaultDuration: (duration) => set({ defaultDuration: duration }),
+      setChallengeMode: (enabled) => set({ challengeMode: enabled }),
+
+      setDefaultDuration: (duration) => {
+        if (get().challengeMode) return;
+        set({ defaultDuration: duration });
+      },
 
       setAutoSave: (autoSave) => {
         // Only allow enabling autoSave if user is authenticated
@@ -94,13 +104,19 @@ export const useSettingsStore = create<SettingsState>()(
         set({ autoSave });
       },
 
-      setCorrectionMode: (mode) => set({ correctionMode: mode }),
+      setCorrectionMode: (mode) => {
+        if (get().challengeMode) return;
+        set({ correctionMode: mode });
+      },
 
       setMistakeThreshold: (threshold) => set({ mistakeThreshold: threshold }),
 
       setShowPracticeHighlights: (enabled) => set({ showPracticeHighlights: enabled }),
 
-      setDefaultContentStyle: (style) => set({ defaultContentStyle: style }),
+      setDefaultContentStyle: (style) => {
+        if (get().challengeMode) return;
+        set({ defaultContentStyle: style });
+      },
 
       setCustomText: (text) => set({ customText: text }),
 
@@ -124,6 +140,11 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'typing-trainer-settings',
+      partialize: (state) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { challengeMode, setChallengeMode, ...rest } = state;
+        return rest;
+      },
     }
   )
 );

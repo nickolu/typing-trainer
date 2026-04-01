@@ -9,6 +9,7 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteField,
   query,
   where,
   orderBy,
@@ -241,6 +242,52 @@ export async function getNextIterationNumber(
   } catch (error) {
     console.error('Failed to get next iteration number:', error);
     return 1; // Default to 1 on error
+  }
+}
+
+/**
+ * Share a test result publicly, storing the challenge words for others to take the same test
+ */
+export async function shareResult(id: string, userId: string, challengeWords: string[], correctionMode: string): Promise<void> {
+  try {
+    const { getFirebaseAuth } = await import('@/lib/firebase-config');
+    const auth = getFirebaseAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser || currentUser.uid !== userId) {
+      throw new Error('Not authenticated or user ID mismatch');
+    }
+
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, id);
+
+    await updateDoc(resultRef, { isPublic: true, challengeWords, challengeCorrectionMode: correctionMode });
+  } catch (error) {
+    console.error('Failed to share result:', error);
+    throw error;
+  }
+}
+
+/**
+ * Unshare a test result, removing public access and challenge words
+ */
+export async function unshareResult(id: string, userId: string): Promise<void> {
+  try {
+    const { getFirebaseAuth } = await import('@/lib/firebase-config');
+    const auth = getFirebaseAuth();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser || currentUser.uid !== userId) {
+      throw new Error('Not authenticated or user ID mismatch');
+    }
+
+    const db = getFirebaseDb();
+    const resultRef = doc(db, TEST_RESULTS_COLLECTION, id);
+
+    await updateDoc(resultRef, { isPublic: false, challengeWords: deleteField(), challengeCorrectionMode: deleteField() });
+  } catch (error) {
+    console.error('Failed to unshare result:', error);
+    throw error;
   }
 }
 

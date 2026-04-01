@@ -13,15 +13,10 @@ export default function ResultsPage() {
   const [result, setResult] = useState<TestResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     async function loadResult() {
-      if (!currentUserId) {
-        setError('User not authenticated');
-        setLoading(false);
-        return;
-      }
-
       try {
         const id = params.id as string;
         const testResult = await getTestResult(id);
@@ -31,8 +26,12 @@ export default function ResultsPage() {
           return;
         }
 
-        // Verify ownership
-        if (testResult.userId !== currentUserId) {
+        // Check if the current user owns this result
+        const ownsResult = !!currentUserId && testResult.userId === currentUserId;
+        setIsOwner(ownsResult);
+
+        // Allow viewing if user owns it OR if the result is public
+        if (!ownsResult && !testResult.isPublic) {
           setError('You do not have permission to view this result');
           return;
         }
@@ -65,5 +64,5 @@ export default function ResultsPage() {
     );
   }
 
-  return <ResultsView result={result} />;
+  return <ResultsView result={result} isOwner={isOwner} />;
 }

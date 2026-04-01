@@ -63,6 +63,11 @@ export interface TestResult {
   // Labels
   labels?: string[]; // User-selected and auto-generated labels for filtering
 
+  // Sharing
+  isPublic?: boolean; // Whether this result is viewable via shareable link
+  challengeWords?: string[]; // Word list stored when sharing, so challengers can take the same test
+  challengeCorrectionMode?: string; // Correction mode used in the original test
+
   // Time trial metadata
   isTimeTrial?: boolean; // Is this a time trial test
   timeTrialId?: string; // ID of the time trial

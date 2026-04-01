@@ -17,6 +17,8 @@ import {
   X,
   Trophy,
   Sparkles,
+  Share2,
+  Link as LinkIcon,
 } from "lucide-react";
 import { useTestStore } from "@/store/test-store";
 import { useSettingsStore } from "@/store/settings-store";
@@ -27,6 +29,7 @@ import {
   getTimeTrialBestTime,
   getTestResultsByContent,
 } from "@/lib/db/firebase";
+import { shareResult, unshareResult } from "@/lib/db";
 import { getUserTimeTrialRank } from "@/lib/db/time-trials";
 import {
   getRandomTest,
@@ -59,9 +62,10 @@ function generateNgramPracticeWords(ngrams: string[], targetCount: number): stri
 
 interface ResultsViewProps {
   result: TestResult;
+  isOwner?: boolean;
 }
 
-export function ResultsView({ result }: ResultsViewProps) {
+export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
   const router = useRouter();
   const { defaultDuration } = useSettingsStore();
   const { initializeTest, resetTest, retryLastTest } = useTestStore();
@@ -76,6 +80,11 @@ export function ResultsView({ result }: ResultsViewProps) {
   );
   const [isSavingLabels, setIsSavingLabels] = useState(false);
   const [labelError, setLabelError] = useState<string | null>(null);
+
+  // Sharing state
+  const [isPublic, setIsPublic] = useState(result.isPublic || false);
+  const [isTogglingShare, setIsTogglingShare] = useState(false);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   // Test content availability for retry and trial history
   const [canRetry, setCanRetry] = useState(false);
@@ -386,6 +395,63 @@ export function ResultsView({ result }: ResultsViewProps) {
     router.push("/");
   };
 
+  const buildShareText = () => {
+    const url = `${window.location.origin}/challenge/${result.id}`;
+    const lines = [
+      `CunningType \u2328\uFE0F`,
+      `${result.wpm} WPM | ${result.accuracy}% Accuracy`,
+      `Can you beat me?`,
+      url,
+    ];
+    return lines.join("\n");
+  };
+
+  const handleShare = async () => {
+    if (!currentUserId || !result.userId) return;
+    setIsTogglingShare(true);
+    setShareMessage(null);
+    try {
+      if (isPublic) {
+        await unshareResult(result.id, currentUserId);
+        setIsPublic(false);
+        setShareMessage("Link sharing disabled");
+      } else {
+        // Get words from local state, or fetch from Firestore if not loaded yet
+        let words = targetWords;
+        if (words.length === 0 && result.testContentId) {
+          const { getTestContent } = await import("@/lib/db");
+          const testContent = await getTestContent(result.testContentId);
+          if (testContent) {
+            words = testContent.words;
+          }
+        }
+        if (words.length === 0) {
+          setShareMessage("Failed to share: no test content found");
+          setTimeout(() => setShareMessage(null), 3000);
+          return;
+        }
+        const { correctionMode } = useSettingsStore.getState();
+        await shareResult(result.id, currentUserId, words, correctionMode);
+        setIsPublic(true);
+        await navigator.clipboard.writeText(buildShareText());
+        setShareMessage("Copied to clipboard!");
+      }
+      setTimeout(() => setShareMessage(null), 3000);
+    } catch (error) {
+      console.error("Failed to update sharing:", error);
+      setShareMessage("Failed to update sharing");
+      setTimeout(() => setShareMessage(null), 3000);
+    } finally {
+      setIsTogglingShare(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    await navigator.clipboard.writeText(buildShareText());
+    setShareMessage("Copied to clipboard!");
+    setTimeout(() => setShareMessage(null), 3000);
+  };
+
   const handlePracticeSlowNgrams = (ngrams: string[]) => {
     const count =
       defaultDuration === "content-length"
@@ -413,42 +479,87 @@ export function ResultsView({ result }: ResultsViewProps) {
 
         {/* Actions */}
         <div className="flex gap-4 justify-center flex-wrap mb-8">
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-          >
-            <Target className="w-5 h-5" />
-            Targeted Practice
-          </button>
-          <Link
-            href="/stats"
-            className="px-6 py-3 bg-editor-muted/50 hover:bg-editor-muted/70 text-editor-fg rounded-lg font-medium transition-colors"
-          >
-            View Stats
-          </Link>
-          {canRetry && (
-            <button
-              onClick={handleTryAgain}
-              className="px-6 py-3 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
-            >
-              Try Again
-            </button>
+          {isOwner && (
+            <>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                <Target className="w-5 h-5" />
+                Targeted Practice
+              </button>
+              <Link
+                href="/stats"
+                className="px-6 py-3 bg-editor-muted/50 hover:bg-editor-muted/70 text-editor-fg rounded-lg font-medium transition-colors"
+              >
+                View Stats
+              </Link>
+              {canRetry && (
+                <button
+                  onClick={handleTryAgain}
+                  className="px-6 py-3 bg-editor-muted hover:bg-editor-muted/80 text-editor-fg rounded-lg font-medium transition-colors"
+                >
+                  Try Again
+                </button>
+              )}
+              {isCheckingRetry && (
+                <button
+                  disabled
+                  className="px-6 py-3 bg-editor-muted/50 text-editor-fg rounded-lg font-medium cursor-not-allowed"
+                >
+                  Loading...
+                </button>
+              )}
+              <button
+                onClick={handleNewTest}
+                className="px-6 py-3 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
+              >
+                New Test
+              </button>
+            </>
           )}
-          {isCheckingRetry && (
-            <button
-              disabled
-              className="px-6 py-3 bg-editor-muted/50 text-editor-fg rounded-lg font-medium cursor-not-allowed"
-            >
-              Loading...
-            </button>
+
+          {/* Share button - owner can share/unshare */}
+          {isOwner && result.userId && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleShare}
+                disabled={isTogglingShare}
+                className={`px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  isPublic
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-editor-muted/50 hover:bg-editor-muted/70 text-editor-fg"
+                }`}
+              >
+                {isPublic ? (
+                  <LinkIcon className="w-5 h-5" />
+                ) : (
+                  <Share2 className="w-5 h-5" />
+                )}
+                {isTogglingShare ? "..." : isPublic ? "Shared" : "Share"}
+              </button>
+              {isPublic && (
+                <button
+                  onClick={handleCopyLink}
+                  className="p-2 text-editor-muted hover:text-editor-fg transition-colors"
+                  title="Copy link"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           )}
-          <button
-            onClick={handleNewTest}
-            className="px-6 py-3 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors"
-          >
-            New Test
-          </button>
+
         </div>
+
+        {/* Share message toast */}
+        {shareMessage && (
+          <div className="flex justify-center mb-4">
+            <span className="text-sm text-green-400 bg-green-400/10 px-4 py-2 rounded-lg">
+              {shareMessage}
+            </span>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -580,7 +691,7 @@ export function ResultsView({ result }: ResultsViewProps) {
         )}
 
         {/* Labels Section */}
-        {isAuthenticated && result.userId && (
+        {isOwner && isAuthenticated && result.userId && (
           <div className="bg-editor-bg border border-editor-muted rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">Labels</h2>
