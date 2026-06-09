@@ -78,6 +78,7 @@ export default function DailyHubPage() {
   const [today, setToday] = useState('');
   const [streakInfo, setStreakInfo] = useState<DailyStreakInfo | null>(null);
   const [passageScore, setPassageScore] = useState<DailyChallengeResult | null>(null);
+  const [quoteScore, setQuoteScore] = useState<DailyChallengeResult | null>(null);
 
   useEffect(() => {
     async function loadStatus() {
@@ -85,11 +86,13 @@ export default function DailyHubPage() {
       setToday(date);
 
       if (isAuthenticated && currentUserId) {
-        const [score, streak] = await Promise.all([
-          getDailyChallengeScore(currentUserId, date),
+        const [pScore, qScore, streak] = await Promise.all([
+          getDailyChallengeScore(currentUserId, date, 'passage'),
+          getDailyChallengeScore(currentUserId, date, 'quote'),
           getDailyStreakInfo(currentUserId),
         ]);
-        setPassageScore(score);
+        setPassageScore(pScore);
+        setQuoteScore(qScore);
         setStreakInfo(streak);
       }
     }
@@ -138,11 +141,13 @@ export default function DailyHubPage() {
             score={passageScore ? { wpm: passageScore.wpm, accuracy: passageScore.accuracy } : undefined}
           />
 
-          {/* Daily Quote Card — Coming Soon placeholder */}
+          {/* Daily Quote Card */}
           <ChallengeCard
             title="Daily Quote"
             description="A quick famous quote to type — takes 30 seconds. The perfect daily warm-up."
-            comingSoon
+            href="/daily/quote"
+            completed={!!quoteScore}
+            score={quoteScore ? { wpm: quoteScore.wpm, accuracy: quoteScore.accuracy } : undefined}
           />
 
           {/* Daily Weakness Attack Card — Coming Soon placeholder */}
