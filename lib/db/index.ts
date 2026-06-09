@@ -13,3 +13,4 @@ export * from './labels';
 export * from './ngram-stats';
 export * from './daily-challenges';
 export * from './daily-streaks';
+export * from './weekly-winner';
