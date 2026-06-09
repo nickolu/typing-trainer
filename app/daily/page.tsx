@@ -14,6 +14,7 @@ import {
   saveDailyChallengeScore,
   DailyChallengeResult,
 } from '@/lib/db/daily-challenges';
+import { getDailyStreakInfo, updateDailyStreak, DailyStreakInfo } from '@/lib/db/daily-streaks';
 import { TestContent } from '@/lib/types';
 
 type PageState = 'loading' | 'ready' | 'typing' | 'complete' | 'already-completed';
@@ -138,6 +139,7 @@ export default function DailyPage() {
     testResultId: string;
   } | null>(null);
   const [isPractice, setIsPractice] = useState(false);
+  const [streakInfo, setStreakInfo] = useState<DailyStreakInfo | null>(null);
 
   // Track whether we've already handled the current test completion
   const handledResultId = useRef<string | null>(null);
@@ -164,11 +166,20 @@ export default function DailyPage() {
           if (score) {
             setExistingScore(score);
             setPageState('already-completed');
-            return;
+          } else {
+            setPageState('ready');
           }
         } catch (err) {
           console.error('Failed to check daily challenge status:', err);
+          setPageState('ready');
         }
+        try {
+          const streak = await getDailyStreakInfo(currentUserId);
+          setStreakInfo(streak);
+        } catch (err) {
+          console.error('Failed to load streak info:', err);
+        }
+        return;
       }
 
       setPageState('ready');
@@ -211,7 +222,10 @@ export default function DailyPage() {
             completionTime,
             testResultId
           );
-          if (!isFirstAttempt) {
+          if (isFirstAttempt) {
+            const updatedStreak = await updateDailyStreak(currentUserId);
+            setStreakInfo(updatedStreak);
+          } else {
             // Race condition — already submitted
             setIsPractice(true);
           }
@@ -278,6 +292,27 @@ export default function DailyPage() {
           <p className="text-editor-muted">
             {today ? formatDate(today) : ''} &mdash; Everyone types the same passage. First attempt counts!
           </p>
+          {/* Streak display - show below the header */}
+          {streakInfo && isAuthenticated && (
+            <div className="flex items-center gap-6 mt-4">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🔥</span>
+                <div>
+                  <div className="text-lg font-bold">{streakInfo.dailyStreak} day{streakInfo.dailyStreak !== 1 ? 's' : ''}</div>
+                  <div className="text-xs text-editor-muted">Current streak</div>
+                </div>
+              </div>
+              {streakInfo.bestDailyStreak > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">⭐</span>
+                  <div>
+                    <div className="text-lg font-bold">{streakInfo.bestDailyStreak} day{streakInfo.bestDailyStreak !== 1 ? 's' : ''}</div>
+                    <div className="text-xs text-editor-muted">Best streak</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Ready state: show passage title and start button */}
