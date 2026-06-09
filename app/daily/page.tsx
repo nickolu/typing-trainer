@@ -7,6 +7,13 @@ import { getTodayPST } from '@/lib/daily-challenge';
 import { getDailyChallengeScore, DailyChallengeResult } from '@/lib/db/daily-challenges';
 import { getDailyStreakInfo, DailyStreakInfo } from '@/lib/db/daily-streaks';
 import { getTestResultsByUser } from '@/lib/db/test-results';
+import { getWeeklyWinner, WeeklyWinner } from '@/lib/db/weekly-winner';
+
+function formatDateShort(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
 function formatDate(dateStr: string): string {
   // dateStr is YYYY-MM-DD, parse in local timezone to avoid off-by-one
@@ -87,6 +94,8 @@ export default function DailyHubPage() {
   const [quoteScore, setQuoteScore] = useState<DailyChallengeResult | null>(null);
   const [weaknessCompleted, setWeaknessCompleted] = useState(false);
   const [testCount, setTestCount] = useState(0);
+  const [weeklyWinner, setWeeklyWinner] = useState<WeeklyWinner | null>(null);
+  const [winnerDismissed, setWinnerDismissed] = useState(false);
 
   useEffect(() => {
     async function loadStatus() {
@@ -110,9 +119,29 @@ export default function DailyHubPage() {
           localStorage.getItem(`cunningtype-weakness-completed-${currentUserId}-${date}`) === 'true';
         setWeaknessCompleted(wCompleted);
       }
+
+      // Load weekly winner (available to all visitors)
+      const winner = await getWeeklyWinner();
+      setWeeklyWinner(winner);
+      if (winner && typeof window !== 'undefined') {
+        const dismissKey = `cunningtype-weekly-winner-dismissed-${winner.weekStart}`;
+        if (localStorage.getItem(dismissKey) === 'true') {
+          setWinnerDismissed(true);
+        }
+      }
     }
     loadStatus();
   }, [isAuthenticated, currentUserId]);
+
+  const dismissWinner = () => {
+    if (weeklyWinner) {
+      localStorage.setItem(
+        `cunningtype-weekly-winner-dismissed-${weeklyWinner.weekStart}`,
+        'true'
+      );
+      setWinnerDismissed(true);
+    }
+  };
 
   return (
     <div className="min-h-screen p-8">
@@ -144,6 +173,33 @@ export default function DailyHubPage() {
             </div>
           )}
         </div>
+
+        {/* Weekly Winner Banner */}
+        {weeklyWinner && !winnerDismissed && (
+          <div className="mb-8 bg-editor-accent/10 border border-editor-accent/30 rounded-lg p-6 relative">
+            <button
+              onClick={dismissWinner}
+              className="absolute top-3 right-3 text-editor-muted hover:text-editor-fg transition-colors"
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+            <div className="text-center">
+              <div className="text-sm text-editor-accent font-medium mb-1">
+                🏆 Last Week&apos;s Champion
+              </div>
+              <div className="text-2xl font-bold mb-1">
+                {weeklyWinner.displayName}
+              </div>
+              <div className="text-editor-muted text-sm">
+                {weeklyWinner.averageWpm} WPM avg · {weeklyWinner.averageAccuracy}% accuracy · {weeklyWinner.daysPlayed} days played
+              </div>
+              <div className="text-editor-muted text-xs mt-1">
+                Week of {formatDateShort(weeklyWinner.weekStart)} – {formatDateShort(weeklyWinner.weekEnd)}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Challenge Cards Grid */}
         <div className="grid gap-6">
