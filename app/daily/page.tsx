@@ -6,6 +6,7 @@ import { useUserStore } from '@/store/user-store';
 import { getTodayPST } from '@/lib/daily-challenge';
 import { getDailyChallengeScore, DailyChallengeResult } from '@/lib/db/daily-challenges';
 import { getDailyStreakInfo, DailyStreakInfo } from '@/lib/db/daily-streaks';
+import { getTestResultsByUser } from '@/lib/db/test-results';
 
 function formatDate(dateStr: string): string {
   // dateStr is YYYY-MM-DD, parse in local timezone to avoid off-by-one
@@ -26,12 +27,14 @@ interface ChallengeCardProps {
   completed?: boolean;
   score?: { wpm: number; accuracy: number };
   comingSoon?: boolean;
+  disabled?: boolean;
 }
 
-function ChallengeCard({ title, description, href, completed, score, comingSoon }: ChallengeCardProps) {
+function ChallengeCard({ title, description, href, completed, score, comingSoon, disabled }: ChallengeCardProps) {
+  const isInactive = comingSoon || disabled;
   const content = (
     <div className={`bg-editor-bg border rounded-lg p-6 transition-colors ${
-      comingSoon
+      isInactive
         ? 'border-editor-muted/50 opacity-60'
         : 'border-editor-muted hover:border-editor-accent/50'
     }`}>
@@ -46,6 +49,9 @@ function ChallengeCard({ title, description, href, completed, score, comingSoon 
           {comingSoon && (
             <span className="text-editor-muted text-sm">Coming Soon</span>
           )}
+          {disabled && !comingSoon && (
+            <span className="text-editor-muted text-sm">Locked</span>
+          )}
         </div>
       </div>
       <p className="text-editor-muted mb-4">{description}</p>
@@ -59,7 +65,7 @@ function ChallengeCard({ title, description, href, completed, score, comingSoon 
       )}
 
       {/* Action */}
-      {!comingSoon && (
+      {!isInactive && (
         <div className="text-editor-accent font-medium text-sm">
           {completed ? 'View Results / Play Again →' : 'Start Challenge →'}
         </div>
@@ -67,7 +73,7 @@ function ChallengeCard({ title, description, href, completed, score, comingSoon 
     </div>
   );
 
-  if (href && !comingSoon) {
+  if (href && !isInactive) {
     return <Link href={href}>{content}</Link>;
   }
   return content;
@@ -79,6 +85,8 @@ export default function DailyHubPage() {
   const [streakInfo, setStreakInfo] = useState<DailyStreakInfo | null>(null);
   const [passageScore, setPassageScore] = useState<DailyChallengeResult | null>(null);
   const [quoteScore, setQuoteScore] = useState<DailyChallengeResult | null>(null);
+  const [weaknessCompleted, setWeaknessCompleted] = useState(false);
+  const [testCount, setTestCount] = useState(0);
 
   useEffect(() => {
     async function loadStatus() {
@@ -86,14 +94,21 @@ export default function DailyHubPage() {
       setToday(date);
 
       if (isAuthenticated && currentUserId) {
-        const [pScore, qScore, streak] = await Promise.all([
+        const [pScore, qScore, streak, results] = await Promise.all([
           getDailyChallengeScore(currentUserId, date, 'passage'),
           getDailyChallengeScore(currentUserId, date, 'quote'),
           getDailyStreakInfo(currentUserId),
+          getTestResultsByUser(currentUserId).catch(() => []),
         ]);
         setPassageScore(pScore);
         setQuoteScore(qScore);
         setStreakInfo(streak);
+        setTestCount(results.length);
+
+        // Check weakness completion from localStorage
+        const wCompleted = typeof window !== 'undefined' &&
+          localStorage.getItem(`cunningtype-weakness-completed-${currentUserId}-${date}`) === 'true';
+        setWeaknessCompleted(wCompleted);
       }
     }
     loadStatus();
@@ -150,11 +165,16 @@ export default function DailyHubPage() {
             score={quoteScore ? { wpm: quoteScore.wpm, accuracy: quoteScore.accuracy } : undefined}
           />
 
-          {/* Daily Weakness Attack Card — Coming Soon placeholder */}
+          {/* Daily Weakness Attack Card */}
           <ChallengeCard
             title="Weakness Attack"
-            description="AI-generated passage targeting your slowest sequences and most mistyped words."
-            comingSoon
+            description={testCount < 5
+              ? `Complete ${5 - testCount} more test${5 - testCount !== 1 ? 's' : ''} to unlock`
+              : 'AI-generated passage targeting your slowest sequences and most mistyped words.'
+            }
+            href="/daily/weakness"
+            completed={weaknessCompleted}
+            disabled={!isAuthenticated || testCount < 5}
           />
         </div>
       </div>
