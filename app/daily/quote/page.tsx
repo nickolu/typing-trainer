@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
-import { getDailyPassage, getTodayPST } from '@/lib/daily-challenge';
+import { getTodayPST } from '@/lib/daily-challenge';
+import { getDailyQuote, quoteToText, DailyQuote } from '@/lib/daily-quotes';
 import { textToWords } from '@/lib/test-content';
 import { TypingTest } from '@/components/typing-test/TypingTest';
 import {
@@ -16,12 +17,10 @@ import {
   DailyChallengeResult,
 } from '@/lib/db/daily-challenges';
 import { getDailyStreakInfo, updateDailyStreak, DailyStreakInfo } from '@/lib/db/daily-streaks';
-import { TestContent } from '@/lib/types';
 
 type PageState = 'loading' | 'ready' | 'typing' | 'complete' | 'already-completed';
 
 function formatDate(dateStr: string): string {
-  // dateStr is YYYY-MM-DD, parse in local timezone to avoid off-by-one
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year, month - 1, day);
   return date.toLocaleDateString('en-US', {
@@ -46,17 +45,17 @@ interface DailyLeaderboardProps {
   currentUserId: string | null;
 }
 
-function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
+function DailyQuoteLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
   const [entries, setEntries] = useState<DailyLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadLeaderboard() {
       try {
-        const data = await getDailyLeaderboard(date, 100, currentUserId ?? undefined);
+        const data = await getDailyLeaderboard(date, 100, currentUserId ?? undefined, 'quote');
         setEntries(data);
       } catch (err) {
-        console.error('Failed to load daily leaderboard:', err);
+        console.error('Failed to load daily quote leaderboard:', err);
       } finally {
         setLoading(false);
       }
@@ -89,7 +88,7 @@ function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
             </tr>
           </thead>
           <tbody>
-            {entries.map((entry, index) => (
+            {entries.map((entry) => (
               <tr
                 key={entry.userId}
                 className={`border-b border-editor-muted/30 transition-colors ${
@@ -125,13 +124,13 @@ function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
   );
 }
 
-export default function DailyPassagePage() {
+export default function DailyQuotePage() {
   const { currentUserId, isAuthenticated } = useUserStore();
   const { initializeTest, resetTest, status, result } = useTestStore();
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [today, setToday] = useState<string>('');
-  const [passage, setPassage] = useState<TestContent | null>(null);
+  const [quote, setQuote] = useState<DailyQuote | null>(null);
   const [existingScore, setExistingScore] = useState<DailyChallengeResult | null>(null);
   const [completedResult, setCompletedResult] = useState<{
     wpm: number;
@@ -153,17 +152,17 @@ export default function DailyPassagePage() {
     return unlockSettings;
   }, []);
 
-  // Load daily passage and check completion status
+  // Load daily quote and check completion status
   useEffect(() => {
     async function initialize() {
       const date = getTodayPST();
       setToday(date);
-      const dailyPassage = getDailyPassage(date);
-      setPassage(dailyPassage);
+      const dailyQuote = getDailyQuote(date);
+      setQuote(dailyQuote);
 
       if (isAuthenticated && currentUserId) {
         try {
-          const score = await getDailyChallengeScore(currentUserId, date);
+          const score = await getDailyChallengeScore(currentUserId, date, 'quote');
           if (score) {
             setExistingScore(score);
             setPageState('already-completed');
@@ -171,7 +170,7 @@ export default function DailyPassagePage() {
             setPageState('ready');
           }
         } catch (err) {
-          console.error('Failed to check daily challenge status:', err);
+          console.error('Failed to check daily quote status:', err);
           setPageState('ready');
         }
         try {
@@ -199,6 +198,7 @@ export default function DailyPassagePage() {
       handledResultId.current = result.id;
       handleTestComplete(result);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, result, pageState]);
 
   const handleTestComplete = useCallback(
@@ -210,7 +210,7 @@ export default function DailyPassagePage() {
       const completionTime = testResult.completionTime ?? testResult.duration;
       const testResultId = testResult.id;
 
-      // Restore challenge mode off (test is done)
+      // Restore challenge mode off
       useSettingsStore.setState({ challengeMode: false });
 
       if (isAuthenticated && currentUserId && !isPractice) {
@@ -222,7 +222,7 @@ export default function DailyPassagePage() {
             accuracy,
             completionTime,
             testResultId,
-            'passage'
+            'quote'
           );
           if (isFirstAttempt) {
             const updatedStreak = await updateDailyStreak(currentUserId);
@@ -232,7 +232,7 @@ export default function DailyPassagePage() {
             setIsPractice(true);
           }
         } catch (err) {
-          console.error('Failed to save daily challenge score:', err);
+          console.error('Failed to save daily quote score:', err);
         }
       }
 
@@ -244,7 +244,7 @@ export default function DailyPassagePage() {
 
   const startChallenge = useCallback(
     (practice: boolean = false) => {
-      if (!passage) return;
+      if (!quote) return;
 
       setIsPractice(practice);
       handledResultId.current = null;
@@ -255,22 +255,23 @@ export default function DailyPassagePage() {
       settingsState.setCorrectionMode('normal');
       useSettingsStore.setState({ challengeMode: true });
 
-      const words = textToWords(passage.text);
+      const quoteText = quoteToText(quote);
+      const words = textToWords(quoteText, 1);
 
       resetTest();
       initializeTest(
         {
           duration: 'content-length',
-          testContentId: passage.id,
-          testContentTitle: passage.title,
-          testContentCategory: passage.category,
+          testContentId: `daily-quote-${today}`,
+          testContentTitle: `Daily Quote by ${quote.author}`,
+          testContentCategory: 'quote',
         },
         words
       );
 
       setPageState('typing');
     },
-    [passage, resetTest, initializeTest]
+    [quote, today, resetTest, initializeTest]
   );
 
   const playAgain = useCallback(() => {
@@ -280,7 +281,7 @@ export default function DailyPassagePage() {
   if (pageState === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-editor-muted">Loading daily challenge...</p>
+        <p className="text-editor-muted">Loading daily quote...</p>
       </div>
     );
   }
@@ -297,11 +298,11 @@ export default function DailyPassagePage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Daily Passage</h1>
+          <h1 className="text-4xl font-bold mb-2">Daily Quote</h1>
           <p className="text-editor-muted">
-            {today ? formatDate(today) : ''} &mdash; Everyone types the same passage. First attempt counts!
+            {today ? formatDate(today) : ''} &mdash; A quick typing exercise. First attempt counts!
           </p>
-          {/* Streak display - show below the header */}
+          {/* Streak display */}
           {streakInfo && isAuthenticated && (
             <div className="flex items-center gap-6 mt-4">
               <div className="flex items-center gap-2">
@@ -324,13 +325,19 @@ export default function DailyPassagePage() {
           )}
         </div>
 
-        {/* Ready state: show passage title and start button */}
-        {pageState === 'ready' && passage && (
+        {/* Ready state: show quote and start button */}
+        {pageState === 'ready' && quote && (
           <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">{passage.title}</h2>
-            {passage.source && (
-              <p className="text-editor-muted mb-6">&mdash; {passage.source}</p>
-            )}
+            {/* Quote display */}
+            <blockquote className="mb-6">
+              <p className="text-2xl italic text-editor-fg leading-relaxed mb-4">
+                &ldquo;{quote.text}&rdquo;
+              </p>
+              <footer className="text-editor-muted text-base">
+                &mdash; {quote.author}
+                {quote.source && <span className="text-editor-muted/70">, <em>{quote.source}</em></span>}
+              </footer>
+            </blockquote>
             {!isAuthenticated && (
               <p className="text-editor-muted mb-4 text-sm">
                 Sign in to save your score and appear on the leaderboard.
@@ -353,6 +360,9 @@ export default function DailyPassagePage() {
           <>
             {/* Results summary */}
             <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 mb-8">
+              <p className="text-center text-editor-muted mb-6">
+                You typed this quote in {formatTime(completedResult.completionTime)} at {completedResult.wpm} WPM
+              </p>
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
                   <div className="text-3xl font-bold">{completedResult.wpm}</div>
@@ -377,7 +387,7 @@ export default function DailyPassagePage() {
             </div>
 
             {/* Leaderboard */}
-            <DailyLeaderboard date={today} currentUserId={currentUserId} />
+            <DailyQuoteLeaderboard date={today} currentUserId={currentUserId} />
 
             {/* Play again button */}
             <div className="text-center mt-6">
@@ -395,7 +405,10 @@ export default function DailyPassagePage() {
         {pageState === 'already-completed' && existingScore && (
           <>
             <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 mb-8 text-center">
-              <h2 className="text-2xl font-bold mb-6">Today&apos;s Challenge Complete!</h2>
+              <h2 className="text-2xl font-bold mb-2">Today&apos;s Quote Complete!</h2>
+              <p className="text-editor-muted mb-6">
+                You typed this quote in {formatTime(existingScore.completionTime)} at {existingScore.wpm} WPM
+              </p>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <div className="text-3xl font-bold">{existingScore.wpm}</div>
@@ -419,7 +432,7 @@ export default function DailyPassagePage() {
                 Play Again (Practice)
               </button>
             </div>
-            <DailyLeaderboard date={today} currentUserId={currentUserId} />
+            <DailyQuoteLeaderboard date={today} currentUserId={currentUserId} />
           </>
         )}
       </div>
