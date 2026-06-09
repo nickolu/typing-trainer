@@ -23,6 +23,9 @@ export interface UserProfile {
   wpmScoreResetDate?: Date | null; // When the score will reset (30 days from last update)
   timeTrialContentMigrated?: boolean; // Whether time trial content has been migrated (v1 -> v2)
   hasSeenTimeTrialResetNotice?: boolean; // Whether user has seen the time trial reset notice
+  dailyStreak?: number;
+  bestDailyStreak?: number;
+  lastDailyChallengeDate?: string | null;
 }
 
 /**
@@ -82,6 +85,9 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       wpmScoreResetDate: data.wpmScoreResetDate ? convertTimestampToDate(data.wpmScoreResetDate) : null,
       timeTrialContentMigrated: data.timeTrialContentMigrated ?? false,
       hasSeenTimeTrialResetNotice: data.hasSeenTimeTrialResetNotice ?? false,
+      dailyStreak: data.dailyStreak ?? 0,
+      bestDailyStreak: data.bestDailyStreak ?? 0,
+      lastDailyChallengeDate: data.lastDailyChallengeDate ?? null,
     };
   } catch (error) {
     console.error('Failed to get user profile:', error);
