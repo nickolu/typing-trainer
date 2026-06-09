@@ -8,6 +8,7 @@ export function MainNav() {
 
   const navItems = [
     { href: '/', label: 'Typing Test' },
+    { href: '/daily', label: 'Daily' },
     { href: '/stats', label: 'Stats' },
     { href: '/settings', label: 'Settings' },
     { href: '/leaderboard', label: 'Leaderboard' },
