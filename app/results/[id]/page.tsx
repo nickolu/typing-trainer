@@ -1,68 +1,78 @@
-'use client';
+import type { Metadata } from 'next';
+import { ResultsPageClient } from './ResultsPageClient';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { ResultsView } from '@/components/results/ResultsView';
-import { getTestResult } from '@/lib/db';
-import { useUserStore } from '@/store/user-store';
-import { TestResult } from '@/lib/types';
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
-export default function ResultsPage() {
-  const params = useParams();
-  const { currentUserId } = useUserStore();
-  const [result, setResult] = useState<TestResult | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
+async function fetchResultMetadata(id: string) {
+  try {
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/testResults/${id}`;
+    const res = await fetch(url, { next: { revalidate: 60 } });
 
-  useEffect(() => {
-    async function loadResult() {
-      try {
-        const id = params.id as string;
-        const testResult = await getTestResult(id);
+    if (!res.ok) return null;
 
-        if (!testResult) {
-          setError('Test result not found');
-          return;
-        }
+    const data = await res.json();
+    if (!data.fields) return null;
 
-        // Check if the current user owns this result
-        const ownsResult = !!currentUserId && testResult.userId === currentUserId;
-        setIsOwner(ownsResult);
+    const fields = data.fields;
 
-        // Allow viewing if user owns it OR if the result is public
-        if (!ownsResult && !testResult.isPublic) {
-          setError('You do not have permission to view this result');
-          return;
-        }
-
-        setResult(testResult);
-      } catch (err) {
-        console.error('Failed to load test result:', err);
-        setError('Failed to load test result');
-      } finally {
-        setLoading(false);
-      }
+    // Helper to parse Firestore value types
+    function parseField(field: Record<string, unknown>): unknown {
+      if (!field) return undefined;
+      if ('integerValue' in field) return Number(field.integerValue);
+      if ('doubleValue' in field) return Number(field.doubleValue);
+      if ('stringValue' in field) return field.stringValue;
+      if ('booleanValue' in field) return field.booleanValue;
+      return undefined;
     }
 
-    loadResult();
-  }, [params.id, currentUserId]);
+    const isPublic = parseField(fields.isPublic);
+    if (!isPublic) return null;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-editor-muted">Loading results...</p>
-      </div>
-    );
+    const wpm = parseField(fields.wpm) as number | undefined;
+    const accuracy = parseField(fields.accuracy) as number | undefined;
+
+    return { wpm, accuracy };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const result = await fetchResultMetadata(id);
+
+  if (!result || result.wpm == null || result.accuracy == null) {
+    return {
+      title: 'CunningType - Typing Test Results',
+    };
   }
 
-  if (error || !result) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <p className="text-editor-error">{error || 'Result not found'}</p>
-      </div>
-    );
-  }
+  const wpm = Math.round(result.wpm);
+  const accuracy = Math.round(result.accuracy);
+  const title = `${wpm} WPM | ${accuracy}% Accuracy on CunningType`;
+  const description = `I typed ${wpm} WPM with ${accuracy}% accuracy. Can you beat me?`;
 
-  return <ResultsView result={result} isOwner={isOwner} />;
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      images: ['/cunningtype-preview.jpg'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/cunningtype-preview.jpg'],
+    },
+  };
+}
+
+export default async function ResultsPage({ params }: PageProps) {
+  const { id } = await params;
+  return <ResultsPageClient id={id} />;
 }
