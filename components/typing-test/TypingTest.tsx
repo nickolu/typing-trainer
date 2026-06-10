@@ -19,7 +19,11 @@ import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWor
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
 
-export function TypingTest() {
+interface TypingTestProps {
+  onComplete?: (resultId: string) => void;
+}
+
+export function TypingTest({ onComplete }: TypingTestProps = {}) {
   const router = useRouter();
   const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
   const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold, currentKeyboard } = useSettingsStore();
@@ -872,7 +876,11 @@ export function TypingTest() {
       const result = await completeTest(shouldSave);
       // Navigate to results page only if we got a valid result AND it was saved
       if (result && shouldSave) {
-        await router.push(`/results/${result.id}`);
+        if (onComplete) {
+          onComplete(result.id);
+        } else {
+          await router.push(`/results/${result.id}`);
+        }
         // Note: Component should unmount after navigation, so we don't reset the ref
       } else {
         // If practice mode, show results inline
@@ -887,7 +895,7 @@ export function TypingTest() {
       setIsCompletingTest(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completeTest, router, autoSave, defaultContentStyle, isAuthenticated]);
+  }, [completeTest, router, autoSave, defaultContentStyle, isAuthenticated, onComplete]);
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
