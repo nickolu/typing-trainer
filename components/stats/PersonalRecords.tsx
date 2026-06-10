@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { TestResult } from '@/lib/types';
 import { DailyStreakInfo } from '@/lib/db/daily-streaks';
+import { useSettingsStore } from '@/store/settings-store';
 
 interface PersonalRecordsProps {
   results: TestResult[];
@@ -21,9 +22,12 @@ interface RecordCard {
   label: string;
   value: string;
   date: string | null;
+  goalProgress?: { currentAvg: number; progress: number };
 }
 
 export function PersonalRecords({ results, streakInfo }: PersonalRecordsProps) {
+  const { wpmGoal } = useSettingsStore();
+
   const records = useMemo(() => {
     // Filter out practice and deleted results
     const valid = results.filter(
@@ -87,15 +91,36 @@ export function PersonalRecords({ results, streakInfo }: PersonalRecordsProps) {
       },
     ];
 
+    if (wpmGoal > 0) {
+      const sorted = [...valid].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      const recent = sorted.slice(0, 10);
+      const currentAvg =
+        recent.length > 0
+          ? Math.round(recent.reduce((sum, r) => sum + r.wpm, 0) / recent.length)
+          : 0;
+      const progress = Math.min(100, Math.round((currentAvg / wpmGoal) * 100));
+
+      cards.push({
+        label: 'WPM Goal',
+        value: `${wpmGoal}`,
+        date: null,
+        goalProgress: { currentAvg, progress },
+      });
+    }
+
     return cards;
-  }, [results, streakInfo]);
+  }, [results, streakInfo, wpmGoal]);
+
+  const gridCols = records.length === 5 ? 'lg:grid-cols-5' : 'lg:grid-cols-4';
 
   return (
     <div className="bg-editor-bg border border-editor-muted rounded-lg p-4">
       <h2 className="text-sm font-medium text-editor-muted uppercase tracking-wider mb-3">
         Personal Records
       </h2>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className={`grid grid-cols-2 ${gridCols} gap-3`}>
         {records.map((record) => (
           <div
             key={record.label}
@@ -103,7 +128,19 @@ export function PersonalRecords({ results, streakInfo }: PersonalRecordsProps) {
           >
             <span className="text-xs text-editor-muted font-medium">{record.label}</span>
             <span className="text-2xl font-bold text-editor-accent">{record.value}</span>
-            {record.date ? (
+            {record.goalProgress ? (
+              <>
+                <div className="w-full bg-editor-muted/30 rounded-full h-2 mt-1">
+                  <div
+                    className="bg-editor-accent rounded-full h-2 transition-all"
+                    style={{ width: `${record.goalProgress.progress}%` }}
+                  />
+                </div>
+                <span className="text-xs text-editor-muted mt-1">
+                  Avg: {record.goalProgress.currentAvg} WPM ({record.goalProgress.progress}%)
+                </span>
+              </>
+            ) : record.date ? (
               <span className="text-xs text-editor-muted">{record.date}</span>
             ) : (
               <span className="text-xs text-editor-muted invisible">placeholder</span>

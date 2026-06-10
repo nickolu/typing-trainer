@@ -6,7 +6,7 @@ import { useUserStore } from '@/store/user-store';
 import { KeyboardSelector } from '@/components/settings/KeyboardSelector';
 
 export default function SettingsPage() {
-  const { showSpeedometer, showWPMOnSpeedometer, setShowSpeedometer, setShowWPMOnSpeedometer, currentKeyboard, setCurrentKeyboard } = useSettingsStore();
+  const { showSpeedometer, showWPMOnSpeedometer, setShowSpeedometer, setShowWPMOnSpeedometer, currentKeyboard, setCurrentKeyboard, wpmGoal, setWpmGoal } = useSettingsStore();
   const { isAuthenticated } = useUserStore();
   const [showSaved, setShowSaved] = React.useState(false);
 
@@ -97,6 +97,35 @@ export default function SettingsPage() {
                   disabled={!showSpeedometer}
                   className="w-5 h-5 rounded border-editor-muted bg-editor-bg-alt text-editor-accent focus:ring-2 focus:ring-editor-accent focus:ring-offset-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 />
+              </div>
+            </div>
+            {/* WPM Goal */}
+            <div className="flex items-start justify-between py-3 border-t border-editor-muted/30">
+              <div className="flex-1">
+                <label htmlFor="wpm-goal" className="font-medium text-editor-fg">
+                  WPM Goal
+                </label>
+                <p className="text-sm text-editor-muted mt-1">
+                  Set a target WPM to track your progress on the stats page
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="wpm-goal"
+                  type="number"
+                  min="0"
+                  max="300"
+                  value={wpmGoal || ''}
+                  placeholder="e.g. 80"
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0;
+                    setWpmGoal(Math.max(0, Math.min(300, val)));
+                    setShowSaved(true);
+                    setTimeout(() => setShowSaved(false), 2000);
+                  }}
+                  className="w-24 px-3 py-2 bg-editor-bg border border-editor-muted rounded text-editor-fg text-right font-mono focus:ring-2 focus:ring-editor-accent focus:border-editor-accent outline-none"
+                />
+                <span className="text-sm text-editor-muted">WPM</span>
               </div>
             </div>
           </div>
