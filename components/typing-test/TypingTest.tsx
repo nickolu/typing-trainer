@@ -978,6 +978,13 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         e.preventDefault();
       }
 
+      // Handle Escape (end test early)
+      if (e.key === 'Escape' && status === 'active') {
+        e.preventDefault();
+        handleComplete();
+        return;
+      }
+
       // Handle Tab (skip to next word)
       if (e.key === 'Tab') {
         handleTab();
@@ -998,7 +1005,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [status, handleKeyPress, handleBackspace, handleTab, startTest, handleRestart]);
+  }, [status, handleKeyPress, handleBackspace, handleTab, startTest, handleRestart, handleComplete]);
 
   // Show initial loading state (only when no content at all)
   if (targetWords.length === 0 && !isGenerating) {
@@ -1341,15 +1348,34 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
       {/* Footer hints */}
       {status !== 'complete' && status !== 'failed' && (
-        <div className="w-full max-w-4xl mt-4 text-sm text-editor-muted text-center">
+        <div className="w-full max-w-4xl mt-4 text-center">
           {status === 'idle' && !isGenerating && (
-            <p>Start typing to begin the test...</p>
+            <p className="text-sm text-editor-muted">Start typing to begin the test...</p>
           )}
-          {status === 'active' && (
-            <p>
-              Press Tab or Space to skip to the next word.
-              {correctionMode === 'speed' && ' Backspace is disabled.'}
-              {correctionMode === 'strict' && ' Wrong keys are blocked.'}
+          {(status === 'idle' || status === 'active') && !isGenerating && (
+            <div className="mt-2 flex items-center justify-center gap-4 text-xs text-editor-muted opacity-60">
+              <span>
+                <kbd className="font-mono bg-editor-muted/10 border border-editor-muted/30 rounded px-1 py-0.5">Tab</kbd>
+                {' '}Skip word
+              </span>
+              <span className="text-editor-muted/30">·</span>
+              <span>
+                <kbd className="font-mono bg-editor-muted/10 border border-editor-muted/30 rounded px-1 py-0.5">
+                  {typeof navigator !== 'undefined' && navigator.platform?.includes('Mac') ? '⌘' : 'Ctrl'}+Enter
+                </kbd>
+                {' '}Restart
+              </span>
+              <span className="text-editor-muted/30">·</span>
+              <span>
+                <kbd className="font-mono bg-editor-muted/10 border border-editor-muted/30 rounded px-1 py-0.5">Esc</kbd>
+                {' '}End test
+              </span>
+            </div>
+          )}
+          {status === 'active' && (correctionMode === 'speed' || correctionMode === 'strict') && (
+            <p className="mt-1 text-xs text-editor-muted opacity-60">
+              {correctionMode === 'speed' && 'Backspace is disabled.'}
+              {correctionMode === 'strict' && 'Wrong keys are blocked.'}
             </p>
           )}
         </div>
