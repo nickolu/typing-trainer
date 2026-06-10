@@ -10,7 +10,6 @@ import {
   getTodayPST,
   DailyChallengeConfig,
 } from '@/lib/daily-challenge';
-import { textToWords, calculateRequiredWords } from '@/lib/test-content';
 import { TypingTest } from '@/components/typing-test/TypingTest';
 import {
   DailyLeaderboardEntry,
@@ -178,17 +177,11 @@ export default function DailyChallengePage() {
       const dailyContent = getDailyContent(dailyConfig);
       setContent(dailyContent);
 
-      // Prepare words based on duration mode
+      // Truncate to ~60 words so the daily challenge takes ~1 min at 60 WPM
       const rawWords = dailyContent.text.split(/\s+/).filter(Boolean);
-      let words: string[];
-      if (dailyConfig.durationMode === 'timed') {
-        words = textToWords(dailyContent.text, calculateRequiredWords(60));
-      } else {
-        // content-length: truncate to 40-60 words
-        const targetWords = Math.min(60, rawWords.length);
-        const count = Math.max(40, targetWords);
-        words = rawWords.slice(0, count);
-      }
+      const targetWords = Math.min(60, rawWords.length);
+      const count = Math.max(40, targetWords);
+      const words = rawWords.slice(0, count);
       setPreparedWords(words);
 
       if (isAuthenticated && currentUserId) {
