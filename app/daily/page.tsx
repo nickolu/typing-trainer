@@ -21,6 +21,8 @@ import {
 import { getDailyStreakInfo, updateDailyStreak, DailyStreakInfo } from '@/lib/db/daily-streaks';
 import { getWeeklyWinner, WeeklyWinner } from '@/lib/db/weekly-winner';
 import { TestContent } from '@/lib/types';
+import { shareResult } from '@/lib/db/test-results';
+import { Share2 } from 'lucide-react';
 
 type PageState = 'loading' | 'ready' | 'typing' | 'complete' | 'already-completed';
 
@@ -154,6 +156,7 @@ export default function DailyChallengePage() {
   const [streakInfo, setStreakInfo] = useState<DailyStreakInfo | null>(null);
   const [weeklyWinner, setWeeklyWinner] = useState<WeeklyWinner | null>(null);
   const [winnerDismissed, setWinnerDismissed] = useState(false);
+  const [shareStatus, setShareStatus] = useState<'idle' | 'sharing' | 'shared' | 'error'>('idle');
 
   // Track whether we've already handled the current test completion
   const handledResultId = useRef<string | null>(null);
@@ -325,6 +328,26 @@ export default function DailyChallengePage() {
     }
   };
 
+  const handleDailyShare = useCallback(
+    async (testResultId: string) => {
+      if (!currentUserId) return;
+      setShareStatus('sharing');
+      try {
+        const { correctionMode } = useSettingsStore.getState();
+        await shareResult(testResultId, currentUserId, preparedWords, correctionMode);
+        const url = window.location.origin + '/results/' + testResultId;
+        await navigator.clipboard.writeText(url);
+        setShareStatus('shared');
+        setTimeout(() => setShareStatus('idle'), 2000);
+      } catch (err) {
+        console.error('Failed to share result:', err);
+        setShareStatus('error');
+        setTimeout(() => setShareStatus('idle'), 2000);
+      }
+    },
+    [currentUserId, preparedWords]
+  );
+
   if (pageState === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -449,13 +472,23 @@ export default function DailyChallengePage() {
 
             <DailyLeaderboard date={today} currentUserId={currentUserId} />
 
-            <div className="text-center mt-6">
+            <div className="text-center mt-6 flex items-center justify-center gap-3">
               <button
                 onClick={playAgain}
                 className="px-6 py-3 border border-editor-muted text-editor-fg hover:bg-editor-muted/20 rounded-lg transition-colors"
               >
                 Play Again (Practice)
               </button>
+              {isAuthenticated && (
+                <button
+                  onClick={() => handleDailyShare(completedResult.testResultId)}
+                  disabled={shareStatus === 'sharing'}
+                  className="px-6 py-3 flex items-center gap-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <Share2 size={16} />
+                  {shareStatus === 'sharing' ? 'Sharing...' : shareStatus === 'shared' ? 'Link copied!' : shareStatus === 'error' ? 'Error' : 'Share'}
+                </button>
+              )}
             </div>
           </>
         )}
@@ -484,12 +517,24 @@ export default function DailyChallengePage() {
                   <div className="text-editor-muted">Time</div>
                 </div>
               </div>
-              <button
-                onClick={playAgain}
-                className="mt-6 px-6 py-3 border border-editor-muted text-editor-fg hover:bg-editor-muted/20 rounded-lg transition-colors"
-              >
-                Play Again (Practice)
-              </button>
+              <div className="mt-6 flex items-center justify-center gap-3">
+                <button
+                  onClick={playAgain}
+                  className="px-6 py-3 border border-editor-muted text-editor-fg hover:bg-editor-muted/20 rounded-lg transition-colors"
+                >
+                  Play Again (Practice)
+                </button>
+                {isAuthenticated && existingScore.testResultId && (
+                  <button
+                    onClick={() => handleDailyShare(existingScore.testResultId)}
+                    disabled={shareStatus === 'sharing'}
+                    className="px-6 py-3 flex items-center gap-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Share2 size={16} />
+                    {shareStatus === 'sharing' ? 'Sharing...' : shareStatus === 'shared' ? 'Link copied!' : shareStatus === 'error' ? 'Error' : 'Share'}
+                  </button>
+                )}
+              </div>
             </div>
             <DailyLeaderboard date={today} currentUserId={currentUserId} />
           </>
