@@ -56,6 +56,8 @@ interface SettingsState {
   setShowSpeedometer: (enabled: boolean) => void;
   setShowWPMOnSpeedometer: (enabled: boolean) => void;
   setCurrentKeyboard: (keyboard: string | null) => void;
+  wpmGoal: number; // 0 means no goal set
+  setWpmGoal: (goal: number) => void;
   resetSettings: () => void;
 }
 
@@ -81,6 +83,7 @@ const defaultSettings = {
   showSpeedometer: true,
   showWPMOnSpeedometer: true,
   currentKeyboard: null,
+  wpmGoal: 0,
 };
 
 export const useSettingsStore = create<SettingsState>()(
@@ -135,6 +138,8 @@ export const useSettingsStore = create<SettingsState>()(
       setShowWPMOnSpeedometer: (enabled) => set({ showWPMOnSpeedometer: enabled }),
 
       setCurrentKeyboard: (keyboard) => set({ currentKeyboard: keyboard }),
+
+      setWpmGoal: (goal) => set({ wpmGoal: goal }),
 
       resetSettings: () => set(defaultSettings),
     }),

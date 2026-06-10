@@ -37,9 +37,12 @@ export default function StatsPage() {
     if (!currentUserId) return;
 
     try {
-      const allResults = await getTestResultsByUser(currentUserId);
+      const [allResults, streak] = await Promise.all([
+        getTestResultsByUser(currentUserId),
+        getDailyStreakInfo(currentUserId),
+      ]);
       setResults(allResults);
-      getDailyStreakInfo(currentUserId).then(setStreakInfo).catch(console.error);
+      setStreakInfo(streak);
     } catch (error) {
       console.error('Failed to load test results:', error);
     } finally {
