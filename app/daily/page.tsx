@@ -167,10 +167,12 @@ export default function DailyChallengePage() {
   // Track whether we've already handled the current test completion
   const handledResultId = useRef<string | null>(null);
 
-  // Restore settings on unmount
+  // Save original autoSave setting and restore on unmount
+  const originalAutoSave = useRef(useSettingsStore.getState().autoSave);
   useEffect(() => {
     return () => {
       useSettingsStore.setState({ challengeMode: false });
+      useSettingsStore.getState().setAutoSave(originalAutoSave.current);
     };
   }, []);
 
@@ -362,6 +364,9 @@ export default function DailyChallengePage() {
       const settingsState = useSettingsStore.getState();
       settingsState.setCorrectionMode(config.correctionMode);
       settingsState.setMistakeThreshold(config.errorLimit ?? -1);
+      // Disable autoSave so TypingTest doesn't save to testResults —
+      // daily challenges save to daily_scores via handleTestComplete instead
+      settingsState.setAutoSave(false);
       // Lock settings during challenge
       useSettingsStore.setState({ challengeMode: true });
 
