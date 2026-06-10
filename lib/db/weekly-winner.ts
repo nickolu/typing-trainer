@@ -84,7 +84,7 @@ export async function getWeeklyWinner(): Promise<WeeklyWinner | null> {
       const docMode: string | undefined = data.mode;
 
       // Only include passage mode: mode field is 'passage' or absent (legacy docs)
-      if (docMode !== undefined && docMode !== 'passage') return;
+      if (docMode !== undefined && docMode !== 'passage' && docMode !== 'daily') return;
 
       const userId = data.userId;
       if (!userScores.has(userId)) {

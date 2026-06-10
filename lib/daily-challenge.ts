@@ -1,6 +1,25 @@
 import { TestContent } from './types';
 import { staticTests } from './test-content';
 
+export type DailyContentType = 'prose' | 'quote' | 'technical' | 'code' | 'common';
+export type DailyDurationType = 'timed' | 'content-length';
+export type DailyCorrectionMode = 'normal' | 'speed' | 'strict';
+
+export interface DailyChallengeConfig {
+  date: string;
+  contentType: DailyContentType;
+  durationMode: DailyDurationType;
+  durationSeconds: number;      // 60 when timed
+  correctionMode: DailyCorrectionMode;
+  errorLimit: number | null;    // null unless correctionMode === 'strict'
+  displayLabel: string;         // e.g. "60-second timed test, strict mode (5 errors max)"
+}
+
+const DAILY_CONTENT_TYPES: DailyContentType[] = ['prose', 'quote', 'technical', 'code', 'common'];
+const DAILY_CORRECTION_MODES: DailyCorrectionMode[] = ['normal', 'speed', 'strict'];
+const DAILY_DURATION_MODES: DailyDurationType[] = ['timed', 'content-length'];
+const STRICT_ERROR_LIMITS = [3, 4, 5, 6, 7, 8, 9, 10];
+
 // FNV-1a hash for deterministic seeding from a date string
 function fnv1aHash(str: string): number {
   let hash = 0x811c9dc5; // FNV offset basis
@@ -104,4 +123,93 @@ export function getDailyPassage(date?: string): TestContent {
   }
 
   return passage;
+}
+
+export function getDailyConfig(date?: string): DailyChallengeConfig {
+  const targetDate = date ?? getTodayPST();
+  const seed = getDailySeed('daily-config-' + targetDate);
+  const prng = seededRandom(seed);
+
+  const contentType = DAILY_CONTENT_TYPES[Math.floor(prng() * DAILY_CONTENT_TYPES.length)];
+  const durationMode = DAILY_DURATION_MODES[Math.floor(prng() * DAILY_DURATION_MODES.length)];
+  const correctionMode = DAILY_CORRECTION_MODES[Math.floor(prng() * DAILY_CORRECTION_MODES.length)];
+  const durationSeconds = 60;
+
+  let errorLimit: number | null = null;
+  if (correctionMode === 'strict') {
+    errorLimit = STRICT_ERROR_LIMITS[Math.floor(prng() * STRICT_ERROR_LIMITS.length)];
+  }
+
+  const durationLabel = durationMode === 'timed'
+    ? `${durationSeconds}-second timed test`
+    : 'Content-length test';
+
+  let correctionLabel: string;
+  if (correctionMode === 'strict' && errorLimit !== null) {
+    correctionLabel = `strict mode (${errorLimit} errors max)`;
+  } else if (correctionMode === 'speed') {
+    correctionLabel = 'speed mode';
+  } else {
+    correctionLabel = 'normal mode';
+  }
+
+  const displayLabel = `${durationLabel}, ${correctionLabel}`;
+
+  return {
+    date: targetDate,
+    contentType,
+    durationMode,
+    durationSeconds,
+    correctionMode,
+    errorLimit,
+    displayLabel,
+  };
+}
+
+export function getDailyContent(config: DailyChallengeConfig): TestContent {
+  const allTests = getDailySelectableTests();
+
+  let filtered: TestContent[];
+  switch (config.contentType) {
+    case 'prose':
+      filtered = allTests.filter(t => t.category === 'prose');
+      break;
+    case 'quote':
+      filtered = allTests.filter(t => t.category === 'quote');
+      break;
+    case 'technical':
+      filtered = allTests.filter(t => t.category === 'technical');
+      break;
+    case 'code':
+      filtered = allTests.filter(t => t.category === 'code-typescript' || t.category === 'code-python');
+      break;
+    case 'common':
+      filtered = allTests.filter(t => t.category === 'common');
+      break;
+    default:
+      filtered = [];
+  }
+
+  const tests = filtered.length > 0 ? filtered : allTests;
+
+  const targetDate = config.date;
+  const epochDate = new Date(EPOCH + 'T00:00:00Z');
+  const dateObj = new Date(targetDate + 'T00:00:00Z');
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const dayNumber = Math.floor((dateObj.getTime() - epochDate.getTime()) / msPerDay);
+
+  const cycleLength = tests.length;
+  const cycleNumber = Math.floor(dayNumber / cycleLength);
+  const positionInCycle = ((dayNumber % cycleLength) + cycleLength) % cycleLength;
+
+  const cycleSeed = fnv1aHash('daily-content-' + config.date + '-' + config.contentType + '-cycle-' + cycleNumber);
+  const prng = seededRandom(cycleSeed);
+
+  const shuffled = [...tests];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(prng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled[positionInCycle];
 }

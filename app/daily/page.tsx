@@ -1,22 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useUserStore } from '@/store/user-store';
-import { getTodayPST } from '@/lib/daily-challenge';
-import { getDailyChallengeScore, DailyChallengeResult } from '@/lib/db/daily-challenges';
-import { getDailyStreakInfo, DailyStreakInfo } from '@/lib/db/daily-streaks';
-import { getTestResultsByUser } from '@/lib/db/test-results';
+import { useTestStore } from '@/store/test-store';
+import { useSettingsStore } from '@/store/settings-store';
+import {
+  getDailyConfig,
+  getDailyContent,
+  getTodayPST,
+  DailyChallengeConfig,
+} from '@/lib/daily-challenge';
+import { textToWords, calculateRequiredWords } from '@/lib/test-content';
+import { TypingTest } from '@/components/typing-test/TypingTest';
+import {
+  DailyLeaderboardEntry,
+  getDailyLeaderboard,
+  getDailyChallengeScore,
+  saveDailyChallengeScore,
+  DailyChallengeResult,
+} from '@/lib/db/daily-challenges';
+import { getDailyStreakInfo, updateDailyStreak, DailyStreakInfo } from '@/lib/db/daily-streaks';
 import { getWeeklyWinner, WeeklyWinner } from '@/lib/db/weekly-winner';
+import { TestContent } from '@/lib/types';
 
-function formatDateShort(dateStr: string): string {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+type PageState = 'loading' | 'ready' | 'typing' | 'complete' | 'already-completed';
 
 function formatDate(dateStr: string): string {
-  // dateStr is YYYY-MM-DD, parse in local timezone to avoid off-by-one
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year, month - 1, day);
   return date.toLocaleDateString('en-US', {
@@ -27,111 +36,291 @@ function formatDate(dateStr: string): string {
   });
 }
 
-interface ChallengeCardProps {
-  title: string;
-  description: string;
-  href?: string;
-  completed?: boolean;
-  score?: { wpm: number; accuracy: number };
-  comingSoon?: boolean;
-  disabled?: boolean;
+function formatTime(seconds: number): string {
+  if (seconds < 60) {
+    return `${Math.round(seconds)}s`;
+  }
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  return `${m}m ${s}s`;
 }
 
-function ChallengeCard({ title, description, href, completed, score, comingSoon, disabled }: ChallengeCardProps) {
-  const isInactive = comingSoon || disabled;
-  const content = (
-    <div className={`bg-editor-bg border rounded-lg p-6 transition-colors ${
-      isInactive
-        ? 'border-editor-muted/50 opacity-60'
-        : 'border-editor-muted hover:border-editor-accent/50'
-    }`}>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-bold">{title}</h2>
-        <div className="flex items-center gap-2">
-          {completed && (
-            <span className="text-editor-success text-sm font-medium flex items-center gap-1">
-              ✓ Complete
-            </span>
-          )}
-          {comingSoon && (
-            <span className="text-editor-muted text-sm">Coming Soon</span>
-          )}
-          {disabled && !comingSoon && (
-            <span className="text-editor-muted text-sm">Locked</span>
-          )}
-        </div>
+function formatDateShort(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+interface DailyLeaderboardProps {
+  date: string;
+  currentUserId: string | null;
+}
+
+function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
+  const [entries, setEntries] = useState<DailyLeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadLeaderboard() {
+      try {
+        const data = await getDailyLeaderboard(date, 100, currentUserId ?? undefined, 'daily');
+        setEntries(data);
+      } catch (err) {
+        console.error('Failed to load daily leaderboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadLeaderboard();
+  }, [date, currentUserId]);
+
+  return (
+    <div className="bg-editor-bg border border-editor-muted rounded-lg overflow-hidden">
+      <div className="px-6 py-4 border-b border-editor-muted flex items-center justify-between">
+        <h2 className="text-xl font-bold">Daily Leaderboard</h2>
+        <span className="text-sm text-editor-muted">Accuracy &ge;95% required to qualify</span>
       </div>
-      <p className="text-editor-muted mb-4">{description}</p>
 
-      {/* Score summary if completed */}
-      {completed && score && (
-        <div className="flex gap-4 mb-4 text-sm">
-          <span className="text-editor-fg font-mono font-bold">{score.wpm} WPM</span>
-          <span className="text-editor-fg">{Math.round(score.accuracy)}% accuracy</span>
+      {loading ? (
+        <div className="p-8 text-center text-editor-muted">Loading leaderboard...</div>
+      ) : entries.length === 0 ? (
+        <div className="p-8 text-center text-editor-muted">
+          No qualifying scores yet. Be the first!
         </div>
-      )}
-
-      {/* Action */}
-      {!isInactive && (
-        <div className="text-editor-accent font-medium text-sm">
-          {completed ? 'View Results / Play Again →' : 'Start Challenge →'}
-        </div>
+      ) : (
+        <table className="w-full">
+          <thead>
+            <tr className="bg-editor-muted/20 border-b border-editor-muted">
+              <th className="px-6 py-3 text-left text-sm font-semibold text-editor-fg">Rank</th>
+              <th className="px-6 py-3 text-left text-sm font-semibold text-editor-fg">Name</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold text-editor-fg">WPM</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold text-editor-fg">Accuracy</th>
+              <th className="px-6 py-3 text-right text-sm font-semibold text-editor-fg">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <tr
+                key={entry.userId}
+                className={`border-b border-editor-muted/30 transition-colors ${
+                  entry.isCurrentUser
+                    ? 'bg-editor-accent/10 hover:bg-editor-accent/15'
+                    : 'hover:bg-editor-muted/10'
+                }`}
+              >
+                <td className="px-6 py-3 text-editor-fg font-medium">
+                  <span className={entry.rank <= 3 ? 'text-editor-accent font-bold' : ''}>
+                    #{entry.rank}
+                  </span>
+                </td>
+                <td className="px-6 py-3 text-editor-fg">
+                  {entry.displayName}
+                  {entry.isCurrentUser && (
+                    <span className="ml-2 text-xs text-editor-accent">(you)</span>
+                  )}
+                </td>
+                <td className="px-6 py-3 text-right font-mono font-bold text-editor-fg">
+                  <span className={entry.rank <= 3 ? 'text-editor-accent' : ''}>{entry.wpm}</span>
+                </td>
+                <td className="px-6 py-3 text-right text-editor-fg">{entry.accuracy}%</td>
+                <td className="px-6 py-3 text-right text-editor-fg font-mono">
+                  {formatTime(entry.completionTime)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
     </div>
   );
-
-  if (href && !isInactive) {
-    return <Link href={href}>{content}</Link>;
-  }
-  return content;
 }
 
-export default function DailyHubPage() {
+export default function DailyChallengePage() {
   const { currentUserId, isAuthenticated } = useUserStore();
-  const [today, setToday] = useState('');
+  const { initializeTest, resetTest, status, result } = useTestStore();
+
+  const [pageState, setPageState] = useState<PageState>('loading');
+  const [today, setToday] = useState<string>('');
+  const [config, setConfig] = useState<DailyChallengeConfig | null>(null);
+  const [content, setContent] = useState<TestContent | null>(null);
+  const [preparedWords, setPreparedWords] = useState<string[]>([]);
+  const [existingScore, setExistingScore] = useState<DailyChallengeResult | null>(null);
+  const [completedResult, setCompletedResult] = useState<{
+    wpm: number;
+    accuracy: number;
+    completionTime: number;
+    testResultId: string;
+  } | null>(null);
+  const [isPractice, setIsPractice] = useState(false);
   const [streakInfo, setStreakInfo] = useState<DailyStreakInfo | null>(null);
-  const [passageScore, setPassageScore] = useState<DailyChallengeResult | null>(null);
-  const [quoteScore, setQuoteScore] = useState<DailyChallengeResult | null>(null);
-  const [weaknessCompleted, setWeaknessCompleted] = useState(false);
-  const [testCount, setTestCount] = useState(0);
   const [weeklyWinner, setWeeklyWinner] = useState<WeeklyWinner | null>(null);
   const [winnerDismissed, setWinnerDismissed] = useState(false);
 
+  // Track whether we've already handled the current test completion
+  const handledResultId = useRef<string | null>(null);
+
+  // Restore settings on unmount
   useEffect(() => {
-    async function loadStatus() {
+    return () => {
+      useSettingsStore.setState({ challengeMode: false });
+    };
+  }, []);
+
+  // Load daily config, content and check completion status
+  useEffect(() => {
+    async function initialize() {
       const date = getTodayPST();
       setToday(date);
 
-      if (isAuthenticated && currentUserId) {
-        const [pScore, qScore, streak, results] = await Promise.all([
-          getDailyChallengeScore(currentUserId, date, 'passage'),
-          getDailyChallengeScore(currentUserId, date, 'quote'),
-          getDailyStreakInfo(currentUserId),
-          getTestResultsByUser(currentUserId).catch(() => []),
-        ]);
-        setPassageScore(pScore);
-        setQuoteScore(qScore);
-        setStreakInfo(streak);
-        setTestCount(results.length);
+      const dailyConfig = getDailyConfig(date);
+      setConfig(dailyConfig);
 
-        // Check weakness completion from localStorage
-        const wCompleted = typeof window !== 'undefined' &&
-          localStorage.getItem(`cunningtype-weakness-completed-${currentUserId}-${date}`) === 'true';
-        setWeaknessCompleted(wCompleted);
+      const dailyContent = getDailyContent(dailyConfig);
+      setContent(dailyContent);
+
+      // Prepare words based on duration mode
+      const rawWords = dailyContent.text.split(/\s+/).filter(Boolean);
+      let words: string[];
+      if (dailyConfig.durationMode === 'timed') {
+        words = textToWords(dailyContent.text, calculateRequiredWords(60));
+      } else {
+        // content-length: truncate to 40-60 words
+        const targetWords = Math.min(60, rawWords.length);
+        const count = Math.max(40, targetWords);
+        words = rawWords.slice(0, count);
+      }
+      setPreparedWords(words);
+
+      if (isAuthenticated && currentUserId) {
+        try {
+          const score = await getDailyChallengeScore(currentUserId, date, 'daily');
+          if (score) {
+            setExistingScore(score);
+            setPageState('already-completed');
+          } else {
+            setPageState('ready');
+          }
+        } catch (err) {
+          console.error('Failed to check daily challenge status:', err);
+          setPageState('ready');
+        }
+        try {
+          const streak = await getDailyStreakInfo(currentUserId);
+          setStreakInfo(streak);
+        } catch (err) {
+          console.error('Failed to load streak info:', err);
+        }
+      } else {
+        setPageState('ready');
       }
 
       // Load weekly winner (available to all visitors)
-      const winner = await getWeeklyWinner();
-      setWeeklyWinner(winner);
-      if (winner && typeof window !== 'undefined') {
-        const dismissKey = `cunningtype-weekly-winner-dismissed-${winner.weekStart}`;
-        if (localStorage.getItem(dismissKey) === 'true') {
-          setWinnerDismissed(true);
+      try {
+        const winner = await getWeeklyWinner();
+        setWeeklyWinner(winner);
+        if (winner && typeof window !== 'undefined') {
+          const dismissKey = `cunningtype-weekly-winner-dismissed-${winner.weekStart}`;
+          if (localStorage.getItem(dismissKey) === 'true') {
+            setWinnerDismissed(true);
+          }
         }
+      } catch (err) {
+        console.error('Failed to load weekly winner:', err);
       }
     }
-    loadStatus();
+    initialize();
   }, [isAuthenticated, currentUserId]);
+
+  // Watch for test completion
+  useEffect(() => {
+    if (
+      status === 'complete' &&
+      result !== null &&
+      pageState === 'typing' &&
+      handledResultId.current !== result.id
+    ) {
+      handledResultId.current = result.id;
+      handleTestComplete(result);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, result, pageState]);
+
+  const handleTestComplete = useCallback(
+    async (testResult: typeof result) => {
+      if (!testResult || !today) return;
+
+      const wpm = testResult.wpm;
+      const accuracy = testResult.perCharacterAccuracy ?? testResult.accuracy;
+      const completionTime = testResult.completionTime ?? testResult.duration;
+      const testResultId = testResult.id;
+
+      // Restore settings — always reset mistakeThreshold to prevent polluting regular tests
+      useSettingsStore.setState({ challengeMode: false });
+      useSettingsStore.getState().setMistakeThreshold(-1);
+
+      if (isAuthenticated && currentUserId && !isPractice) {
+        try {
+          const { isFirstAttempt } = await saveDailyChallengeScore(
+            currentUserId,
+            today,
+            wpm,
+            accuracy,
+            completionTime,
+            testResultId,
+            'daily'
+          );
+          if (isFirstAttempt) {
+            const updatedStreak = await updateDailyStreak(currentUserId);
+            setStreakInfo(updatedStreak);
+          } else {
+            // Race condition — already submitted
+            setIsPractice(true);
+          }
+        } catch (err) {
+          console.error('Failed to save daily challenge score:', err);
+        }
+      }
+
+      setCompletedResult({ wpm, accuracy, completionTime, testResultId });
+      setPageState('complete');
+    },
+    [today, isAuthenticated, currentUserId, isPractice]
+  );
+
+  const startChallenge = useCallback(
+    (practice: boolean = false) => {
+      if (!config || !content || preparedWords.length === 0) return;
+
+      setIsPractice(practice);
+      handledResultId.current = null;
+
+      // Unlock settings to change them
+      useSettingsStore.setState({ challengeMode: false });
+      const settingsState = useSettingsStore.getState();
+      settingsState.setCorrectionMode(config.correctionMode);
+      settingsState.setMistakeThreshold(config.errorLimit ?? -1);
+      // Lock settings during challenge
+      useSettingsStore.setState({ challengeMode: true });
+
+      resetTest();
+      initializeTest(
+        {
+          duration: config.durationMode === 'timed' ? 60 : 'content-length',
+          testContentId: content.id,
+          testContentTitle: content.title,
+          testContentCategory: content.category,
+        },
+        preparedWords
+      );
+
+      setPageState('typing');
+    },
+    [config, content, preparedWords, resetTest, initializeTest]
+  );
+
+  const playAgain = useCallback(() => {
+    startChallenge(true);
+  }, [startChallenge]);
 
   const dismissWinner = () => {
     if (weeklyWinner) {
@@ -143,12 +332,20 @@ export default function DailyHubPage() {
     }
   };
 
+  if (pageState === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-editor-muted">Loading daily challenge...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Daily Challenges</h1>
+          <h1 className="text-4xl font-bold mb-2">Daily Challenge</h1>
           <p className="text-editor-muted">{today ? formatDate(today) : ''}</p>
 
           {/* Streak display */}
@@ -201,38 +398,109 @@ export default function DailyHubPage() {
           </div>
         )}
 
-        {/* Challenge Cards Grid */}
-        <div className="grid gap-6">
-          {/* Daily Passage Card */}
-          <ChallengeCard
-            title="Daily Passage"
-            description="Type today's passage. Everyone gets the same text — compete for the fastest WPM!"
-            href="/daily/passage"
-            completed={!!passageScore}
-            score={passageScore ? { wpm: passageScore.wpm, accuracy: passageScore.accuracy } : undefined}
-          />
+        {/* Ready state */}
+        {pageState === 'ready' && config && content && (
+          <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 text-center">
+            <div className="mb-4">
+              <p className="text-sm text-editor-muted uppercase tracking-wider mb-1">Today&apos;s Challenge</p>
+              <p className="text-lg font-semibold text-editor-accent">{config.displayLabel}</p>
+            </div>
+            <h2 className="text-2xl font-bold mb-2">{content.title}</h2>
+            {content.source && (
+              <p className="text-editor-muted mb-6">&mdash; {content.source}</p>
+            )}
+            {!content.source && <div className="mb-6" />}
+            {!isAuthenticated && (
+              <p className="text-editor-muted mb-4 text-sm">
+                Sign in to save your score and appear on the leaderboard.
+              </p>
+            )}
+            <button
+              onClick={() => startChallenge(false)}
+              className="px-8 py-4 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-bold text-lg transition-colors"
+            >
+              Start Daily Challenge
+            </button>
+          </div>
+        )}
 
-          {/* Daily Quote Card */}
-          <ChallengeCard
-            title="Daily Quote"
-            description="A quick famous quote to type — takes 30 seconds. The perfect daily warm-up."
-            href="/daily/quote"
-            completed={!!quoteScore}
-            score={quoteScore ? { wpm: quoteScore.wpm, accuracy: quoteScore.accuracy } : undefined}
-          />
+        {/* Typing state */}
+        {pageState === 'typing' && <TypingTest />}
 
-          {/* Daily Weakness Attack Card */}
-          <ChallengeCard
-            title="Weakness Attack"
-            description={testCount < 5
-              ? `Complete ${5 - testCount} more test${5 - testCount !== 1 ? 's' : ''} to unlock`
-              : 'AI-generated passage targeting your slowest sequences and most mistyped words.'
-            }
-            href="/daily/weakness"
-            completed={weaknessCompleted}
-            disabled={!isAuthenticated || testCount < 5}
-          />
-        </div>
+        {/* Complete state */}
+        {pageState === 'complete' && completedResult && (
+          <>
+            <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 mb-8">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-3xl font-bold">{completedResult.wpm}</div>
+                  <div className="text-editor-muted">WPM</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold">{Math.round(completedResult.accuracy)}%</div>
+                  <div className="text-editor-muted">Accuracy</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold">
+                    {formatTime(completedResult.completionTime)}
+                  </div>
+                  <div className="text-editor-muted">Time</div>
+                </div>
+              </div>
+              {isPractice && (
+                <p className="text-editor-muted text-center mt-4">
+                  Practice run &mdash; your first attempt is your official score
+                </p>
+              )}
+            </div>
+
+            <DailyLeaderboard date={today} currentUserId={currentUserId} />
+
+            <div className="text-center mt-6">
+              <button
+                onClick={playAgain}
+                className="px-6 py-3 border border-editor-muted text-editor-fg hover:bg-editor-muted/20 rounded-lg transition-colors"
+              >
+                Play Again (Practice)
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Already completed state */}
+        {pageState === 'already-completed' && existingScore && (
+          <>
+            <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 mb-8 text-center">
+              <h2 className="text-2xl font-bold mb-6">Today&apos;s Challenge Complete!</h2>
+              {config && (
+                <p className="text-editor-muted mb-4 text-sm">{config.displayLabel}</p>
+              )}
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <div className="text-3xl font-bold">{existingScore.wpm}</div>
+                  <div className="text-editor-muted">WPM</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold">{Math.round(existingScore.accuracy)}%</div>
+                  <div className="text-editor-muted">Accuracy</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold">
+                    {formatTime(existingScore.completionTime)}
+                  </div>
+                  <div className="text-editor-muted">Time</div>
+                </div>
+              </div>
+              <button
+                onClick={playAgain}
+                className="mt-6 px-6 py-3 border border-editor-muted text-editor-fg hover:bg-editor-muted/20 rounded-lg transition-colors"
+              >
+                Play Again (Practice)
+              </button>
+            </div>
+            <DailyLeaderboard date={today} currentUserId={currentUserId} />
+          </>
+        )}
       </div>
     </div>
   );
