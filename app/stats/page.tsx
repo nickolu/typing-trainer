@@ -12,6 +12,8 @@ import { AggregateAnalytics } from '@/components/charts/AggregateAnalytics';
 import { ProblematicWords } from '@/components/charts/ProblematicWords';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { Tag, X } from 'lucide-react';
+import { getDailyStreakInfo, DailyStreakInfo } from '@/lib/db/daily-streaks';
+import { PersonalRecords } from '@/components/stats/PersonalRecords';
 
 type TimeFilter = 'all' | '7days' | '30days' | '90days';
 
@@ -21,6 +23,7 @@ export default function StatsPage() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('7days');
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [isLabelsExpanded, setIsLabelsExpanded] = useState(false);
+  const [streakInfo, setStreakInfo] = useState<DailyStreakInfo | null>(null);
   const { currentUserId } = useUserStore();
 
   useEffect(() => {
@@ -36,6 +39,7 @@ export default function StatsPage() {
     try {
       const allResults = await getTestResultsByUser(currentUserId);
       setResults(allResults);
+      getDailyStreakInfo(currentUserId).then(setStreakInfo).catch(console.error);
     } catch (error) {
       console.error('Failed to load test results:', error);
     } finally {
@@ -271,6 +275,9 @@ export default function StatsPage() {
                 </div>
               )}
             </div>
+
+            {/* Personal Records */}
+            <PersonalRecords results={results} streakInfo={streakInfo} />
 
             {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
