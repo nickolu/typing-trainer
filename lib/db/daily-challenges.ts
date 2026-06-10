@@ -19,7 +19,7 @@ import { getUserProfile } from './users';
 
 export const DAILY_CHALLENGE_SCORES_COLLECTION = 'dailyChallengeScores';
 
-export type DailyChallengeMode = 'passage' | 'quote' | 'weakness';
+export type DailyChallengeMode = 'passage' | 'quote' | 'weakness' | 'daily';
 
 export interface DailyLeaderboardEntry {
   rank: number;
