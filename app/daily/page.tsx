@@ -425,7 +425,7 @@ export default function DailyChallengePage() {
         )}
 
         {/* Typing state */}
-        {pageState === 'typing' && <TypingTest />}
+        {pageState === 'typing' && <TypingTest onComplete={() => {}} />}
 
         {/* Complete state */}
         {pageState === 'complete' && completedResult && (
