@@ -1,7 +1,7 @@
 import { TestContent } from './types';
 import { staticTests } from './test-content';
 
-export type DailyContentType = 'prose' | 'quote' | 'technical' | 'code' | 'common';
+export type DailyContentType = 'prose' | 'technical' | 'code' | 'common';
 export type DailyDurationType = 'timed' | 'content-length';
 export type DailyCorrectionMode = 'normal' | 'speed' | 'strict';
 
@@ -15,7 +15,7 @@ export interface DailyChallengeConfig {
   displayLabel: string;         // e.g. "60-second timed test, strict mode (5 errors max)"
 }
 
-const DAILY_CONTENT_TYPES: DailyContentType[] = ['prose', 'quote', 'technical', 'code', 'common'];
+const DAILY_CONTENT_TYPES: DailyContentType[] = ['prose', 'technical', 'code', 'common'];
 const DAILY_CORRECTION_MODES: DailyCorrectionMode[] = ['normal', 'speed', 'strict'];
 const DAILY_DURATION_MODES: DailyDurationType[] = ['timed', 'content-length'];
 const STRICT_ERROR_LIMITS = [3, 4, 5, 6, 7, 8, 9, 10];
@@ -173,9 +173,6 @@ export function getDailyContent(config: DailyChallengeConfig): TestContent {
   switch (config.contentType) {
     case 'prose':
       filtered = allTests.filter(t => t.category === 'prose');
-      break;
-    case 'quote':
-      filtered = allTests.filter(t => t.category === 'quote');
       break;
     case 'technical':
       filtered = allTests.filter(t => t.category === 'technical');
