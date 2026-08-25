@@ -158,8 +158,6 @@ export async function getDailyLeaderboard(
       const q = query(
         scoresRef,
         where('date', '==', date),
-        where('accuracy', '>=', 95),
-        orderBy('accuracy', 'asc'),
         orderBy('wpm', 'desc'),
         firestoreLimit(maxResults)
       );
@@ -183,8 +181,6 @@ export async function getDailyLeaderboard(
         scoresRef,
         where('date', '==', date),
         where('mode', '==', mode),
-        where('accuracy', '>=', 95),
-        orderBy('accuracy', 'asc'),
         orderBy('wpm', 'desc'),
         firestoreLimit(maxResults)
       );

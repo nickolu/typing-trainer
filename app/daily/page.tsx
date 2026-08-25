@@ -81,7 +81,6 @@ function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
     <div className="bg-editor-bg border border-editor-muted rounded-lg overflow-hidden">
       <div className="px-6 py-4 border-b border-editor-muted flex items-center justify-between">
         <h2 className="text-xl font-bold">Daily Leaderboard</h2>
-        <span className="text-sm text-editor-muted">Accuracy &ge;95% required to qualify</span>
       </div>
 
       {loading ? (
@@ -195,11 +194,22 @@ export default function DailyChallengePage() {
       const dailyContent = getDailyContent(dailyConfig);
       setContent(dailyContent);
 
-      // Truncate to ~60 words so the daily challenge takes ~1 min at 60 WPM
       const rawWords = dailyContent.text.split(/\s+/).filter(Boolean);
-      const targetWords = Math.min(60, rawWords.length);
-      const count = Math.max(40, targetWords);
-      const words = rawWords.slice(0, count);
+      let words: string[];
+      if (dailyConfig.durationMode === 'timed') {
+        // For timed tests, generate enough words for a 200 WPM typist for the
+        // full duration. If the source passage is shorter, repeat it so no
+        // typist ever runs out of text before the timer ends.
+        const targetWords = Math.ceil(200 * dailyConfig.durationSeconds / 60);
+        const repeated: string[] = [];
+        while (repeated.length < targetWords) {
+          repeated.push(...rawWords);
+        }
+        words = repeated.slice(0, targetWords);
+      } else {
+        // Content-length: use the full passage as-is
+        words = rawWords;
+      }
       setPreparedWords(words);
 
       if (isAuthenticated && currentUserId) {
