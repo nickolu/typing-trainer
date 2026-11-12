@@ -637,7 +637,9 @@ export const staticTests: TestContent[] = [
 
 // Helper function to get a random test (optionally filtered by category)
 export function getRandomTest(category?: TestContent['category']): TestContent {
-  const tests = category ? getTestsByCategory(category) : staticTests;
+  const categoryTests = category ? getTestsByCategory(category) : staticTests;
+  // Unknown/empty category (e.g. an AI style passed by mistake) falls back to all tests
+  const tests = categoryTests.length > 0 ? categoryTests : staticTests;
   const randomIndex = Math.floor(Math.random() * tests.length);
   return tests[randomIndex];
 }
@@ -670,8 +672,8 @@ export function calculateRequiredWords(durationSeconds: number): number {
 export function textToWords(text: string, minWords: number = 150): string[] {
   const words = text.split(/\s+/).filter((word) => word.length > 0);
 
-  // If we already have enough words, return as-is
-  if (words.length >= minWords) {
+  // If we already have enough words (or none at all, which would loop forever below), return as-is
+  if (words.length >= minWords || words.length === 0) {
     return words;
   }
 

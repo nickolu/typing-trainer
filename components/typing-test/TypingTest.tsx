@@ -777,11 +777,17 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
           }
         };
         loadNGramContent();
+      } else if (isAIContentStyle(defaultContentStyle) && !generationError) {
+        // AI style with no content yet (e.g. page load with a persisted AI style): generate it.
+        // If generation fails, generationError is set and we fall through to static content below
+        // instead of retrying in a loop.
+        handleContentLoad();
       } else {
         const loadStaticContent = async () => {
           try {
-            // Respect the selected content style
-            const category = defaultContentStyle === 'random'
+            // Respect the selected content style. AI styles only reach here after a failed
+            // generation, so fall back to a random static test (keeping the user's AI selection).
+            const category = defaultContentStyle === 'random' || isAIContentStyle(defaultContentStyle)
               ? undefined
               : (defaultContentStyle as 'quote' | 'prose' | 'technical' | 'common' | 'special-chars' | 'code-typescript' | 'code-python');
             const testContent = getRandomTest(category);
@@ -815,7 +821,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, autoSave, getTestLabels]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, generationError, handleContentLoad, isGenerating, isLoadingContent, result, autoSave, getTestLabels]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
