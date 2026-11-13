@@ -16,7 +16,7 @@ export interface DailyChallengeConfig {
 }
 
 const DAILY_CONTENT_TYPES: DailyContentType[] = ['prose', 'technical', 'common'];
-const DAILY_CORRECTION_MODES: DailyCorrectionMode[] = ['normal', 'speed', 'strict'];
+const DAILY_CORRECTION_MODES: DailyCorrectionMode[] = ['normal', 'speed'];
 const DAILY_DURATION_MODES: DailyDurationType[] = ['timed', 'content-length'];
 const STRICT_ERROR_LIMITS = [3, 4, 5, 6, 7, 8, 9, 10];
 

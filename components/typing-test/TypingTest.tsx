@@ -53,6 +53,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isCompletingTest, setIsCompletingTest] = useState(false);
   const isCompletingRef = useRef(false); // Use ref to prevent effects from interfering during completion
+  const inputIgnoreUntil = useRef<number>(0);
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [shouldShake, setShouldShake] = useState(false);
@@ -70,6 +71,15 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
   // Stable temp ID for unauthenticated users to prevent infinite loops
   const [tempSourceId] = useState(() => 'temp-' + Date.now());
+
+  // Grace period: ignore keypresses for 500ms after a test completes and resets to idle
+  const prevStatusRef = useRef(status);
+  useEffect(() => {
+    if (prevStatusRef.current === 'complete' && status === 'idle') {
+      inputIgnoreUntil.current = Date.now() + 500;
+    }
+    prevStatusRef.current = status;
+  }, [status]);
 
   // Helper function to add keyboard label to userLabels
   const getTestLabels = useCallback((baseLabels: string[] = []): string[] => {
@@ -960,6 +970,9 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
       if (status === 'idle') {
         // Only start on actual characters (not Shift, Ctrl, etc.)
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          if (Date.now() < inputIgnoreUntil.current) {
+            return; // Grace period — ignore stray keypresses after test completion
+          }
           startTest();
           // Let the key press be handled by the active state logic below
           // by not returning here

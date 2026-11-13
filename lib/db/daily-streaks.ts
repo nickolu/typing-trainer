@@ -2,7 +2,7 @@
  * Daily streak tracking operations
  */
 
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase-config';
 import { USERS_COLLECTION } from './shared';
 import { getTodayPST } from '@/lib/daily-challenge';
@@ -52,31 +52,27 @@ export async function updateDailyStreak(userId: string): Promise<DailyStreakInfo
     return current;
   }
 
-  let newStreak: number;
-
-  if (current.lastDailyChallengeDate && isYesterday(current.lastDailyChallengeDate, today)) {
-    // Consecutive day — increment
-    newStreak = current.dailyStreak + 1;
-  } else {
-    // Missed days or first time — start at 1
-    newStreak = 1;
-  }
-
+  const newStreak =
+    current.lastDailyChallengeDate && isYesterday(current.lastDailyChallengeDate, today)
+      ? current.dailyStreak + 1
+      : 1;
   const newBest = Math.max(newStreak, current.bestDailyStreak);
-
-  const db = getFirebaseDb();
-  const userRef = doc(db, USERS_COLLECTION, userId);
-  await updateDoc(userRef, {
-    dailyStreak: newStreak,
-    bestDailyStreak: newBest,
-    lastDailyChallengeDate: today,
-  });
-
-  return {
+  const updated: DailyStreakInfo = {
     dailyStreak: newStreak,
     bestDailyStreak: newBest,
     lastDailyChallengeDate: today,
   };
+
+  const db = getFirebaseDb();
+  const userRef = doc(db, USERS_COLLECTION, userId);
+  try {
+    await setDoc(userRef, updated, { merge: true });
+  } catch (err) {
+    console.error('[updateDailyStreak] Failed to persist streak:', err);
+    // Still return the computed value so the UI reflects the correct streak
+  }
+
+  return updated;
 }
 
 /**
