@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { useUserStore } from './user-store';
 
 export type TestDuration = 15 | 30 | 60 | 120 | 'content-length';
 // Static content from library
@@ -19,7 +18,6 @@ interface SettingsState {
 
   // Test settings
   defaultDuration: TestDuration;
-  autoSave: boolean;
   correctionMode: CorrectionMode;
   mistakeThreshold: number; // Number of mistakes allowed in strict mode (Infinity for unlimited)
   showPracticeHighlights: boolean;
@@ -42,7 +40,6 @@ interface SettingsState {
 
   // Actions
   setDefaultDuration: (duration: TestDuration) => void;
-  setAutoSave: (autoSave: boolean) => void;
   setCorrectionMode: (mode: CorrectionMode) => void;
   setMistakeThreshold: (threshold: number) => void;
   setShowPracticeHighlights: (enabled: boolean) => void;
@@ -69,7 +66,6 @@ export const isAIContentStyle = (style: ContentStyle): style is AIContentStyle =
 const defaultSettings = {
   challengeMode: false,
   defaultDuration: 30 as TestDuration,
-  autoSave: true,
   correctionMode: 'normal' as CorrectionMode,
   mistakeThreshold: -1, // -1 represents unlimited (instead of Infinity which doesn't serialize)
   showPracticeHighlights: true,
@@ -96,15 +92,6 @@ export const useSettingsStore = create<SettingsState>()(
       setDefaultDuration: (duration) => {
         if (get().challengeMode) return;
         set({ defaultDuration: duration });
-      },
-
-      setAutoSave: (autoSave) => {
-        // Only allow enabling autoSave if user is authenticated
-        const { isAuthenticated } = useUserStore.getState();
-        if (autoSave && !isAuthenticated) {
-          return; // Silently ignore attempts to enable autoSave when not authenticated
-        }
-        set({ autoSave });
       },
 
       setCorrectionMode: (mode) => {

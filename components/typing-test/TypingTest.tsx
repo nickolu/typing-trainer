@@ -26,7 +26,7 @@ interface TypingTestProps {
 export function TypingTest({ onComplete }: TypingTestProps = {}) {
   const router = useRouter();
   const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold, currentKeyboard } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, showPracticeHighlights, showSpeedometer, setDefaultContentStyle, correctionMode, mistakeThreshold, currentKeyboard } = useSettingsStore();
   const {
     status,
     duration,
@@ -604,16 +604,6 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [llmModel, llmTemperature, customPrompt, customSequences, customText, customTextRepeat, defaultDuration, resetTest, initializeTest]);
 
-  // Manage autoSave based on authentication status
-  useEffect(() => {
-    if (!isAuthenticated && autoSave) {
-      // Disable autoSave for anonymous users (they can't save results anyway)
-      setAutoSave(false);
-    }
-    // Note: We don't force autoSave to be enabled for authenticated users
-    // to respect their preference. They can toggle it manually.
-  }, [isAuthenticated, autoSave, setAutoSave]);
-
   // Initialize test on mount
   useEffect(() => {
     // Don't do anything if we're completing the test - let navigation happen
@@ -624,7 +614,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
     // Reset test if it's in a completed or failed state (user navigated back from results)
     // BUT don't reset if we just completed in practice mode and want to show results inline
-    const shouldShowResultsInline = status === 'complete' && result && !autoSave;
+    const shouldShowResultsInline = status === 'complete' && result && !isAuthenticated;
     if ((status === 'complete' || status === 'failed') && !shouldShowResultsInline) {
       isCompletingRef.current = false;
       resetTest();
@@ -815,7 +805,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, autoSave, getTestLabels]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, isAuthenticated, getTestLabels]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -871,8 +861,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
     isCompletingRef.current = true; // Set ref immediately to block effects
     setIsCompletingTest(true);
     try {
-      const isBenchmark = defaultContentStyle === 'benchmark';
-      const shouldSave = autoSave || (isBenchmark && isAuthenticated);
+      const shouldSave = isAuthenticated;
       const result = await completeTest(shouldSave);
       // Navigate to results page only if we got a valid result AND it was saved
       if (result && shouldSave) {
@@ -887,15 +876,14 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         isCompletingRef.current = false;
         setIsCompletingTest(false);
       }
-      // If practice mode (autoSave is false), result is stored in test store
-      // and will be displayed inline - no navigation needed
+      // For anonymous users, result is stored in test store and displayed inline — no navigation needed
     } catch (error) {
       console.error('Failed to complete test:', error);
       isCompletingRef.current = false;
       setIsCompletingTest(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completeTest, router, autoSave, defaultContentStyle, isAuthenticated, onComplete]);
+  }, [completeTest, router, isAuthenticated, onComplete]);
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
@@ -1017,7 +1005,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
   }
 
   // Show loading state when completing test and navigating
-  if (isCompletingTest && autoSave) {
+  if (isCompletingTest && isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -1233,8 +1221,8 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         </div>
       )}
 
-      {/* Quick Results Display - Show inline when results aren't being saved */}
-      {status === 'complete' && result && !autoSave && (
+      {/* Quick Results Display - Show inline for anonymous users */}
+      {status === 'complete' && result && !isAuthenticated && (
         <div className="w-full max-w-4xl mb-6 bg-editor-bg/80 border border-editor-muted rounded-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Test Complete!</h2>
 
@@ -1256,67 +1244,39 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
             </div>
           </div>
 
-          {/* Messaging based on authentication status */}
-          {isAuthenticated ? (
-            // Logged in user with Save Results disabled
-            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-blue-400 mb-2">Want to see more in-depth analysis?</h3>
-              <p className="text-sm text-editor-muted mb-3">
-                Enable &quot;Save Results&quot; in the menu bar to unlock detailed performance metrics, progress tracking, and personalized insights. Your results will be saved to help you improve over time!
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setAutoSave(true);
-                    resetTest();
-                  }}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                >
-                  Enable Saving
-                </button>
-                <button
-                  onClick={resetTest}
-                  className="flex-1 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg font-medium transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          ) : (
-            // Not logged in
-            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
-              <h3 className="font-semibold text-green-400 mb-2">Get More From Your Practice!</h3>
-              <p className="text-sm text-editor-muted mb-3">
-                Create a free account (email only required) to unlock:
-              </p>
-              <ul className="text-sm text-editor-muted mb-4 space-y-1 list-disc list-inside">
-                <li>Detailed performance analytics and progress tracking</li>
-                <li>Personalized practice recommendations</li>
-                <li>Historical data and trends over time</li>
-                <li>Custom test configurations and sequences</li>
-              </ul>
-              <div className="flex gap-3">
-                <Link
-                  href="/signup"
-                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-center"
-                >
-                  Sign Up
-                </Link>
-                <Link
-                  href="/login"
-                  className="flex-1 px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors text-center"
-                >
-                  Log In
-                </Link>
-              </div>
-              <button
-                onClick={resetTest}
-                className="w-full mt-3 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg font-medium transition-colors"
+          {/* Messaging for anonymous users */}
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-4">
+            <h3 className="font-semibold text-green-400 mb-2">Get More From Your Practice!</h3>
+            <p className="text-sm text-editor-muted mb-3">
+              Create a free account (email only required) to unlock:
+            </p>
+            <ul className="text-sm text-editor-muted mb-4 space-y-1 list-disc list-inside">
+              <li>Detailed performance analytics and progress tracking</li>
+              <li>Personalized practice recommendations</li>
+              <li>Historical data and trends over time</li>
+              <li>Custom test configurations and sequences</li>
+            </ul>
+            <div className="flex gap-3">
+              <Link
+                href="/signup"
+                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors text-center"
               >
-                Try Again
-              </button>
+                Sign Up
+              </Link>
+              <Link
+                href="/login"
+                className="flex-1 px-4 py-2 bg-editor-accent hover:bg-editor-accent/80 text-white rounded-lg font-medium transition-colors text-center"
+              >
+                Log In
+              </Link>
             </div>
-          )}
+            <button
+              onClick={resetTest}
+              className="w-full mt-3 px-4 py-2 bg-editor-muted/30 hover:bg-editor-muted/50 text-editor-fg rounded-lg font-medium transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       )}
 
