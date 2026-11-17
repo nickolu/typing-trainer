@@ -20,9 +20,10 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
   } = useSettingsStore();
 
   const modelOptions = [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cheap)' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default — Fast & Cheap)' },
     { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
-    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (Best Quality)' },
+    { value: 'o3-mini', label: 'o3 Mini (Reasoning, Fast)' },
+    { value: 'o3', label: 'o3 (Reasoning, Best Quality)' },
   ];
 
   const styleOptions: { value: ContentStyle; label: string; description: string }[] = [
