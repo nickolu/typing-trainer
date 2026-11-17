@@ -26,7 +26,7 @@ interface TypingTestProps {
 export function TypingTest({ onComplete }: TypingTestProps = {}) {
   const router = useRouter();
   const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold, currentKeyboard } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, autoSave, showPracticeHighlights, showSpeedometer, setAutoSave, setDefaultContentStyle, correctionMode, mistakeThreshold, currentKeyboard, challengeMode } = useSettingsStore();
   const {
     status,
     duration,
@@ -634,7 +634,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
     // Reset test if it's in a completed or failed state (user navigated back from results)
     // BUT don't reset if we just completed in practice mode and want to show results inline
-    const shouldShowResultsInline = status === 'complete' && result && !autoSave;
+    const shouldShowResultsInline = status === 'complete' && result && !autoSave && !challengeMode;
     if ((status === 'complete' || status === 'failed') && !shouldShowResultsInline) {
       isCompletingRef.current = false;
       resetTest();
@@ -984,6 +984,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
       // Only process if test is active (or just became active)
       if (status !== 'active' && status !== 'idle') {
+        e.preventDefault(); // Prevent browser defaults (scroll, focus-shift, button clicks) while test is completing
         return;
       }
 
@@ -1253,7 +1254,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
       )}
 
       {/* Quick Results Display - Show inline when results aren't being saved */}
-      {status === 'complete' && result && !autoSave && (
+      {status === 'complete' && result && !autoSave && !challengeMode && (
         <div className="w-full max-w-4xl mb-6 bg-editor-bg/80 border border-editor-muted rounded-lg p-6">
           <h2 className="text-2xl font-bold mb-4">Test Complete!</h2>
 
