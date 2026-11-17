@@ -19,7 +19,7 @@ import { getUserProfile } from './users';
 
 export const DAILY_CHALLENGE_SCORES_COLLECTION = 'dailyChallengeScores';
 
-export type DailyChallengeMode = 'passage' | 'quote' | 'weakness' | 'daily';
+export type DailyChallengeMode = 'passage' | 'weakness' | 'daily';
 
 export interface DailyLeaderboardEntry {
   rank: number;
@@ -158,8 +158,6 @@ export async function getDailyLeaderboard(
       const q = query(
         scoresRef,
         where('date', '==', date),
-        where('accuracy', '>=', 95),
-        orderBy('accuracy', 'asc'),
         orderBy('wpm', 'desc'),
         firestoreLimit(maxResults)
       );
@@ -183,8 +181,6 @@ export async function getDailyLeaderboard(
         scoresRef,
         where('date', '==', date),
         where('mode', '==', mode),
-        where('accuracy', '>=', 95),
-        orderBy('accuracy', 'asc'),
         orderBy('wpm', 'desc'),
         firestoreLimit(maxResults)
       );

@@ -45,7 +45,21 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "accuracy",
+          "fieldPath": "wpm",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "dailyChallengeScores",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "mode",
           "order": "ASCENDING"
         },
         {

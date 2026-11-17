@@ -10,7 +10,6 @@ import {
   getTodayPST,
   DailyChallengeConfig,
 } from '@/lib/daily-challenge';
-import { getDailyQuote, quoteToText } from '@/lib/daily-quotes';
 import { TypingTest } from '@/components/typing-test/TypingTest';
 import {
   DailyLeaderboardEntry,
@@ -26,7 +25,7 @@ import { shareResult } from '@/lib/db/test-results';
 import { Share2 } from 'lucide-react';
 
 type PageState = 'loading' | 'ready' | 'typing' | 'complete' | 'already-completed';
-type DailyMode = 'passage' | 'quote';
+type DailyMode = 'passage';
 
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -57,10 +56,9 @@ function formatDateShort(dateStr: string): string {
 interface DailyLeaderboardProps {
   date: string;
   currentUserId: string | null;
-  mode: DailyMode;
 }
 
-function DailyLeaderboard({ date, currentUserId, mode }: DailyLeaderboardProps) {
+function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
   const [entries, setEntries] = useState<DailyLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,8 +66,7 @@ function DailyLeaderboard({ date, currentUserId, mode }: DailyLeaderboardProps) 
     async function loadLeaderboard() {
       setLoading(true);
       try {
-        const dbMode = mode === 'passage' ? 'daily' : 'quote';
-        const data = await getDailyLeaderboard(date, 100, currentUserId ?? undefined, dbMode);
+        const data = await getDailyLeaderboard(date, 100, currentUserId ?? undefined, 'daily');
         setEntries(data);
       } catch (err) {
         console.error('Failed to load daily leaderboard:', err);
@@ -78,13 +75,12 @@ function DailyLeaderboard({ date, currentUserId, mode }: DailyLeaderboardProps) 
       }
     }
     loadLeaderboard();
-  }, [date, currentUserId, mode]);
+  }, [date, currentUserId]);
 
   return (
     <div className="bg-editor-bg border border-editor-muted rounded-lg overflow-hidden">
       <div className="px-6 py-4 border-b border-editor-muted flex items-center justify-between">
         <h2 className="text-xl font-bold">Daily Leaderboard</h2>
-        <span className="text-sm text-editor-muted">Accuracy &ge;95% required to qualify</span>
       </div>
 
       {loading ? (
@@ -146,7 +142,6 @@ export default function DailyChallengePage() {
   const { initializeTest, resetTest, status, result } = useTestStore();
 
   const [pageState, setPageState] = useState<PageState>('loading');
-  const [selectedMode, setSelectedMode] = useState<DailyMode>('passage');
   const [today, setToday] = useState<string>('');
   const [config, setConfig] = useState<DailyChallengeConfig | null>(null);
   const [content, setContent] = useState<TestContent | null>(null);
@@ -190,80 +185,45 @@ export default function DailyChallengePage() {
       setShareStatus('idle');
       handledResultId.current = null;
 
-      if (selectedMode === 'passage') {
-        const dailyConfig = getDailyConfig(date);
-        setConfig(dailyConfig);
+      const dailyConfig = getDailyConfig(date);
+      setConfig(dailyConfig);
 
-        const dailyContent = getDailyContent(dailyConfig);
-        setContent(dailyContent);
+      const dailyContent = getDailyContent(dailyConfig);
+      setContent(dailyContent);
 
-        // Truncate to ~60 words so the daily challenge takes ~1 min at 60 WPM
-        const rawWords = dailyContent.text.split(/\s+/).filter(Boolean);
-        const targetWords = Math.min(60, rawWords.length);
-        const count = Math.max(40, targetWords);
-        const words = rawWords.slice(0, count);
-        setPreparedWords(words);
+      const rawWords = dailyContent.text.split(/\s+/).filter(Boolean);
+      let words: string[];
+      if (dailyConfig.durationMode === 'timed') {
+        // For timed tests, generate enough words for a 200 WPM typist for the
+        // full duration. If the source passage is shorter, repeat it so no
+        // typist ever runs out of text before the timer ends.
+        const targetWords = Math.ceil(200 * dailyConfig.durationSeconds / 60);
+        const repeated: string[] = [];
+        while (repeated.length < targetWords) {
+          repeated.push(...rawWords);
+        }
+        words = repeated.slice(0, targetWords);
+      } else {
+        // Content-length: use the full passage as-is
+        words = rawWords;
+      }
+      setPreparedWords(words);
 
-        if (isAuthenticated && currentUserId) {
-          try {
-            const score = await getDailyChallengeScore(currentUserId, date, 'daily');
-            if (score) {
-              setExistingScore(score);
-              setPageState('already-completed');
-            } else {
-              setPageState('ready');
-            }
-          } catch (err) {
-            console.error('Failed to check daily challenge status:', err);
+      if (isAuthenticated && currentUserId) {
+        try {
+          const score = await getDailyChallengeScore(currentUserId, date, 'daily');
+          if (score) {
+            setExistingScore(score);
+            setPageState('already-completed');
+          } else {
             setPageState('ready');
           }
-        } else {
+        } catch (err) {
+          console.error('Failed to check daily challenge status:', err);
           setPageState('ready');
         }
       } else {
-        // Quote mode
-        const quote = getDailyQuote(date);
-        const quoteText = quoteToText(quote);
-        const syntheticContent: TestContent = {
-          id: `daily-quote-${date}`,
-          category: 'quote',
-          title: `"${quote.text.substring(0, 50)}..."`,
-          source: quote.author,
-          text: quoteText,
-        };
-        setContent(syntheticContent);
-
-        const syntheticConfig = {
-          date,
-          seed: 0,
-          contentType: 'quote' as const,
-          durationMode: 'content-length' as const,
-          durationSeconds: 0,
-          correctionMode: 'normal' as const,
-          errorLimit: null,
-          displayLabel: 'Daily Quote',
-        };
-        setConfig(syntheticConfig as unknown as DailyChallengeConfig);
-
-        const rawWords = quoteText.split(/\s+/).filter(Boolean);
-        setPreparedWords(rawWords);
-
-        if (isAuthenticated && currentUserId) {
-          try {
-            const score = await getDailyChallengeScore(currentUserId, date, 'quote');
-            if (score) {
-              setExistingScore(score);
-              setPageState('already-completed');
-            } else {
-              setPageState('ready');
-            }
-          } catch (err) {
-            console.error('Failed to check daily quote status:', err);
-            setPageState('ready');
-          }
-        } else {
-          setPageState('ready');
-        }
+        setPageState('ready');
       }
 
       if (isAuthenticated && currentUserId) {
@@ -290,7 +250,7 @@ export default function DailyChallengePage() {
       }
     }
     initialize();
-  }, [isAuthenticated, currentUserId, selectedMode]);
+  }, [isAuthenticated, currentUserId]);
 
   // Watch for test completion
   useEffect(() => {
@@ -321,7 +281,6 @@ export default function DailyChallengePage() {
 
       if (isAuthenticated && currentUserId && !isPractice) {
         try {
-          const dbMode = selectedMode === 'passage' ? 'daily' : 'quote';
           const { isFirstAttempt } = await saveDailyChallengeScore(
             currentUserId,
             today,
@@ -329,7 +288,7 @@ export default function DailyChallengePage() {
             accuracy,
             completionTime,
             testResultId,
-            dbMode
+            'daily'
           );
           if (isFirstAttempt) {
             const updatedStreak = await updateDailyStreak(currentUserId);
@@ -346,7 +305,7 @@ export default function DailyChallengePage() {
       setCompletedResult({ wpm, accuracy, completionTime, testResultId });
       setPageState('complete');
     },
-    [today, isAuthenticated, currentUserId, isPractice, selectedMode]
+    [today, isAuthenticated, currentUserId, isPractice]
   );
 
   const startChallenge = useCallback(
@@ -480,32 +439,6 @@ export default function DailyChallengePage() {
           </div>
         )}
 
-        {/* Mode selector */}
-        {pageState !== 'typing' && (
-          <div className="flex justify-center gap-2 mb-6">
-            <button
-              onClick={() => setSelectedMode('passage')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedMode === 'passage'
-                  ? 'bg-editor-accent text-white'
-                  : 'border border-editor-muted text-editor-muted hover:text-editor-fg'
-              }`}
-            >
-              Daily Passage
-            </button>
-            <button
-              onClick={() => setSelectedMode('quote')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedMode === 'quote'
-                  ? 'bg-editor-accent text-white'
-                  : 'border border-editor-muted text-editor-muted hover:text-editor-fg'
-              }`}
-            >
-              Daily Quote
-            </button>
-          </div>
-        )}
-
         {/* Ready state */}
         {pageState === 'ready' && config && content && (
           <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 text-center">
@@ -562,7 +495,7 @@ export default function DailyChallengePage() {
               )}
             </div>
 
-            <DailyLeaderboard date={today} currentUserId={currentUserId} mode={selectedMode} />
+            <DailyLeaderboard date={today} currentUserId={currentUserId} />
 
             <div className="text-center mt-6 flex items-center justify-center gap-3">
               <button
@@ -628,7 +561,7 @@ export default function DailyChallengePage() {
                 )}
               </div>
             </div>
-            <DailyLeaderboard date={today} currentUserId={currentUserId} mode={selectedMode} />
+            <DailyLeaderboard date={today} currentUserId={currentUserId} />
           </>
         )}
       </div>

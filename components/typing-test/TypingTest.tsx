@@ -53,6 +53,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [isCompletingTest, setIsCompletingTest] = useState(false);
   const isCompletingRef = useRef(false); // Use ref to prevent effects from interfering during completion
+  const inputIgnoreUntil = useRef<number>(0);
   const [liveWPM, setLiveWPM] = useState(0);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [shouldShake, setShouldShake] = useState(false);
@@ -70,6 +71,15 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
   // Stable temp ID for unauthenticated users to prevent infinite loops
   const [tempSourceId] = useState(() => 'temp-' + Date.now());
+
+  // Grace period: ignore keypresses for 500ms after a test completes and resets to idle
+  const prevStatusRef = useRef(status);
+  useEffect(() => {
+    if (prevStatusRef.current === 'complete' && status === 'idle') {
+      inputIgnoreUntil.current = Date.now() + 500;
+    }
+    prevStatusRef.current = status;
+  }, [status]);
 
   // Helper function to add keyboard label to userLabels
   const getTestLabels = useCallback((baseLabels: string[] = []): string[] => {
@@ -767,11 +777,17 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
           }
         };
         loadNGramContent();
+      } else if (isAIContentStyle(defaultContentStyle) && !generationError) {
+        // AI style with no content yet (e.g. page load with a persisted AI style): generate it.
+        // If generation fails, generationError is set and we fall through to static content below
+        // instead of retrying in a loop.
+        handleContentLoad();
       } else {
         const loadStaticContent = async () => {
           try {
-            // Respect the selected content style
-            const category = defaultContentStyle === 'random'
+            // Respect the selected content style. AI styles only reach here after a failed
+            // generation, so fall back to a random static test (keeping the user's AI selection).
+            const category = defaultContentStyle === 'random' || isAIContentStyle(defaultContentStyle)
               ? undefined
               : (defaultContentStyle as 'quote' | 'prose' | 'technical' | 'common' | 'special-chars' | 'code-typescript' | 'code-python');
             const testContent = getRandomTest(category);
@@ -805,7 +821,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, isGenerating, isLoadingContent, result, isAuthenticated, getTestLabels]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, generationError, handleContentLoad, isGenerating, isLoadingContent, result, isAuthenticated, getTestLabels]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {
@@ -942,6 +958,9 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
       if (status === 'idle') {
         // Only start on actual characters (not Shift, Ctrl, etc.)
         if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          if (Date.now() < inputIgnoreUntil.current) {
+            return; // Grace period — ignore stray keypresses after test completion
+          }
           startTest();
           // Let the key press be handled by the active state logic below
           // by not returning here
