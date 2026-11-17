@@ -6,7 +6,7 @@ import { useSettingsStore, TestDuration, isAIContentStyle } from '@/store/settin
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
 import { isTimeTrialTest } from '@/lib/test-content';
-import { Save, BookOpen, Highlighter, Clock, RotateCcw, Keyboard } from 'lucide-react';
+import { BookOpen, Highlighter, Clock, RotateCcw, Keyboard } from 'lucide-react';
 import { ContentOptionsModal } from './ContentOptionsModal';
 import { LabelSelector } from './LabelSelector';
 import { TimeSelector } from './TimeSelector';
@@ -29,14 +29,12 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
   const isMac = typeof window !== 'undefined' && navigator.platform.toUpperCase().indexOf('MAC') >= 0;
   const {
     defaultDuration,
-    autoSave,
     correctionMode,
     mistakeThreshold,
     showPracticeHighlights,
     defaultContentStyle,
     currentKeyboard,
     setDefaultDuration,
-    setAutoSave,
     setCorrectionMode,
     setMistakeThreshold,
     setShowPracticeHighlights,
@@ -170,36 +168,6 @@ export function SettingsToolbar({ disabled = false, onContentChange, showHighlig
               onLabelsChange={setUserLabels}
               disabled={disabled}
             />
-
-            {/* Save Results Toggle */}
-            <div className={`flex items-center gap-2 group relative transition-opacity ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
-              <Save className={`w-5 h-5 ${autoSave ? 'text-editor-accent' : 'text-editor-muted'}`} />
-              <button
-                onClick={() => isAuthenticated && setAutoSave(!autoSave)}
-                disabled={!isAuthenticated}
-                className={`relative w-11 h-6 rounded-full transition-colors ${
-                  autoSave ? 'bg-editor-accent' : 'bg-editor-muted/30'
-                } ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
-                aria-label="Toggle save results"
-                title={!isAuthenticated ? 'Sign in to save results' : ''}
-              >
-                <div
-                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    autoSave ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-              {/* Tooltip */}
-              <div className="absolute left-0 top-full mt-2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                {!isAuthenticated
-                  ? 'Sign in to save test results to your history.'
-                  : isBenchmarkMode && autoSave
-                  ? 'Benchmark test results will be saved to track your progress. You can disable this if needed.'
-                  : autoSave
-                  ? 'Test results will be saved to your history for tracking progress.'
-                  : 'Test results will NOT be saved. Use this for casual practice without affecting your stats.'}
-              </div>
-            </div>
 
           </div>
 
