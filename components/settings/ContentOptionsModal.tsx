@@ -114,10 +114,9 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
   }, [isOpen, defaultContentStyle]);
 
   const modelOptions = [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Default — Fast & Cheap)' },
-    { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
-    { value: 'o3-mini', label: 'o3 Mini (Reasoning, Fast)' },
-    { value: 'o3', label: 'o3 (Reasoning, Best Quality)' },
+    { value: 'gpt-6-luna', label: 'GPT-6 Luna (Default — Fast & Cheap)' },
+    { value: 'gpt-6-sol', label: 'GPT-6 Sol (Recommended)' },
+    { value: 'gpt-6-astra', label: 'GPT-6 Astra (Best Quality)' },
   ];
 
   const handleAddSequence = () => {
