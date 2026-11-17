@@ -20,9 +20,9 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
   } = useSettingsStore();
 
   const modelOptions = [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cheap)' },
-    { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
-    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (Best Quality)' },
+    { value: 'gpt-6-luna', label: 'GPT-6 Luna (Default — Fast & Cheap)' },
+    { value: 'gpt-6-sol', label: 'GPT-6 Sol (Recommended)' },
+    { value: 'gpt-6-astra', label: 'GPT-6 Astra (Best Quality)' },
   ];
 
   const styleOptions: { value: ContentStyle; label: string; description: string }[] = [
@@ -88,7 +88,7 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
               ))}
             </select>
             <p className="text-xs text-editor-muted mt-1">
-              GPT-4o Mini is recommended for cost-effectiveness
+              GPT-6 Luna is recommended for cost-effectiveness
             </p>
           </div>
 

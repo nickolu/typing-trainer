@@ -290,10 +290,11 @@ export default function DailyChallengePage() {
             testResultId,
             'daily'
           );
-          if (isFirstAttempt) {
-            const updatedStreak = await updateDailyStreak(currentUserId);
-            setStreakInfo(updatedStreak);
-          } else {
+          // Always update streak — updateDailyStreak is idempotent (no-op if already updated today).
+          // Calling it even on repeat plays handles the case where the first attempt failed to update streak.
+          const updatedStreak = await updateDailyStreak(currentUserId);
+          setStreakInfo(updatedStreak);
+          if (!isFirstAttempt) {
             // Race condition — already submitted
             setIsPractice(true);
           }

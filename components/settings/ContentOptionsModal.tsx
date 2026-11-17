@@ -114,9 +114,9 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
   }, [isOpen, defaultContentStyle]);
 
   const modelOptions = [
-    { value: 'gpt-4o-mini', label: 'GPT-4o Mini (Fast & Cheap)' },
-    { value: 'gpt-4o', label: 'GPT-4o (Recommended)' },
-    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (Best Quality)' },
+    { value: 'gpt-6-luna', label: 'GPT-6 Luna (Default — Fast & Cheap)' },
+    { value: 'gpt-6-sol', label: 'GPT-6 Sol (Recommended)' },
+    { value: 'gpt-6-astra', label: 'GPT-6 Astra (Best Quality)' },
   ];
 
   const handleAddSequence = () => {

@@ -72,7 +72,7 @@ const defaultSettings = {
   defaultContentStyle: 'random' as ContentStyle,
   customText: '',
   customTextRepeat: 'once' as CustomTextRepeat,
-  llmModel: 'gpt-4o-mini',
+  llmModel: 'gpt-6-luna',
   llmTemperature: 0.7,
   customPrompt: '',
   customSequences: [] as string[],

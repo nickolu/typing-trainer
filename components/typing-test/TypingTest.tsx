@@ -972,6 +972,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
 
       // Only process if test is active (or just became active)
       if (status !== 'active' && status !== 'idle') {
+        e.preventDefault(); // Prevent browser defaults (scroll, focus-shift, button clicks) while test is completing
         return;
       }
 
