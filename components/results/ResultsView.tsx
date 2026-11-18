@@ -43,6 +43,7 @@ import { analyzeMistakes } from "@/lib/test-engine/mistake-analysis";
 import { UserRankBadge } from "@/components/time-trial/UserRankBadge";
 import { TimeTrialLeaderboardModal } from "@/components/time-trial/TimeTrialLeaderboardModal";
 import { NgramStats, getNgramStats, updateNgramStats } from "@/lib/db/ngram-stats";
+import { updateWordErrorStats } from "@/lib/db/word-errors";
 
 function generateNgramPracticeWords(ngrams: string[], targetCount: number): string[] {
   const repsPerNgram = Math.max(3, Math.ceil(targetCount / ngrams.length));
@@ -292,7 +293,19 @@ export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
       .then(setNgramStats)
       .catch(console.error)
       .finally(() => setIsLoadingNgramStats(false));
-  }, [currentUserId, result.keystrokeTimings]);
+
+    // Persist word-level errors cross-test
+    if (result.keystrokeTimings && result.keystrokeTimings.length > 0) {
+      const mistakeAnalysis = analyzeMistakes(
+        result.keystrokeTimings,
+        targetWords,
+        result.typedWords
+      );
+      if (mistakeAnalysis.commonMistypedWords.length > 0) {
+        updateWordErrorStats(currentUserId, mistakeAnalysis.commonMistypedWords).catch(console.error);
+      }
+    }
+  }, [currentUserId, result.keystrokeTimings, targetWords, result.typedWords]);
 
   // Calculate sequence timings
   const twoCharSequences = useMemo(

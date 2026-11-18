@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateTargetedPractice, GenerateContentOptions } from '@/lib/llm/openai';
+import { generateTargetedPractice, generateMistakePractice, GenerateContentOptions } from '@/lib/llm/openai';
 
 // Force this route to use Node.js runtime (not Edge)
 export const runtime = 'nodejs';
@@ -7,15 +7,38 @@ export const runtime = 'nodejs';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { sequences, options } = body as {
-      sequences: string[];
+    const { sequences, words, options } = body as {
+      sequences?: string[];
+      words?: string[];
       options?: Omit<GenerateContentOptions, 'focusSequences'>;
     };
 
-    // Validate sequences
+    // Check if API key is configured server-side
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: 'OpenAI API key is not configured on the server' },
+        { status: 500 }
+      );
+    }
+
+    // Word-error-based practice mode
+    if (words && words.length > 0) {
+      if (words.length > 50) {
+        return NextResponse.json(
+          { error: 'Maximum 50 words allowed' },
+          { status: 400 }
+        );
+      }
+
+      const commonWords = words.map((w) => ({ target: w, typed: '', count: 1 }));
+      const result = await generateMistakePractice([], { commonWords }, options || {});
+      return NextResponse.json(result);
+    }
+
+    // Sequence-based practice mode (original behavior)
     if (!sequences || sequences.length === 0) {
       return NextResponse.json(
-        { error: 'At least one sequence is required' },
+        { error: 'At least one sequence or word is required' },
         { status: 400 }
       );
     }
@@ -24,14 +47,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Maximum 20 sequences allowed' },
         { status: 400 }
-      );
-    }
-
-    // Check if API key is configured server-side
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenAI API key is not configured on the server' },
-        { status: 500 }
       );
     }
 

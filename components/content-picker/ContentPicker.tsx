@@ -19,6 +19,7 @@ const aiMainOptions: { value: ContentStyle; label: string; description: string }
   { value: 'ai-prose', label: 'AI Prose', description: 'AI-generated fiction' },
   { value: 'ai-quote', label: 'AI Quote', description: 'AI-generated quotes' },
   { value: 'ai-custom', label: 'AI Custom', description: 'Your own AI prompt' },
+  { value: 'ai-word-errors', label: 'Problem Words', description: 'Practice words you often mistype' },
 ];
 
 export function ContentPicker() {

@@ -59,6 +59,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
     { value: 'ai-common', label: 'AI Common', description: 'Generated phrases' },
     { value: 'ai-sequences', label: 'AI Character Sequence', description: 'Practice specific sequences' },
     { value: 'ai-custom', label: 'AI Custom', description: 'Custom AI prompt' },
+    { value: 'ai-word-errors', label: 'Problem Words', description: 'Practice your most-missed words' },
   ];
 
   const suggestedPrompts = [
@@ -527,8 +528,8 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
                 </div>
               </div>
 
-              {/* Custom Prompt (for all AI styles except ai-sequences) */}
-              {defaultContentStyle !== 'ai-sequences' && (
+              {/* Custom Prompt (for all AI styles except ai-sequences and ai-word-errors) */}
+              {defaultContentStyle !== 'ai-sequences' && defaultContentStyle !== 'ai-word-errors' && (
                 <div>
                   <label className="block text-sm font-medium mb-2">
                     {defaultContentStyle === 'ai-custom' ? 'Custom Prompt' : 'Additional Instructions (Optional)'}
