@@ -213,7 +213,7 @@ export async function generateTypingContent(
           content: prompt,
         },
       ],
-      temperature,
+      ...(model.startsWith('gpt-4') ? { temperature } : {}),
       max_completion_tokens: maxTokens,
       response_format: { type: "json_object" },
     });
@@ -358,7 +358,7 @@ export async function generateMistakePractice(
           content: prompt,
         },
       ],
-      temperature,
+      ...(model.startsWith('gpt-4') ? { temperature } : {}),
       max_completion_tokens: maxTokens,
       response_format: { type: "json_object" },
     });
