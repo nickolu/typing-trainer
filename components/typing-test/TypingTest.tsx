@@ -299,6 +299,12 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
     const isAI = isAIContentStyle(currentContentStyle);
 
     if (isAI) {
+      if (!isAuthenticated) {
+        // User is logged out but has an AI style persisted — silently fall back
+        await handleContentLoad('random');
+        return;
+      }
+
       // Generate AI content
       setIsGenerating(true);
 
