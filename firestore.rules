@@ -55,6 +55,12 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // Word error stats - users can only access their own stats
+    match /wordErrors/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
     // Daily challenge scores - global read for leaderboard, own write only
     // Document ID format: userId_date
     match /dailyChallengeScores/{scoreId} {

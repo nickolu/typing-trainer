@@ -376,6 +376,63 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
             },
             words
           );
+        } else if (currentContentStyle === 'ai-word-errors') {
+          // Problem Words practice mode — fetch the user's most-missed words
+          if (!currentUserId) {
+            await handleContentLoad('random');
+            return;
+          }
+
+          const { getTopProblemWords } = await import('@/lib/db/word-errors');
+          const problemWords = await getTopProblemWords(currentUserId, 20);
+
+          if (problemWords.length === 0) {
+            setGenerationError('No problem word data yet. Complete a few tests first and your most-missed words will appear here.');
+            setIsGenerating(false);
+            return;
+          }
+
+          // Use the practice API endpoint with words
+          const response = await fetch('/api/generate-practice', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              words: problemWords,
+              options: {
+                model: llmModel,
+                temperature: llmTemperature,
+                minWords: requiredWords,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate practice content');
+          }
+
+          const result = await response.json();
+          const words = textToWords(result.text, requiredWords);
+
+          // Save test content and get ID
+          const testContentId = await saveOrReuseTestContent(result.text, words);
+
+          // Initialize test with practice metadata
+          resetTest();
+          initializeTest(
+            {
+              duration: defaultDuration,
+              testContentId,
+              testContentTitle: result.title || 'Problem Words Practice',
+              testContentCategory: 'AI Problem Words',
+              isPractice: true,
+              practiceSequences: problemWords,
+              userLabels: getTestLabels(),
+            },
+            words
+          );
         } else {
           // Regular AI content generation
           // Map AI style to API style
