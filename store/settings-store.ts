@@ -24,6 +24,7 @@ interface SettingsState {
 
   // Content settings
   defaultContentStyle: ContentStyle;
+  hasUserSelectedContent: boolean;
   customText: string; // User-provided custom text for typing practice
   customTextRepeat: CustomTextRepeat; // How many times to repeat custom text
   llmModel: string;
@@ -44,6 +45,7 @@ interface SettingsState {
   setMistakeThreshold: (threshold: number) => void;
   setShowPracticeHighlights: (enabled: boolean) => void;
   setDefaultContentStyle: (style: ContentStyle) => void;
+  setHasUserSelectedContent: (value: boolean) => void;
   setCustomText: (text: string) => void;
   setCustomTextRepeat: (repeat: CustomTextRepeat) => void;
   setLlmModel: (model: string) => void;
@@ -70,6 +72,7 @@ const defaultSettings = {
   mistakeThreshold: -1, // -1 represents unlimited (instead of Infinity which doesn't serialize)
   showPracticeHighlights: true,
   defaultContentStyle: 'random' as ContentStyle,
+  hasUserSelectedContent: false,
   customText: '',
   customTextRepeat: 'once' as CustomTextRepeat,
   llmModel: 'gpt-6-luna',
@@ -107,6 +110,8 @@ export const useSettingsStore = create<SettingsState>()(
         if (get().challengeMode) return;
         set({ defaultContentStyle: style });
       },
+
+      setHasUserSelectedContent: (value) => set({ hasUserSelectedContent: value }),
 
       setCustomText: (text) => set({ customText: text }),
 
