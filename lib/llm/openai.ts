@@ -214,7 +214,7 @@ export async function generateTypingContent(
         },
       ],
       temperature,
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       response_format: { type: "json_object" },
     });
 
@@ -359,7 +359,7 @@ export async function generateMistakePractice(
         },
       ],
       temperature,
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens,
       response_format: { type: "json_object" },
     });
 
