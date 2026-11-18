@@ -61,6 +61,15 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
     { value: 'ai-custom', label: 'AI Custom', description: 'Custom AI prompt' },
   ];
 
+  const suggestedPrompts = [
+    { label: 'Pinky warm-up', prompt: 'Generate a typing practice passage that heavily uses pinky finger keys: Q, A, Z on the left and P, semicolon, slash on the right. Use common words that naturally include these letters.' },
+    { label: 'Left hand shift', prompt: 'Generate a typing practice passage that requires frequent use of the left hand shift key (for capitals on the right side of the keyboard: Y, U, I, O, P, H, J, K, L, N, M).' },
+    { label: 'Home row mastery', prompt: 'Generate a typing practice passage using words that heavily favor home row keys: A, S, D, F on the left and J, K, L, semicolon on the right.' },
+    { label: 'Number row practice', prompt: 'Generate a typing practice passage that naturally incorporates numbers, dates, percentages, and statistics within flowing sentences.' },
+    { label: 'Punctuation-heavy', prompt: 'Generate a typing practice passage with rich punctuation: commas, semicolons, colons, dashes, parentheses, and quotation marks used naturally in the text.' },
+    { label: 'Learn about a topic', prompt: 'Generate an interesting and educational typing practice passage about a fascinating topic in science, history, or technology.' },
+  ];
+
   const [sequenceInput, setSequenceInput] = useState('');
   const [isLoadingSequences, setIsLoadingSequences] = useState(false);
   const [sequenceError, setSequenceError] = useState<string | null>(null);
@@ -446,6 +455,27 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
                       )}
                     </div>
                   ))}
+                </div>
+
+                {/* Suggested Prompts */}
+                <div className="mt-4">
+                  <p className="text-xs text-editor-muted mb-2">Suggested prompts</p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedPrompts.map((s) => (
+                      <button
+                        key={s.label}
+                        onClick={() => {
+                          if (!currentUserId) return;
+                          setDefaultContentStyle('ai-custom');
+                          setCustomPrompt(s.prompt);
+                        }}
+                        disabled={!currentUserId}
+                        className="px-3 py-1 text-xs rounded-full border border-editor-muted hover:border-editor-accent hover:text-editor-accent transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </>
