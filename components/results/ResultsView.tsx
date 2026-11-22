@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import confetti from "canvas-confetti";
@@ -39,11 +39,9 @@ import {
   getTestById,
 } from "@/lib/test-content";
 import { calculateSequenceTimings } from "@/lib/test-engine/calculations";
-import { analyzeMistakes } from "@/lib/test-engine/mistake-analysis";
 import { UserRankBadge } from "@/components/time-trial/UserRankBadge";
 import { TimeTrialLeaderboardModal } from "@/components/time-trial/TimeTrialLeaderboardModal";
-import { NgramStats, getNgramStats, updateNgramStats } from "@/lib/db/ngram-stats";
-import { updateWordErrorStats } from "@/lib/db/word-errors";
+import { NgramStats, getNgramStats } from "@/lib/db/ngram-stats";
 
 function generateNgramPracticeWords(ngrams: string[], targetCount: number): string[] {
   const repsPerNgram = Math.max(3, Math.ceil(targetCount / ngrams.length));
@@ -75,7 +73,6 @@ export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
   const [practiceError, setPracticeError] = useState<string | null>(null);
   const [ngramStats, setNgramStats] = useState<NgramStats | null>(null);
   const [isLoadingNgramStats, setIsLoadingNgramStats] = useState(false);
-  const hasUpdatedNgramStats = useRef(false);
   const [currentLabels, setCurrentLabels] = useState<string[]>(
     result.labels || []
   );
@@ -283,29 +280,24 @@ export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
     result.id,
   ]);
 
-  // Update ngram stats after test completes
+  // Read (never write) ngram stats for display. Writes happen once at test completion
+  // in TypingTest; the write is fire-and-forget, so for a just-finished test we refetch
+  // once shortly after in case it hadn't landed yet. Owner only.
   useEffect(() => {
-    if (!currentUserId || hasUpdatedNgramStats.current) return;
-    hasUpdatedNgramStats.current = true;
+    if (!currentUserId || result.userId !== currentUserId) return;
     setIsLoadingNgramStats(true);
-    updateNgramStats(currentUserId, result.keystrokeTimings)
-      .then(() => getNgramStats(currentUserId))
+    getNgramStats(currentUserId)
       .then(setNgramStats)
       .catch(console.error)
       .finally(() => setIsLoadingNgramStats(false));
 
-    // Persist word-level errors cross-test
-    if (result.keystrokeTimings && result.keystrokeTimings.length > 0) {
-      const mistakeAnalysis = analyzeMistakes(
-        result.keystrokeTimings,
-        targetWords,
-        result.typedWords
-      );
-      if (mistakeAnalysis.commonMistypedWords.length > 0) {
-        updateWordErrorStats(currentUserId, mistakeAnalysis.commonMistypedWords).catch(console.error);
-      }
-    }
-  }, [currentUserId, result.keystrokeTimings, targetWords, result.typedWords]);
+    const isFresh = Date.now() - new Date(result.createdAt).getTime() < 60_000;
+    if (!isFresh) return;
+    const timer = setTimeout(() => {
+      getNgramStats(currentUserId).then(setNgramStats).catch(console.error);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [currentUserId, result.userId, result.createdAt]);
 
   // Calculate sequence timings
   const twoCharSequences = useMemo(

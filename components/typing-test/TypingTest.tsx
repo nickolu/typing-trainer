@@ -18,6 +18,9 @@ import { BenchmarkInfoDialog } from '@/components/benchmark/BenchmarkInfoDialog'
 import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
+import { wordsWithErrors } from '@/lib/test-engine/word-errors';
+import { updateNgramStats } from '@/lib/db/ngram-stats';
+import { updateWordErrorStats } from '@/lib/db/word-errors';
 
 interface TypingTestProps {
   onComplete?: (resultId: string) => void;
@@ -941,7 +944,18 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
     setIsCompletingTest(true);
     try {
       const shouldSave = isAuthenticated;
+      const completedTargetWords = useTestStore.getState().targetWords;
       const result = await completeTest(shouldSave);
+      // Record cross-test stats exactly once per completed test, for the signed-in owner.
+      // Fire-and-forget so it never blocks navigation to the results page.
+      if (result && shouldSave && currentUserId && result.keystrokeTimings?.length > 0) {
+        const keystrokes = result.keystrokeTimings;
+        updateNgramStats(currentUserId, keystrokes).catch(console.error);
+        const errors = wordsWithErrors(keystrokes, completedTargetWords);
+        if (errors.length > 0) {
+          updateWordErrorStats(currentUserId, errors).catch(console.error);
+        }
+      }
       // Navigate to results page only if we got a valid result AND it was saved
       if (result && shouldSave) {
         if (onComplete) {
@@ -962,7 +976,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
       setIsCompletingTest(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completeTest, router, isAuthenticated, onComplete]);
+  }, [completeTest, router, isAuthenticated, onComplete, currentUserId]);
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
