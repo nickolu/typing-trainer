@@ -18,6 +18,9 @@ import { BenchmarkInfoDialog } from '@/components/benchmark/BenchmarkInfoDialog'
 import { getRandomTest, textToWords, textToWordsWithRepeat, calculateRequiredWords, getTestById, isTimeTrialTest } from '@/lib/test-content';
 import { getRandomBenchmarkContent, BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { calculateLiveWPM } from '@/lib/test-engine/calculations';
+import { wordsWithErrors } from '@/lib/test-engine/word-errors';
+import { updateNgramStats } from '@/lib/db/ngram-stats';
+import { updateWordErrorStats } from '@/lib/db/word-errors';
 
 interface TypingTestProps {
   onComplete?: (resultId: string) => void;
@@ -372,6 +375,63 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
               testContentCategory: 'AI Character Sequence',
               isPractice: true,
               practiceSequences: sequencesToUse,
+              userLabels: getTestLabels(),
+            },
+            words
+          );
+        } else if (currentContentStyle === 'ai-word-errors') {
+          // Problem Words practice mode — fetch the user's most-missed words
+          if (!currentUserId) {
+            await handleContentLoad('random');
+            return;
+          }
+
+          const { getTopProblemWords } = await import('@/lib/db/word-errors');
+          const problemWords = await getTopProblemWords(currentUserId, 20);
+
+          if (problemWords.length === 0) {
+            setGenerationError('No problem word data yet. Complete a few tests first and your most-missed words will appear here.');
+            setIsGenerating(false);
+            return;
+          }
+
+          // Use the practice API endpoint with words
+          const response = await fetch('/api/generate-practice', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              words: problemWords,
+              options: {
+                model: llmModel,
+                temperature: llmTemperature,
+                minWords: requiredWords,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate practice content');
+          }
+
+          const result = await response.json();
+          const words = textToWords(result.text, requiredWords);
+
+          // Save test content and get ID
+          const testContentId = await saveOrReuseTestContent(result.text, words);
+
+          // Initialize test with practice metadata
+          resetTest();
+          initializeTest(
+            {
+              duration: defaultDuration,
+              testContentId,
+              testContentTitle: result.title || 'Problem Words Practice',
+              testContentCategory: 'AI Problem Words',
+              isPractice: true,
+              practiceSequences: problemWords,
               userLabels: getTestLabels(),
             },
             words
@@ -884,7 +944,18 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
     setIsCompletingTest(true);
     try {
       const shouldSave = isAuthenticated;
+      const completedTargetWords = useTestStore.getState().targetWords;
       const result = await completeTest(shouldSave);
+      // Record cross-test stats exactly once per completed test, for the signed-in owner.
+      // Fire-and-forget so it never blocks navigation to the results page.
+      if (result && shouldSave && currentUserId && result.keystrokeTimings?.length > 0) {
+        const keystrokes = result.keystrokeTimings;
+        updateNgramStats(currentUserId, keystrokes).catch(console.error);
+        const errors = wordsWithErrors(keystrokes, completedTargetWords);
+        if (errors.length > 0) {
+          updateWordErrorStats(currentUserId, errors).catch(console.error);
+        }
+      }
       // Navigate to results page only if we got a valid result AND it was saved
       if (result && shouldSave) {
         if (onComplete) {
@@ -905,7 +976,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
       setIsCompletingTest(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [completeTest, router, isAuthenticated, onComplete]);
+  }, [completeTest, router, isAuthenticated, onComplete, currentUserId]);
 
   // Auto-complete test when all words are typed in content-length mode
   useEffect(() => {
