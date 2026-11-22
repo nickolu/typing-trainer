@@ -26,15 +26,18 @@ export function wordsWithErrors(
   keystrokes: KeystrokeEvent[],
   targetWords: string[]
 ): WordErrorCount[] {
-  const perWord = new Map<number, { wrong: number; backspaced: boolean }>();
+  const perWord = new Map<number, { wrong: number; backspaced: boolean; typed: boolean }>();
 
   for (const ks of keystrokes) {
-    const info = perWord.get(ks.wordIndex) ?? { wrong: 0, backspaced: false };
+    const info = perWord.get(ks.wordIndex) ?? { wrong: 0, backspaced: false, typed: false };
     if (ks.isBackspace) {
-      info.backspaced = true;
+      // A backspace on an empty input is recorded against the word being left, which was
+      // never typed into; only count it if this word already had a typed keystroke.
+      if (info.typed) info.backspaced = true;
     } else if (!ks.wasCorrect && ks.key !== ' ' && ks.key !== 'Tab') {
       info.wrong += 1;
     }
+    if (!ks.isBackspace) info.typed = true;
     perWord.set(ks.wordIndex, info);
   }
 

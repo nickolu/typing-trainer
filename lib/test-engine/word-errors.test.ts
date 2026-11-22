@@ -34,8 +34,17 @@ describe('wordsWithErrors', () => {
     expect(wordsWithErrors(events, ['the'])).toEqual([]);
   });
 
-  it('counts a backspace-only word as 1', () => {
-    expect(wordsWithErrors([ks(0, 'Backspace', false, true)], ['word'])).toEqual([{ word: 'word', count: 1 }]);
+  it('counts an in-word backspace after typing a char as 1', () => {
+    const events = [ks(0, 'w', true), ks(0, 'Backspace', false, true)];
+    expect(wordsWithErrors(events, ['word'])).toEqual([{ word: 'word', count: 1 }]);
+  });
+
+  it('ignores a boundary backspace into the previous word', () => {
+    const events = [
+      ks(1, 'w', true), ks(1, 'o', true), ks(1, 'r', true), ks(1, 'd', true), ks(1, ' ', true),
+      ks(2, 'Backspace', false, true),
+    ];
+    expect(wordsWithErrors(events, ['the', 'word', 'next'])).toEqual([]);
   });
 
   it('counts each wrong keystroke but ignores space and Tab', () => {
