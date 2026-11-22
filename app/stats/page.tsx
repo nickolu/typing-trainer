@@ -13,6 +13,7 @@ import { ProblematicWords } from '@/components/charts/ProblematicWords';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { Tag, X } from 'lucide-react';
 import { getDailyStreakInfo, DailyStreakInfo } from '@/lib/db/daily-streaks';
+import { ProblemWords } from '@/components/stats/ProblemWords';
 import { PersonalRecords } from '@/components/stats/PersonalRecords';
 
 type TimeFilter = 'all' | '7days' | '30days' | '90days';
@@ -293,6 +294,9 @@ export default function StatsPage() {
 
             {/* Aggregate Analytics */}
             <AggregateAnalytics results={filteredResults} />
+
+            {/* Cross-test Problem Words */}
+            {currentUserId && <ProblemWords userId={currentUserId} />}
 
             {/* Problematic Words */}
             <ProblematicWords results={filteredResults} />
