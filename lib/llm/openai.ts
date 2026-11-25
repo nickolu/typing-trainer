@@ -20,10 +20,10 @@ export interface GenerateContentResult {
 
 function randomTopic(): string {
   const topics = [
-    "Why do we dream of people we’ve never met?",
+    "Why do we dream of people we've never met?",
     "Is free will real or an illusion?",
     "The trolley problem, but with AI self-driving cars",
-    "The philosophy of “doing nothing”",
+    "The philosophy of "doing nothing"",
     "Are humans the universe trying to understand itself?",
     "What if gravity suddenly reversed for 30 seconds?",
     "The ethics of resurrecting extinct species",
@@ -50,7 +50,7 @@ function randomTopic(): string {
     "Time travelers who accidentally start TikTok",
     "A dating app for cyborgs",
     "Earth is revealed to be an alien zoo",
-    "The most awkward silence you’ve ever experienced",
+    "The most awkward silence you've ever experienced",
     "A time you lied and the universe punished you",
     "Invent a phobia and describe it in detail",
     "What your garbage says about you",
@@ -58,7 +58,7 @@ function randomTopic(): string {
     "The strangest job interview question you can imagine",
     "A workplace where employees communicate only via dance",
     "How AI will replace middle managers but not janitors",
-    "“Quiet quitting” in a medieval castle",
+    ""Quiet quitting" in a medieval castle",
     "The day coffee was outlawed in your office",
     "If trees could talk once a year",
     "The secret society of pigeons",
@@ -67,7 +67,7 @@ function randomTopic(): string {
     "The ocean is sending us warnings",
     "A murder mystery set at a clown college",
     "A forgotten password that unlocks a conspiracy",
-    "Someone’s been stealing your thoughts",
+    "Someone's been stealing your thoughts",
     "The map on your cereal box is real",
     "The town where every street leads to the same house",
     "A toaster that predicts your future",
@@ -76,10 +76,10 @@ function randomTopic(): string {
     "Shoes that remember your emotions",
     "A vending machine that gives life advice",
     "The Bachelor but with wizards",
-    "How the Titanic would’ve sunk on Twitter",
+    "How the Titanic would've sunk on Twitter",
     "Rebooting Lord of the Rings as a cooking show",
     "A crossover between SpongeBob and Blade Runner",
-    "The untold story of Yoda’s cousin",
+    "The untold story of Yoda's cousin",
     "Your life as a pizza topping",
     "Gourmet meals in post-apocalyptic bunkers",
     "A world where bread is currency",
@@ -87,7 +87,7 @@ function randomTopic(): string {
     "Forbidden recipes passed down by whispers",
     "The laundromat is a portal to another dimension",
     "If your smartphone had opinions",
-    "A week without lying—even little white ones",
+    "A week without lying-even little white ones",
     "Grocery store heist gone philosophical",
     "The train that never stops",
     "The stranger who saved your life (and never knew)",
@@ -99,8 +99,8 @@ function randomTopic(): string {
     "A society with no concept of time",
     "A language with no nouns",
     "A memoir written by silence",
-    "What it means to “feel blue” in 20 different ways",
-    "A bug’s 5-minute TED Talk",
+    "What it means to "feel blue" in 20 different ways",
+    "A bug's 5-minute TED Talk",
     "Your cat is plotting something big",
     "A zoo escape, but the animals have Twitter accounts",
     "The secret nightlife of garden snails",
@@ -115,7 +115,7 @@ function randomTopic(): string {
     "An instruction manual for becoming invisible",
     "Horoscope predictions for fictional characters",
     "A spam email that turns out to be true",
-    "A story that knows it’s being read",
+    "A story that knows it's being read",
     "A journal entry written by your future self",
     "A character rebelling against their author",
     "A writing prompt that becomes real",
@@ -196,6 +196,7 @@ export async function generateTypingContent(
   }
 
   // Final instructions
+  prompt += `Use only plain ASCII characters: straight quotes and apostrophes, regular hyphens, three periods instead of an ellipsis character, and no em dashes or en dashes. `;
   prompt += `Return the response in JSON format with two fields: "title" (a short 2-5 word descriptive title for the content) and "text" (the passage text). Example: {"title": "The Future of AI", "text": "Your passage here..."}.`;
 
   try {
@@ -342,6 +343,7 @@ export async function generateMistakePractice(
   }
 
   // Final instructions
+  prompt += `Use only plain ASCII characters: straight quotes and apostrophes, regular hyphens, three periods instead of an ellipsis character, and no em dashes or en dashes. `;
   prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting. Return the response in JSON format with two fields: "title" (a short 2-5 word descriptive title for the content) and "text" (the passage text).`;
 
   try {

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import { normalizeTypingText } from '@/lib/text/normalize-typing-text';
 import {
   TestState,
   TestConfig,
@@ -18,6 +19,10 @@ import { useSettingsStore } from './settings-store';
 import { useUserStore } from './user-store';
 import { BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { STRICT_MODE_CONFIG } from '@/lib/strict-mode-config';
+
+// Normalize hard-to-type characters, then re-split on whitespace
+const normalizeWords = (words: string[]): string[] =>
+  words.flatMap((w) => normalizeTypingText(w).split(/\s+/).filter(Boolean));
 
 export const useTestStore = create<TestState>((set, get) => ({
   // Initial state
@@ -55,10 +60,11 @@ export const useTestStore = create<TestState>((set, get) => ({
       isTimeTrial: config.isTimeTrial,
       timeTrialId: config.timeTrialId,
     });
+    const targetWords = normalizeWords(words);
     set({
       testId: uuidv4(),
       duration: config.duration,
-      targetWords: words,
+      targetWords,
       testContentId: config.testContentId,
       testContentTitle: config.testContentTitle || null,
       testContentCategory: config.testContentCategory || null,
@@ -789,11 +795,13 @@ export const useTestStore = create<TestState>((set, get) => ({
         throw new Error('Test content not found. Cannot retry this test.');
       }
 
+      const targetWords = normalizeWords(testContent.words);
+
       // Initialize test with fetched content
       set({
         testId: uuidv4(),
         duration,
-        targetWords: testContent.words,
+        targetWords,
         testContentId,
         testContentTitle,
         testContentCategory,
@@ -816,7 +824,7 @@ export const useTestStore = create<TestState>((set, get) => ({
         lastTestConfig: state.lastTestConfig,
       });
 
-      return testContent.words;
+      return targetWords;
     } catch (error) {
       console.error('Failed to retry test:', error);
       throw error;
