@@ -29,7 +29,7 @@ interface TypingTestProps {
 export function TypingTest({ onComplete }: TypingTestProps = {}) {
   const router = useRouter();
   const { currentUserId, isAuthenticated, wpmScore } = useUserStore();
-  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, showPracticeHighlights, showSpeedometer, setDefaultContentStyle, correctionMode, mistakeThreshold, currentKeyboard } = useSettingsStore();
+  const { defaultDuration, llmModel, llmTemperature, defaultContentStyle, customText, customTextRepeat, customPrompt, customSequences, showPracticeHighlights, showSpeedometer, setDefaultContentStyle, setHasUserSelectedContent, aiGenerationRequested, setAiGenerationRequested, correctionMode, mistakeThreshold, currentKeyboard } = useSettingsStore();
   const {
     status,
     duration,
@@ -844,10 +844,17 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         };
         loadNGramContent();
       } else if (isAIContentStyle(defaultContentStyle) && !generationError) {
-        // AI style with no content yet (e.g. page load with a persisted AI style): generate it.
-        // If generation fails, generationError is set and we fall through to static content below
-        // instead of retrying in a loop.
-        handleContentLoad();
+        if (aiGenerationRequested) {
+          // The user just picked this AI style on the content picker: generate it once.
+          // If generation fails, generationError is set and we fall through to static content below
+          // instead of retrying in a loop.
+          handleContentLoad();
+          setAiGenerationRequested(false);
+        } else {
+          // Persisted AI style with no content (page reload, navigating back home, ...).
+          // Never generate AI content without an explicit action: send the user back to the picker.
+          setHasUserSelectedContent(false);
+        }
       } else {
         const loadStaticContent = async () => {
           try {
@@ -887,7 +894,7 @@ export function TypingTest({ onComplete }: TypingTestProps = {}) {
         loadStaticContent();
       }
     }
-  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, generationError, handleContentLoad, isGenerating, isLoadingContent, result, isAuthenticated, getTestLabels]);
+  }, [status, targetWords, initializeTest, defaultDuration, defaultContentStyle, setDefaultContentStyle, setHasUserSelectedContent, aiGenerationRequested, setAiGenerationRequested, saveOrReuseTestContent, resetTest, customText, customTextRepeat, setGenerationError, generationError, handleContentLoad, isGenerating, isLoadingContent, result, isAuthenticated, getTestLabels]);
 
   // Update test duration when defaultDuration changes (and test is idle)
   useEffect(() => {

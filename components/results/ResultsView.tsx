@@ -32,9 +32,6 @@ import {
 import { shareResult, unshareResult } from "@/lib/db";
 import { getUserTimeTrialRank } from "@/lib/db/time-trials";
 import {
-  getRandomTest,
-  textToWords,
-  textToWordsWithRepeat,
   calculateRequiredWords,
   getTestById,
 } from "@/lib/test-content";
@@ -66,7 +63,7 @@ interface ResultsViewProps {
 
 export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
   const router = useRouter();
-  const { defaultDuration } = useSettingsStore();
+  const { defaultDuration, clearContentSelection } = useSettingsStore();
   const { initializeTest, resetTest, retryLastTest } = useTestStore();
   const { currentUserId, isAuthenticated } = useUserStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -329,24 +326,10 @@ export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
   };
 
   const handleNewTest = () => {
-    // Initialize a new test and go to home
-    const testContent = getRandomTest();
-    const words = defaultDuration === "content-length"
-      ? textToWordsWithRepeat(testContent.text, 'once')
-      : textToWords(testContent.text, calculateRequiredWords(defaultDuration));
-
-    initializeTest(
-      {
-        duration: defaultDuration,
-        testContentId: testContent.id,
-        testContentTitle: testContent.title,
-        testContentCategory: testContent.category.charAt(0).toUpperCase() + testContent.category.slice(1),
-        isTimeTrial: false,
-        timeTrialId: undefined,
-      },
-      words
-    );
-
+    // Back to the first-visit landing state: no test loaded and no content selected (this also
+    // drops time-trial / AI modes), so the home page shows the content picker.
+    resetTest();
+    clearContentSelection();
     router.push("/");
   };
 
