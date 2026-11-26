@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { calculateWPM, calculateAccuracy } from './calculations';
+import { calculateWPM, calculateAccuracy, calculateSequenceTimings } from './calculations';
+import type { KeystrokeEvent } from '../types';
 
 describe('calculations', () => {
   describe('calculateWPM', () => {
@@ -76,6 +77,31 @@ describe('calculations', () => {
       expect(result).toHaveProperty('correctCount');
       expect(result).toHaveProperty('incorrectCount');
       expect(result).toHaveProperty('totalTyped');
+    });
+  });
+  describe('calculateSequenceTimings', () => {
+    const makeKeystrokes = (text: string, wrongIdx: number[] = []): KeystrokeEvent[] =>
+      text.split('').map((key, i) => ({
+        timestamp: i * 100,
+        key,
+        wordIndex: 0,
+        charIndex: i,
+        expectedChar: key,
+        wasCorrect: !wrongIdx.includes(i),
+        isBackspace: false,
+      }));
+
+    it('excludes sequences containing whitespace and cross-word sequences', () => {
+      const result = calculateSequenceTimings(makeKeystrokes('the cat', [3]), ['the', 'cat'], 2, 100);
+      const seqs = result.map((r) => r.sequence);
+      expect(seqs.some((s) => /\s/.test(s))).toBe(false);
+      expect(seqs).toEqual(expect.arrayContaining(['th', 'he', 'ca', 'at']));
+      expect(seqs).not.toContain('ec');
+
+      const tri = calculateSequenceTimings(makeKeystrokes('the cat'), ['the', 'cat'], 3, 100).map((r) => r.sequence);
+      expect(tri.some((s) => /\s/.test(s))).toBe(false);
+      expect(tri).toEqual(expect.arrayContaining(['the', 'cat']));
+      expect(tri).not.toContain('eca');
     });
   });
 });

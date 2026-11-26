@@ -41,11 +41,9 @@ export async function updateNgramStats(
     const ref = doc(db, NGRAM_STATS_COLLECTION, userId);
 
     // Compute ngrams from this test (no targetWords needed — pass empty array)
-    // Filter out any sequence containing a space — we only want pure character ngrams
-    const noSpace = (t: { sequence: string }) => !t.sequence.includes(' ');
-    const bigramTimings = calculateSequenceTimings(keystrokes, [], 2, 200).filter(noSpace);
-    const trigramTimings = calculateSequenceTimings(keystrokes, [], 3, 300).filter(noSpace);
-    const tetragramTimings = calculateSequenceTimings(keystrokes, [], 4, 400).filter(noSpace);
+    const bigramTimings = calculateSequenceTimings(keystrokes, [], 2, 200);
+    const trigramTimings = calculateSequenceTimings(keystrokes, [], 3, 300);
+    const tetragramTimings = calculateSequenceTimings(keystrokes, [], 4, 400);
 
     // Fetch existing stats
     const snap = await getDoc(ref);

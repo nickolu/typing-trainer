@@ -66,7 +66,13 @@ export function analyzeMistakes(
       totalMistakes++;
 
       // Track character substitution
-      if (keystroke.expectedChar && keystroke.key) {
+      // Skip whitespace on either side so spaces never show up as confusions
+      if (
+        keystroke.expectedChar &&
+        keystroke.key &&
+        !/\s/.test(keystroke.expectedChar) &&
+        !/\s/.test(keystroke.key)
+      ) {
         if (!substitutionMap.has(keystroke.expectedChar)) {
           substitutionMap.set(keystroke.expectedChar, new Map());
         }
@@ -153,6 +159,9 @@ function findMistakeSequences(
   for (let i = 0; i < typedKeystrokes.length - sequenceLength + 1; i++) {
     const sequenceKeys = typedKeystrokes.slice(i, i + sequenceLength);
     const sequence = sequenceKeys.map((k) => k.key).join('');
+
+    // Skip sequences spanning whitespace (word boundaries)
+    if (/\s/.test(sequence)) continue;
 
     // Check if any keystroke in the sequence was a mistake
     const hasMistake = sequenceKeys.some((k) => !k.wasCorrect);

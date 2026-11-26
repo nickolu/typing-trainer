@@ -194,7 +194,7 @@ export function calculateSequenceTimings(
   // Filter out special keys (Backspace, Tab, etc.)
   // Only keep actual typed characters
   const typedKeystrokes = keystrokes.filter(
-    (k) => k.key.length === 1 // Only single characters (includes space)
+    (k) => k.key.length === 1 // Only single characters (spaces stay in the stream so word boundaries are preserved)
   );
 
   if (typedKeystrokes.length < sequenceLength) {
@@ -210,6 +210,9 @@ export function calculateSequenceTimings(
       .slice(i, i + sequenceLength)
       .map((k) => k.key)
       .join('');
+
+    // Skip sequences spanning whitespace (word boundaries); not useful for practice
+    if (/\s/.test(sequence)) continue;
 
     // Calculate time difference between first and last keystroke in sequence
     const timeDiff =

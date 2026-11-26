@@ -641,8 +641,8 @@ export async function getAggregateSlowSequences(userId: string, limit: number = 
       const twoChar = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 2, 50);
       const threeChar = calculateSequenceTimings(result.keystrokeTimings, result.targetWords, 3, 50);
 
-      // Combine all sequences, excluding any that contain spaces
-      const allSequences = [...twoChar, ...threeChar].filter(seq => !seq.sequence.includes(' '));
+      // Combine all sequences (whitespace-containing ones are already excluded)
+      const allSequences = [...twoChar, ...threeChar];
 
       for (const seq of allSequences) {
         const existing = sequenceMap.get(seq.sequence);
@@ -729,7 +729,7 @@ export async function getAggregateSequenceTimings(
         100 // Get more sequences for aggregation
       );
 
-      for (const seq of sequences.filter(s => !s.sequence.includes(' '))) {
+      for (const seq of sequences) {
         if (!sequenceMap.has(seq.sequence)) {
           sequenceMap.set(seq.sequence, { times: [], testIndices: [] });
         }
