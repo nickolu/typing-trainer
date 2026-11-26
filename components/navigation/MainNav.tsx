@@ -10,6 +10,7 @@ export function MainNav() {
     { href: '/', label: 'Typing Test' },
     { href: '/daily', label: 'Daily' },
     { href: '/stats', label: 'Stats' },
+    { href: '/fingers', label: 'Fingers' },
     { href: '/settings', label: 'Settings' },
     { href: '/leaderboard', label: 'Leaderboard' },
     { href: '/updates', label: 'Updates' },
