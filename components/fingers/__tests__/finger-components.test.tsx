@@ -7,6 +7,7 @@ import { KeyboardHeatmap } from '../KeyboardHeatmap';
 import { FingerTable } from '../FingerTable';
 import { DataProgress } from '../DataProgress';
 import { DrillLauncher } from '../DrillLauncher';
+import { useTestStore } from '@/store/test-store';
 
 /** Realistic-ish synthetic session: every letter typed, with per-finger speed differences. */
 function syntheticKeystrokes(): KeystrokeEvent[] {
@@ -68,5 +69,16 @@ describe('finger components', () => {
     const pressed = screen.getAllByRole('button', { pressed: true });
     expect(pressed.length).toBe(3);
     expect(pressed.some((b) => b.textContent?.includes('Pinky'))).toBe(true);
+  });
+
+  it('DrillLauncher labels drills by mode so they can be filtered later', () => {
+    render(<DrillLauncher report={report} />);
+    fireEvent.click(screen.getByText('Start balanced drill'));
+    expect(useTestStore.getState().userLabels).toEqual(['finger-drill', 'finger-drill-balanced']);
+    expect(useTestStore.getState().targetWords.length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByText(/^Drill /));
+    expect(useTestStore.getState().userLabels).toEqual(['finger-drill', 'finger-drill-targeted']);
+    expect(useTestStore.getState().practiceSequences.length).toBeGreaterThan(0);
   });
 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Hand, Keyboard } from 'lucide-react';
+import { Hand } from 'lucide-react';
 import { TestResult } from '@/lib/types';
 import { getTestResultsByUser } from '@/lib/db';
 import { useUserStore } from '@/store/user-store';
@@ -13,9 +13,12 @@ import { FingerTable } from '@/components/fingers/FingerTable';
 import { DataProgress } from '@/components/fingers/DataProgress';
 import { DrillLauncher } from '@/components/fingers/DrillLauncher';
 import { describeRelativeSpeed } from '@/components/fingers/finger-colors';
+import { LabelFilter, LabelMatchMode, filterByLabels, hasAnyLabels } from '@/components/filters/LabelFilter';
+import { FINGER_DRILL_LABEL } from '@/components/fingers/DrillLauncher';
 
 type TimeFilter = 'all' | '30days' | '90days';
-const ALL_KEYBOARDS = '__all__';
+// Keep the labels this page is about ahead of the auto-labels every test carries.
+const PINNED_LABEL_PREFIXES = [FINGER_DRILL_LABEL, 'keyboard-'];
 
 export default function FingersPage() {
   const { currentUserId } = useUserStore();
@@ -23,9 +26,13 @@ export default function FingersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
-  const [keyboard, setKeyboard] = useState<string>(ALL_KEYBOARDS);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [matchMode, setMatchMode] = useState<LabelMatchMode>('any');
 
   useEffect(() => {
+    // A new account means a new label set; never carry a selection across users.
+    setSelectedLabels([]);
+    setMatchMode('any');
     if (!currentUserId) return;
     let cancelled = false;
     setLoading(true);
@@ -45,28 +52,18 @@ export default function FingersPage() {
     };
   }, [currentUserId]);
 
-  const keyboards = useMemo(() => {
-    const set = new Set<string>();
-    for (const r of results) {
-      for (const label of r.labels ?? []) {
-        if (label.startsWith('keyboard-')) set.add(label);
-      }
-    }
-    return Array.from(set).sort();
-  }, [results]);
+  // Time filter alone: this is what the label chips count against.
+  const inTimeRange = useMemo(() => {
+    if (timeFilter === 'all') return results;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (timeFilter === '30days' ? 30 : 90));
+    return results.filter((r) => new Date(r.createdAt) >= cutoff);
+  }, [results, timeFilter]);
 
-  const filtered = useMemo(() => {
-    let list = results;
-    if (timeFilter !== 'all') {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - (timeFilter === '30days' ? 30 : 90));
-      list = list.filter((r) => new Date(r.createdAt) >= cutoff);
-    }
-    if (keyboard !== ALL_KEYBOARDS) {
-      list = list.filter((r) => r.labels?.includes(keyboard));
-    }
-    return list;
-  }, [results, timeFilter, keyboard]);
+  const filtered = useMemo(
+    () => filterByLabels(inTimeRange, selectedLabels, matchMode),
+    [inTimeRange, selectedLabels, matchMode]
+  );
 
   const report = useMemo(
     () => analyzeFingers(filtered.map((r) => r.keystrokeTimings ?? [])),
@@ -119,47 +116,44 @@ export default function FingersPage() {
         ) : (
           <>
             {/* Filters */}
-            <div className="bg-editor-bg border border-editor-muted rounded-lg p-3 flex flex-wrap items-center gap-4">
-              <span className="text-editor-muted font-medium">Time Range:</span>
-              <div className="flex gap-2">
-                {([
-                  { value: 'all', label: 'All Time' },
-                  { value: '90days', label: 'Last 90 Days' },
-                  { value: '30days', label: 'Last 30 Days' },
-                ] as Array<{ value: TimeFilter; label: string }>).map((f) => (
-                  <button
-                    key={f.value}
-                    onClick={() => setTimeFilter(f.value)}
-                    className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                      timeFilter === f.value
-                        ? 'bg-editor-accent text-white'
-                        : 'bg-editor-muted/30 text-editor-muted hover:bg-editor-muted/50'
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+            <div className="bg-editor-bg border border-editor-muted rounded-lg p-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="text-editor-muted font-medium">Time Range:</span>
+                <div className="flex gap-2">
+                  {([
+                    { value: 'all', label: 'All Time' },
+                    { value: '90days', label: 'Last 90 Days' },
+                    { value: '30days', label: 'Last 30 Days' },
+                  ] as Array<{ value: TimeFilter; label: string }>).map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => setTimeFilter(f.value)}
+                      className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                        timeFilter === f.value
+                          ? 'bg-editor-accent text-white'
+                          : 'bg-editor-muted/30 text-editor-muted hover:bg-editor-muted/50'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="ml-auto text-editor-muted text-sm">
+                  {filtered.length} {filtered.length === 1 ? 'test' : 'tests'}
+                </div>
               </div>
-              {keyboards.length > 0 && (
-                <div className="flex items-center gap-2">
-                  <Keyboard className="w-4 h-4 text-editor-muted" />
-                  <select
-                    value={keyboard}
-                    onChange={(e) => setKeyboard(e.target.value)}
-                    className="bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1 text-sm"
-                  >
-                    <option value={ALL_KEYBOARDS}>All keyboards</option>
-                    {keyboards.map((k) => (
-                      <option key={k} value={k}>
-                        {k.replace(/^keyboard-/, '')}
-                      </option>
-                    ))}
-                  </select>
+              {(hasAnyLabels(inTimeRange) || selectedLabels.length > 0) && (
+                <div className="border-t border-editor-muted/30 pt-3">
+                  <LabelFilter
+                    results={inTimeRange}
+                    selected={selectedLabels}
+                    onChange={setSelectedLabels}
+                    matchMode={matchMode}
+                    onMatchModeChange={setMatchMode}
+                    pinnedPrefixes={PINNED_LABEL_PREFIXES}
+                  />
                 </div>
               )}
-              <div className="ml-auto text-editor-muted text-sm">
-                {filtered.length} {filtered.length === 1 ? 'test' : 'tests'}
-              </div>
             </div>
 
             <DataProgress report={report} />
