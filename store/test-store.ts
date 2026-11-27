@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
-import { normalizeTypingText } from '@/lib/text/normalize-typing-text';
+import { normalizeWords } from '@/lib/text/normalize-typing-text';
 import {
   TestState,
   TestConfig,
@@ -19,10 +19,6 @@ import { useSettingsStore } from './settings-store';
 import { useUserStore } from './user-store';
 import { BENCHMARK_CONFIG } from '@/lib/benchmark-config';
 import { STRICT_MODE_CONFIG } from '@/lib/strict-mode-config';
-
-// Normalize hard-to-type characters, then re-split on whitespace
-const normalizeWords = (words: string[]): string[] =>
-  words.flatMap((w) => normalizeTypingText(w).split(/\s+/).filter(Boolean));
 
 export const useTestStore = create<TestState>((set, get) => ({
   // Initial state

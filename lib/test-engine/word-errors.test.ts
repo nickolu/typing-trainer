@@ -6,6 +6,7 @@ import {
   mergeWordErrors,
   evictWordErrors,
   rankWordErrors,
+  problemWordsFromResults,
 } from './word-errors';
 
 let t = 0;
@@ -105,5 +106,59 @@ describe('rankWordErrors', () => {
     };
     expect(rankWordErrors(words, 2).map((r) => r.word)).toEqual(['b', 'c']);
     expect(rankWordErrors(words, 10).map((r) => r.word)).toEqual(['b', 'c', 'a']);
+  });
+});
+
+describe('problemWordsFromResults', () => {
+  const at = (iso: string) => new Date(iso);
+
+  it('counts a word that had a corrected typo, keyed by target word', () => {
+    const events = [ks(1, 'x', false), ks(1, 'Backspace', false, true), ks(1, 'q', true)];
+    const results = [
+      { targetWords: ['the', 'quick'], typedWords: ['the', 'quick'], keystrokeTimings: events, createdAt: at('2026-11-20T10:00:00Z') },
+    ];
+    expect(problemWordsFromResults(results)).toEqual([
+      { word: 'quick', count: 1, lastSeenAt: at('2026-11-20T10:00:00Z').getTime() },
+    ]);
+  });
+
+  it('falls back to typed-vs-target for results without keystrokes', () => {
+    const results = [
+      { targetWords: ['hello', 'world'], typedWords: ['hello', 'wrold'], keystrokeTimings: [], createdAt: at('2026-11-20T10:00:00Z') },
+    ];
+    expect(problemWordsFromResults(results).map((w) => w.word)).toEqual(['world']);
+  });
+
+  it('ignores a trailing word the timer cut off, and skipped (empty) words', () => {
+    const results = [
+      { targetWords: ['hello', 'world'], typedWords: ['hello', 'wor'], keystrokeTimings: [], createdAt: at('2026-11-20T10:00:00Z') },
+      { targetWords: ['hello', 'world'], typedWords: ['', 'world'], keystrokeTimings: [], createdAt: at('2026-11-20T10:00:00Z') },
+    ];
+    expect(problemWordsFromResults(results)).toEqual([]);
+  });
+
+  it('skips results without targetWords', () => {
+    const results = [{ typedWords: ['wrold'], keystrokeTimings: [ks(0, 'x', false)], createdAt: at('2026-11-20T10:00:00Z') }];
+    expect(problemWordsFromResults(results)).toEqual([]);
+  });
+
+  it('normalizes case and punctuation and counts once per occurrence', () => {
+    const results = [
+      { targetWords: ['World,', 'world'], typedWords: ['Wrold,', 'wrold'], keystrokeTimings: [], createdAt: at('2026-11-20T10:00:00Z') },
+    ];
+    expect(problemWordsFromResults(results)).toEqual([
+      { word: 'world', count: 2, lastSeenAt: at('2026-11-20T10:00:00Z').getTime() },
+    ]);
+  });
+
+  it('sorts by count then recency and tracks the most recent sighting', () => {
+    const results = [
+      { targetWords: ['alpha', 'beta'], typedWords: ['alpah', 'btea'], keystrokeTimings: [], createdAt: at('2026-11-01T00:00:00Z') },
+      { targetWords: ['alpha', 'gamma'], typedWords: ['alpha', 'gmama'], keystrokeTimings: [], createdAt: at('2026-11-10T00:00:00Z') },
+      { targetWords: ['alpha'], typedWords: ['aplha'], keystrokeTimings: [], createdAt: at('2026-11-05T00:00:00Z') },
+    ];
+    const words = problemWordsFromResults(results);
+    expect(words.map((w) => w.word)).toEqual(['alpha', 'gamma', 'beta']);
+    expect(words[0]).toEqual({ word: 'alpha', count: 2, lastSeenAt: at('2026-11-05T00:00:00Z').getTime() });
   });
 });

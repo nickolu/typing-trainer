@@ -19,13 +19,11 @@ export function normalizeWord(word: string): string {
 }
 
 /**
- * Words that had at least one error in a test, including typos that were later corrected.
- * Count = wrong keystrokes in the word (space/Tab excluded); a backspace alone counts as 1.
+ * Error count per word index from a test's keystrokes, including typos that were later
+ * corrected. Count = wrong keystrokes in the word (space/Tab excluded); a backspace alone
+ * counts as 1. Words with no errors are absent.
  */
-export function wordsWithErrors(
-  keystrokes: KeystrokeEvent[],
-  targetWords: string[]
-): WordErrorCount[] {
+export function errorsByWordIndex(keystrokes: KeystrokeEvent[]): Map<number, number> {
   const perWord = new Map<number, { wrong: number; backspaced: boolean; typed: boolean }>();
 
   for (const ks of keystrokes) {
@@ -41,10 +39,24 @@ export function wordsWithErrors(
     perWord.set(ks.wordIndex, info);
   }
 
-  const merged = new Map<string, number>();
+  const counts = new Map<number, number>();
   for (const [wordIndex, info] of perWord) {
     const count = info.wrong > 0 ? info.wrong : info.backspaced ? 1 : 0;
-    if (count === 0) continue;
+    if (count > 0) counts.set(wordIndex, count);
+  }
+  return counts;
+}
+
+/**
+ * Words that had at least one error in a test, including typos that were later corrected.
+ * Count = wrong keystrokes in the word (space/Tab excluded); a backspace alone counts as 1.
+ */
+export function wordsWithErrors(
+  keystrokes: KeystrokeEvent[],
+  targetWords: string[]
+): WordErrorCount[] {
+  const merged = new Map<string, number>();
+  for (const [wordIndex, count] of errorsByWordIndex(keystrokes)) {
     const target = targetWords[wordIndex];
     if (!target) continue;
     const word = normalizeWord(target);
@@ -98,4 +110,63 @@ export function rankWordErrors(
     })
     .slice(0, topN)
     .map(([word, entry]) => ({ word, entry }));
+}
+
+export interface ProblemWordSummary {
+  word: string;       // normalized word
+  count: number;      // times the word was mistyped (once per occurrence in a test)
+  lastSeenAt: number; // createdAt (ms) of the most recent test it was mistyped in
+}
+
+/** The parts of a TestResult that problemWordsFromResults reads. */
+export interface ProblemWordSource {
+  targetWords?: string[];
+  typedWords?: string[];
+  keystrokeTimings?: KeystrokeEvent[];
+  createdAt: Date | string | number;
+}
+
+/**
+ * Words mistyped across a set of test results, most-missed first.
+ *
+ * An occurrence of a word counts once if it had any wrong keystroke (even if corrected)
+ * or if the word as finally typed differs from the target. Words the test never reached,
+ * and a trailing word the timer cut off mid-way, don't count. Needs `targetWords` on each
+ * result (see hydrateTargetWords); results without them are skipped.
+ */
+export function problemWordsFromResults(results: ProblemWordSource[]): ProblemWordSummary[] {
+  const summaries = new Map<string, ProblemWordSummary>();
+
+  for (const result of results) {
+    const targetWords = result.targetWords;
+    if (!targetWords || targetWords.length === 0) continue;
+    const typedWords = result.typedWords ?? [];
+    const seenAtRaw = new Date(result.createdAt).getTime();
+    const seenAt = Number.isFinite(seenAtRaw) ? seenAtRaw : 0;
+
+    const errorIndices = new Set(errorsByWordIndex(result.keystrokeTimings ?? []).keys());
+    typedWords.forEach((typed, i) => {
+      const target = targetWords[i];
+      if (!typed || !target || typed === target) return;
+      // The last typed word of a timed test is usually cut off by the timer, not mistyped.
+      if (i === typedWords.length - 1 && target.startsWith(typed)) return;
+      errorIndices.add(i);
+    });
+
+    for (const i of errorIndices) {
+      const word = normalizeWord(targetWords[i] ?? '');
+      if (!word) continue;
+      const existing = summaries.get(word);
+      if (existing) {
+        existing.count += 1;
+        existing.lastSeenAt = Math.max(existing.lastSeenAt, seenAt);
+      } else {
+        summaries.set(word, { word, count: 1, lastSeenAt: seenAt });
+      }
+    }
+  }
+
+  return Array.from(summaries.values()).sort((a, b) =>
+    b.count !== a.count ? b.count - a.count : b.lastSeenAt - a.lastSeenAt
+  );
 }

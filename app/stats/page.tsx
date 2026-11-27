@@ -3,13 +3,12 @@
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { TestResult } from '@/lib/types';
-import { getTestResultsByUser, deleteTestResult, restoreTestResult } from '@/lib/db';
+import { getTestResultsByUser, deleteTestResult, restoreTestResult, hydrateTargetWords } from '@/lib/db';
 import { useUserStore } from '@/store/user-store';
 import { StatsTable } from '@/components/stats/StatsTable';
 import { WPMChart } from '@/components/charts/WPMChart';
 import { AccuracyChart } from '@/components/charts/AccuracyChart';
 import { AggregateAnalytics } from '@/components/charts/AggregateAnalytics';
-import { ProblematicWords } from '@/components/charts/ProblematicWords';
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { Tag, X } from 'lucide-react';
 import { getDailyStreakInfo, DailyStreakInfo } from '@/lib/db/daily-streaks';
@@ -25,6 +24,7 @@ export default function StatsPage() {
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [isLabelsExpanded, setIsLabelsExpanded] = useState(false);
   const [streakInfo, setStreakInfo] = useState<DailyStreakInfo | null>(null);
+  const [hydrating, setHydrating] = useState(false);
   const { currentUserId } = useUserStore();
 
   useEffect(() => {
@@ -44,9 +44,20 @@ export default function StatsPage() {
       ]);
       setResults(allResults);
       setStreakInfo(streak);
+      setLoading(false);
+
+      // Results don't store their word list; resolve it from testContents so the
+      // per-word sections (problem words, aggregate analytics) can analyze them.
+      setHydrating(true);
+      try {
+        setResults(await hydrateTargetWords(allResults));
+      } catch (error) {
+        console.error('Failed to load test content for word analysis:', error);
+      } finally {
+        setHydrating(false);
+      }
     } catch (error) {
       console.error('Failed to load test results:', error);
-    } finally {
       setLoading(false);
     }
   };
@@ -293,13 +304,10 @@ export default function StatsPage() {
             <StatsTable results={filteredResults} onDeleteTest={handleDeleteTest} onRestoreTest={handleRestoreTest} />
 
             {/* Aggregate Analytics */}
-            <AggregateAnalytics results={filteredResults} />
+            <AggregateAnalytics results={filteredResults} isLoading={hydrating} />
 
-            {/* Cross-test Problem Words */}
-            {currentUserId && <ProblemWords userId={currentUserId} />}
-
-            {/* Problematic Words */}
-            <ProblematicWords results={filteredResults} />
+            {/* Problem Words */}
+            <ProblemWords results={filteredResults} isLoading={hydrating} />
           </div>
         )}
       </div>

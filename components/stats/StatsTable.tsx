@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { TestResult } from '@/lib/types';
@@ -159,7 +160,7 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
                   <div className="flex items-center gap-2">
                     <Zap className="w-3.5 h-3.5 text-editor-accent" />
                     <span className="font-mono font-bold">
-                      {result.wpm}
+                      {formatNumber(result.wpm)}
                     </span>
                   </div>
                 </td>
@@ -176,10 +177,10 @@ export function StatsTable({ results, onDeleteTest, onRestoreTest }: StatsTableP
                     />
                     <div className="text-xs">
                       <div className="font-mono font-bold">
-                        {result.accuracy}% word
+                        {formatNumber(result.accuracy)}% word
                       </div>
                       <div className="font-mono text-editor-muted">
-                        {result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : '—'} char
+                        {result.perCharacterAccuracy !== undefined ? `${formatNumber(result.perCharacterAccuracy)}%` : '—'} char
                       </div>
                     </div>
                   </div>

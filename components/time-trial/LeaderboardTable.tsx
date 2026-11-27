@@ -3,6 +3,7 @@
  * Displays rankings with trophy icons for top 3 and current user highlighting
  */
 
+import { formatNumber } from '@/lib/utils';
 import { LeaderboardEntry } from '@/lib/types';
 import {
   formatTimeTrialTime,
@@ -117,7 +118,7 @@ export function LeaderboardTable({
                       entry.isCurrentUser ? 'text-yellow-400' : 'text-gray-300'
                     }`}
                   >
-                    {entry.wpm}
+                    {formatNumber(entry.wpm)}
                   </span>
                 </td>
                 <td className="py-3 px-4 text-right">

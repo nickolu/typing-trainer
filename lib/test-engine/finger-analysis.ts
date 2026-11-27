@@ -189,7 +189,7 @@ export function analyzeFingers(keystrokeSets: KeystrokeEvent[][]): FingerReport 
       char,
       finger: getFingerForChar(char)!,
       samples: acc.intervals.length,
-      medianMs: med,
+      medianMs: med === null ? null : Math.round(med),
       attempts: acc.attempts,
       errors: acc.errors,
       accuracy: acc.attempts > 0 ? round1(((acc.attempts - acc.errors) / acc.attempts) * 100) : null,

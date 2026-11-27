@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
@@ -132,7 +133,7 @@ export default function LeaderboardPage() {
                       {entry.displayName}
                     </td>
                     <td className="px-6 py-4 text-right text-editor-fg font-mono font-bold">
-                      {entry.wpmScore}
+                      {entry.wpmScore != null ? formatNumber(entry.wpmScore) : '—'}
                     </td>
                   </tr>
                 ))}

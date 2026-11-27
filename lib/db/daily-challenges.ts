@@ -10,8 +10,6 @@ import {
   setDoc,
   query,
   where,
-  orderBy,
-  limit as firestoreLimit,
   Timestamp,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase-config';
@@ -124,12 +122,17 @@ export async function getDailyChallengeScore(
 
 /**
  * Get leaderboard for a specific date and mode.
- * Only includes entries with accuracy >= 95
- * Sorted by WPM desc, accuracy desc as tiebreaker
- * Limit 100
+ * Sorted by WPM desc, accuracy desc as tiebreaker; equal WPM shares a rank.
  *
- * For 'passage' mode: includes legacy docs (no mode field) and new docs with mode='passage'.
- * For other modes: filters by mode field.
+ * Reads every score for the date with a single equality filter, which Firestore serves
+ * from its automatic single-field index, then filters by mode and sorts in memory. This
+ * deliberately avoids server-side orderBy/limit: those need a composite index to be
+ * deployed, and when it isn't the query fails and the board looks empty.
+ *
+ * For 'passage' mode: includes legacy docs (no mode field) and docs with mode='passage'.
+ * For other modes: only docs with that mode.
+ *
+ * Throws if the read fails so callers can tell "no scores yet" from "couldn't load".
  */
 export async function getDailyLeaderboard(
   date: string,
@@ -137,110 +140,60 @@ export async function getDailyLeaderboard(
   currentUserId?: string,
   mode: DailyChallengeMode = 'passage'
 ): Promise<DailyLeaderboardEntry[]> {
-  try {
-    const db = getFirebaseDb();
-    const scoresRef = collection(db, DAILY_CHALLENGE_SCORES_COLLECTION);
+  const db = getFirebaseDb();
+  const scoresRef = collection(db, DAILY_CHALLENGE_SCORES_COLLECTION);
+  const snapshot = await getDocs(query(scoresRef, where('date', '==', date)));
 
-    type RawEntry = {
-      userId: string;
-      displayName: string;
-      wpm: number;
-      accuracy: number;
-      completionTime: number;
-    };
+  type RawEntry = Omit<DailyLeaderboardEntry, 'rank' | 'isCurrentUser'>;
+  const rawEntries: RawEntry[] = [];
 
-    const rawEntries: RawEntry[] = [];
-    const seenIds = new Set<string>();
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    const docMode: string | undefined = data.mode;
+    const matchesMode =
+      mode === 'passage' ? docMode === undefined || docMode === 'passage' : docMode === mode;
+    if (!matchesMode) return;
+    rawEntries.push({
+      userId: data.userId,
+      displayName: data.displayName || 'Anonymous',
+      wpm: data.wpm || 0,
+      accuracy: data.accuracy || 0,
+      completionTime: data.completionTime || 0,
+    });
+  });
 
-    if (mode === 'passage') {
-      // Query all docs for this date (includes legacy docs without mode field).
-      // Filter client-side: keep docs with mode='passage' or no mode field.
-      const q = query(
-        scoresRef,
-        where('date', '==', date),
-        orderBy('wpm', 'desc'),
-        firestoreLimit(maxResults)
-      );
-      const snapshot = await getDocs(q);
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const docMode: string | undefined = data.mode;
-        if ((docMode === undefined || docMode === 'passage') && !seenIds.has(docSnap.id)) {
-          seenIds.add(docSnap.id);
-          rawEntries.push({
-            userId: data.userId,
-            displayName: data.displayName || 'Anonymous',
-            wpm: data.wpm || 0,
-            accuracy: data.accuracy || 0,
-            completionTime: data.completionTime || 0,
-          });
-        }
-      });
-    } else {
-      const q = query(
-        scoresRef,
-        where('date', '==', date),
-        where('mode', '==', mode),
-        orderBy('wpm', 'desc'),
-        firestoreLimit(maxResults)
-      );
-      const snapshot = await getDocs(q);
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (!seenIds.has(docSnap.id)) {
-          seenIds.add(docSnap.id);
-          rawEntries.push({
-            userId: data.userId,
-            displayName: data.displayName || 'Anonymous',
-            wpm: data.wpm || 0,
-            accuracy: data.accuracy || 0,
-            completionTime: data.completionTime || 0,
-          });
-        }
-      });
+  // Sort by wpm desc, then accuracy desc as tiebreaker
+  rawEntries.sort((a, b) => {
+    if (b.wpm !== a.wpm) return b.wpm - a.wpm;
+    return b.accuracy - a.accuracy;
+  });
+
+  const trimmed = rawEntries.slice(0, maxResults);
+
+  // Assign ranks with tie handling
+  const entries: DailyLeaderboardEntry[] = [];
+  let currentRank = 1;
+  let previousWpm: number | null = null;
+  let sameRankCount = 0;
+
+  trimmed.forEach((entry) => {
+    if (previousWpm !== null && entry.wpm === previousWpm) {
+      sameRankCount++;
+    } else if (previousWpm !== null) {
+      currentRank += sameRankCount + 1;
+      sameRankCount = 0;
     }
 
-    // Sort by wpm desc, then accuracy desc as tiebreaker
-    rawEntries.sort((a, b) => {
-      if (b.wpm !== a.wpm) return b.wpm - a.wpm;
-      return b.accuracy - a.accuracy;
+    entries.push({
+      ...entry,
+      rank: currentRank,
+      isCurrentUser: currentUserId === entry.userId,
     });
 
-    // Trim to maxResults
-    const trimmed = rawEntries.slice(0, maxResults);
+    previousWpm = entry.wpm;
+  });
 
-    // Assign ranks with tie handling
-    const entries: DailyLeaderboardEntry[] = [];
-    let currentRank = 1;
-    let previousWpm: number | null = null;
-    let sameRankCount = 0;
-
-    trimmed.forEach((entry) => {
-      if (previousWpm !== null && entry.wpm === previousWpm) {
-        sameRankCount++;
-      } else if (previousWpm !== null) {
-        currentRank += sameRankCount + 1;
-        sameRankCount = 0;
-      }
-
-      entries.push({
-        rank: currentRank,
-        userId: entry.userId,
-        displayName: entry.displayName,
-        wpm: entry.wpm,
-        accuracy: entry.accuracy,
-        completionTime: entry.completionTime,
-        isCurrentUser: currentUserId === entry.userId,
-      });
-
-      previousWpm = entry.wpm;
-    });
-
-    return entries;
-  } catch (error) {
-    console.error('Failed to get daily leaderboard:', error);
-    return [];
-  }
+  return entries;
 }
 
 /**

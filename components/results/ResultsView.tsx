@@ -1,5 +1,6 @@
 "use client";
 
+import { formatNumber } from '@/lib/utils';
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -387,7 +388,7 @@ export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
     const url = `${window.location.origin}/challenge/${result.id}`;
     const lines = [
       `CunningType \u2328\uFE0F`,
-      `${result.wpm} WPM | ${result.accuracy}% Accuracy`,
+      `${formatNumber(result.wpm)} WPM | ${formatNumber(result.accuracy)}% Accuracy`,
       `Can you beat me?`,
       url,
     ];
@@ -553,17 +554,17 @@ export function ResultsView({ result, isOwner = true }: ResultsViewProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <StatsCard
             label="Words Per Minute"
-            value={result.wpm}
+            value={formatNumber(result.wpm)}
             icon={<Zap className="w-8 h-8" />}
           />
           <StatsCard
             label="Per-Word Accuracy"
-            value={`${result.accuracy}%`}
+            value={`${formatNumber(result.accuracy)}%`}
             icon={<Target className="w-8 h-8" />}
           />
           <StatsCard
             label="Per-Character Accuracy"
-            value={result.perCharacterAccuracy !== undefined ? `${result.perCharacterAccuracy}%` : "—"}
+            value={result.perCharacterAccuracy !== undefined ? `${formatNumber(result.perCharacterAccuracy)}%` : "—"}
             icon={<Target className="w-8 h-8" />}
           />
         </div>
