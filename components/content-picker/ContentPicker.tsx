@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useSettingsStore, ContentStyle } from '@/store/settings-store';
+import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { ContentOptionsModal } from '@/components/settings/ContentOptionsModal';
 import { Lock } from 'lucide-react';
@@ -23,7 +23,7 @@ const aiMainOptions: { value: ContentStyle; label: string; description: string }
 ];
 
 export function ContentPicker() {
-  const { defaultContentStyle, setDefaultContentStyle, setHasUserSelectedContent } = useSettingsStore();
+  const { defaultContentStyle, setDefaultContentStyle, setHasUserSelectedContent, setAiGenerationRequested } = useSettingsStore();
   const { currentUserId } = useUserStore();
   const [showModal, setShowModal] = useState(false);
 
@@ -34,11 +34,15 @@ export function ContentPicker() {
       return;
     }
     setDefaultContentStyle(style);
+    // Explicit user action: allow a single AI generation for this choice
+    setAiGenerationRequested(isAIContentStyle(style));
     setHasUserSelectedContent(true);
   };
 
   const handleModalSave = (style?: ContentStyle) => {
+    const chosen = style ?? defaultContentStyle;
     if (style) setDefaultContentStyle(style);
+    setAiGenerationRequested(isAIContentStyle(chosen));
     setHasUserSelectedContent(true);
     setShowModal(false);
   };

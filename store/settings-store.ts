@@ -25,6 +25,10 @@ interface SettingsState {
   // Content settings
   defaultContentStyle: ContentStyle;
   hasUserSelectedContent: boolean;
+  // Transient (not persisted): set when the user explicitly picks an AI style on the content
+  // picker. TypingTest only auto-generates AI content while this is true, so a persisted AI
+  // style never generates on page load or when navigating back home.
+  aiGenerationRequested: boolean;
   customText: string; // User-provided custom text for typing practice
   customTextRepeat: CustomTextRepeat; // How many times to repeat custom text
   llmModel: string;
@@ -46,6 +50,9 @@ interface SettingsState {
   setShowPracticeHighlights: (enabled: boolean) => void;
   setDefaultContentStyle: (style: ContentStyle) => void;
   setHasUserSelectedContent: (value: boolean) => void;
+  setAiGenerationRequested: (value: boolean) => void;
+  // Back to the first-visit state: no content selected, default style (drops time-trial / AI modes)
+  clearContentSelection: () => void;
   setCustomText: (text: string) => void;
   setCustomTextRepeat: (repeat: CustomTextRepeat) => void;
   setLlmModel: (model: string) => void;
@@ -73,6 +80,7 @@ const defaultSettings = {
   showPracticeHighlights: true,
   defaultContentStyle: 'random' as ContentStyle,
   hasUserSelectedContent: false,
+  aiGenerationRequested: false,
   customText: '',
   customTextRepeat: 'once' as CustomTextRepeat,
   llmModel: 'gpt-6-luna',
@@ -113,6 +121,15 @@ export const useSettingsStore = create<SettingsState>()(
 
       setHasUserSelectedContent: (value) => set({ hasUserSelectedContent: value }),
 
+      setAiGenerationRequested: (value) => set({ aiGenerationRequested: value }),
+
+      clearContentSelection: () =>
+        set({
+          defaultContentStyle: defaultSettings.defaultContentStyle,
+          hasUserSelectedContent: false,
+          aiGenerationRequested: false,
+        }),
+
       setCustomText: (text) => set({ customText: text }),
 
       setCustomTextRepeat: (repeat) => set({ customTextRepeat: repeat }),
@@ -139,7 +156,7 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'typing-trainer-settings',
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { challengeMode, setChallengeMode, ...rest } = state;
+        const { challengeMode, setChallengeMode, aiGenerationRequested, ...rest } = state;
         return rest;
       },
     }
