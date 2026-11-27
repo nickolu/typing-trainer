@@ -5,6 +5,8 @@ import { useSettingsStore, ContentStyle, isAIContentStyle } from '@/store/settin
 import { useUserStore } from '@/store/user-store';
 import { X, BookOpen, Sparkles, Target, Lock, Award, Trophy, FileText } from 'lucide-react';
 import { TimeTrialLeaderboardModal } from '@/components/time-trial/TimeTrialLeaderboardModal';
+import { ModelSelector } from './ModelSelector';
+import { resolveLlmModel } from '@/lib/llm/models';
 
 interface ContentOptionsModalProps {
   isOpen: boolean;
@@ -123,11 +125,7 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
     }
   }, [isOpen, defaultContentStyle]);
 
-  const modelOptions = [
-    { value: 'gpt-6-luna', label: 'GPT-6 Luna (Default — Fast & Cheap)' },
-    { value: 'gpt-6-sol', label: 'GPT-6 Sol (Recommended)' },
-    { value: 'gpt-6-astra', label: 'GPT-6 Astra (Best Quality)' },
-  ];
+  const selectedModel = resolveLlmModel(llmModel);
 
   const handleAddSequence = () => {
     // Don't trim - preserve all spaces including leading/trailing
@@ -501,30 +499,33 @@ export function ContentOptionsModal({ isOpen, onClose, onSave, onBenchmarkSelect
                     max="1"
                     step="0.1"
                     value={llmTemperature}
+                    disabled={!selectedModel.supportsTemperature}
                     onChange={(e) => {
                       const val = parseFloat(e.target.value);
                       if (!isNaN(val) && val >= 0 && val <= 1) {
                         setLlmTemperature(val);
                       }
                     }}
-                    className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
+                  {!selectedModel.supportsTemperature && (
+                    <p className="text-xs text-editor-muted mt-1">
+                      {selectedModel.label} manages its own sampling; temperature is ignored.
+                    </p>
+                  )}
                 </div>
 
                 {/* Model Selection */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Model</label>
-                  <select
+                  <ModelSelector
                     value={llmModel}
-                    onChange={(e) => setLlmModel(e.target.value)}
+                    onChange={setLlmModel}
                     className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  >
-                    {modelOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
+                  />
+                  <p className="text-xs text-editor-muted mt-1">
+                    Also available on the Settings page.
+                  </p>
                 </div>
               </div>
 

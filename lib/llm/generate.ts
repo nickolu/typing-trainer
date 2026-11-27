@@ -1,4 +1,7 @@
-import OpenAI from 'openai';
+import { generateText, Output } from 'ai';
+import { z } from 'zod';
+import { resolveLlmModel, DEFAULT_LLM_MODEL } from './models';
+import { getLanguageModel, getProviderConfigError, getProviderOptions } from './provider';
 
 export interface GenerateContentOptions {
   model?: string;
@@ -124,32 +127,105 @@ function randomTopic(): string {
   return topics[Math.floor(Math.random() * topics.length)];
 }
 
+const contentSchema = z.object({
+  title: z.string().describe('A short 2-5 word descriptive title for the passage'),
+  text: z.string().describe('The typing passage text'),
+});
+
+const DEFAULT_MAX_TOKENS = 4096;
+
+interface RunGenerationArgs {
+  modelId?: string;
+  temperature?: number;
+  maxTokens?: number;
+  system: string;
+  prompt: string;
+  fallbackTitle: string;
+  errorPrefix: string;
+}
+
 /**
- * Generate typing test content using OpenAI (server-side only)
+ * Run a structured generation against the selected model via the Vercel AI SDK.
+ * Handles provider resolution, API-key checks and response validation.
+ */
+// Keep generated passages typeable: no curly quotes, em/en dashes or ellipsis characters.
+const ASCII_ONLY_INSTRUCTION =
+  'Use only plain ASCII characters: straight quotes and apostrophes, regular hyphens, three periods instead of an ellipsis character, and no em dashes or en dashes.';
+
+async function runGeneration({
+  modelId,
+  temperature,
+  maxTokens = DEFAULT_MAX_TOKENS,
+  system,
+  prompt,
+  fallbackTitle,
+  errorPrefix,
+}: RunGenerationArgs): Promise<GenerateContentResult> {
+  const model = resolveLlmModel(modelId);
+
+  const configError = getProviderConfigError(model);
+  if (configError) {
+    throw new Error(configError);
+  }
+
+  const fullPrompt = `${prompt.trim()} ${ASCII_ONLY_INSTRUCTION}`;
+
+  try {
+    console.log(`[${model.id}] Prompt:`, fullPrompt);
+    const result = await generateText({
+      model: getLanguageModel(model),
+      system,
+      prompt: fullPrompt,
+      maxOutputTokens: maxTokens,
+      // Only send temperature to models that honour it; others reject or ignore it.
+      ...(model.supportsTemperature && temperature !== undefined ? { temperature } : {}),
+      providerOptions: getProviderOptions(model),
+      output: Output.object({
+        schema: contentSchema,
+        name: 'typing_passage',
+        description: 'A typing test passage with a short title',
+      }),
+    });
+
+    const parsed = result.output;
+    const text = parsed?.text?.trim();
+
+    if (!text) {
+      throw new Error('No text content in response');
+    }
+
+    const tokensUsed = (result.usage.inputTokens ?? 0) + (result.usage.outputTokens ?? 0);
+
+    return {
+      text,
+      title: parsed.title?.trim() || fallbackTitle,
+      model: model.id,
+      tokensUsed,
+    };
+  } catch (error) {
+    console.error(`${model.provider} API error:`, error);
+    throw new Error(
+      `${errorPrefix}: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
+  }
+}
+
+/**
+ * Generate typing test content using the selected AI model (server-side only)
  */
 export async function generateTypingContent(
   options: GenerateContentOptions = {}
 ): Promise<GenerateContentResult> {
   const {
-    model = 'gpt-4o-mini',
+    model = DEFAULT_LLM_MODEL,
     temperature = 0.7,
-    maxTokens = 500,
+    maxTokens,
     topic,
     style = 'prose',
     customPrompt,
     focusSequences = [],
     minWords = 150,
   } = options;
-
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is not set');
-  }
-
-  const openai = new OpenAI({
-    apiKey,
-  });
 
   // Build the prompt based on style and options
   let prompt = '';
@@ -195,64 +271,16 @@ export async function generateTypingContent(
     prompt += `${customPrompt} `;
   }
 
-  // Final instructions
-  prompt += `Use only plain ASCII characters: straight quotes and apostrophes, regular hyphens, three periods instead of an ellipsis character, and no em dashes or en dashes. `;
-  prompt += `Return the response in JSON format with two fields: "title" (a short 2-5 word descriptive title for the content) and "text" (the passage text). Example: {"title": "The Future of AI", "text": "Your passage here..."}.`;
-
-  try {
-    console.log('Prompt:', prompt);
-    const completion = await openai.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a helpful assistant that generates typing test content. Generate natural, flowing text suitable for typing practice. Always respond in JSON format with "title" and "text" fields.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      ...(model.startsWith('gpt-4') ? { temperature } : {}),
-      max_completion_tokens: maxTokens,
-      response_format: { type: "json_object" },
-    });
-
-    const responseText = completion.choices[0]?.message?.content?.trim() || '';
-    const tokensUsed = completion.usage?.total_tokens || 0;
-
-    if (!responseText) {
-      throw new Error('No content generated from OpenAI');
-    }
-
-    // Parse JSON response
-    let parsed: { title?: string; text?: string };
-    try {
-      parsed = JSON.parse(responseText);
-    } catch (e) {
-      throw new Error('Failed to parse JSON response from OpenAI');
-    }
-
-    if (!parsed.text) {
-      throw new Error('No text content in response');
-    }
-
-    // Use generated title or fallback
-    const title = parsed.title || 'Generated Content';
-
-    return {
-      text: parsed.text,
-      title,
-      model: completion.model,
-      tokensUsed,
-    };
-  } catch (error) {
-    console.error('OpenAI API error:', error);
-    throw new Error(
-      `Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
-  }
+  return runGeneration({
+    modelId: model,
+    temperature,
+    maxTokens,
+    system:
+      'You are a helpful assistant that generates typing test content. Generate natural, flowing text suitable for typing practice.',
+    prompt: prompt.trim(),
+    fallbackTitle: 'Generated Content',
+    errorPrefix: 'Failed to generate content',
+  });
 }
 
 /**
@@ -303,21 +331,11 @@ export async function generateMistakePractice(
   }
 
   const {
-    model = 'gpt-4o-mini',
+    model = DEFAULT_LLM_MODEL,
     temperature = 0.7,
-    maxTokens = 500,
+    maxTokens,
     minWords = 150,
   } = options;
-
-  const apiKey = process.env.OPENAI_API_KEY;
-
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is not set');
-  }
-
-  const openai = new OpenAI({
-    apiKey,
-  });
 
   // Build a detailed prompt for mistake-focused practice
   let prompt = `Generate a typing test passage with at least ${minWords} words that will help the user practice correcting their typing mistakes. `;
@@ -343,60 +361,16 @@ export async function generateMistakePractice(
   }
 
   // Final instructions
-  prompt += `Use only plain ASCII characters: straight quotes and apostrophes, regular hyphens, three periods instead of an ellipsis character, and no em dashes or en dashes. `;
-  prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting. Return the response in JSON format with two fields: "title" (a short 2-5 word descriptive title for the content) and "text" (the passage text).`;
+  prompt += `The text should be natural, coherent, and suitable for typing practice. Avoid special characters, code blocks, or formatting.`;
 
-  try {
-    const completion = await openai.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are a helpful assistant that generates typing test content focused on helping users correct their specific typing mistakes. Create natural, flowing text that strategically includes problematic sequences and characters. Always respond in JSON format with "title" and "text" fields.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      ...(model.startsWith('gpt-4') ? { temperature } : {}),
-      max_completion_tokens: maxTokens,
-      response_format: { type: "json_object" },
-    });
-
-    const responseText = completion.choices[0]?.message?.content?.trim() || '';
-    const tokensUsed = completion.usage?.total_tokens || 0;
-
-    if (!responseText) {
-      throw new Error('No content generated from OpenAI');
-    }
-
-    // Parse JSON response
-    let parsed: { title?: string; text?: string };
-    try {
-      parsed = JSON.parse(responseText);
-    } catch (e) {
-      throw new Error('Failed to parse JSON response from OpenAI');
-    }
-
-    if (!parsed.text) {
-      throw new Error('No text content in response');
-    }
-
-    // Use generated title or fallback
-    const title = parsed.title || 'Practice Content';
-
-    return {
-      text: parsed.text,
-      title,
-      model: completion.model,
-      tokensUsed,
-    };
-  } catch (error) {
-    console.error('OpenAI API error:', error);
-    throw new Error(
-      `Failed to generate mistake practice content: ${error instanceof Error ? error.message : 'Unknown error'}`
-    );
-  }
+  return runGeneration({
+    modelId: model,
+    temperature,
+    maxTokens,
+    system:
+      'You are a helpful assistant that generates typing test content focused on helping users correct their specific typing mistakes. Create natural, flowing text that strategically includes problematic sequences and characters.',
+    prompt,
+    fallbackTitle: 'Practice Content',
+    errorPrefix: 'Failed to generate mistake practice content',
+  });
 }

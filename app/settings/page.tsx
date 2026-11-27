@@ -4,16 +4,37 @@ import React from 'react';
 import { useSettingsStore } from '@/store/settings-store';
 import { useUserStore } from '@/store/user-store';
 import { KeyboardSelector } from '@/components/settings/KeyboardSelector';
+import { ModelSelector } from '@/components/settings/ModelSelector';
+import { resolveLlmModel } from '@/lib/llm/models';
+import { Sparkles } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { showSpeedometer, showWPMOnSpeedometer, setShowSpeedometer, setShowWPMOnSpeedometer, currentKeyboard, setCurrentKeyboard, wpmGoal, setWpmGoal } = useSettingsStore();
+  const {
+    showSpeedometer,
+    showWPMOnSpeedometer,
+    setShowSpeedometer,
+    setShowWPMOnSpeedometer,
+    currentKeyboard,
+    setCurrentKeyboard,
+    wpmGoal,
+    setWpmGoal,
+    llmModel,
+    llmTemperature,
+    setLlmModel,
+    setLlmTemperature,
+  } = useSettingsStore();
+  const selectedModel = resolveLlmModel(llmModel);
   const { isAuthenticated } = useUserStore();
   const [showSaved, setShowSaved] = React.useState(false);
 
-  const handleSettingChange = (setter: (value: boolean) => void, value: boolean) => {
-    setter(value);
+  const flashSaved = () => {
     setShowSaved(true);
     setTimeout(() => setShowSaved(false), 2000);
+  };
+
+  const handleSettingChange = (setter: (value: boolean) => void, value: boolean) => {
+    setter(value);
+    flashSaved();
   };
 
   return (
@@ -126,6 +147,67 @@ export default function SettingsPage() {
                   className="w-24 px-3 py-2 bg-editor-bg border border-editor-muted rounded text-editor-fg text-right font-mono focus:ring-2 focus:ring-editor-accent focus:border-editor-accent outline-none"
                 />
                 <span className="text-sm text-editor-muted">WPM</span>
+              </div>
+            </div>
+
+            {/* AI Content Generation */}
+            <div className="pt-6 border-t border-editor-muted/30">
+              <div className="flex items-center gap-2 mb-1">
+                <Sparkles className="w-4 h-4 text-editor-accent" />
+                <h3 className="font-medium text-editor-fg">AI Content Generation</h3>
+              </div>
+              <p className="text-sm text-editor-muted mb-4">
+                Choose which model generates AI typing passages. API keys are configured on the server.
+              </p>
+
+              <div className="space-y-4">
+                {/* Model */}
+                <div>
+                  <label htmlFor="llm-model" className="text-sm font-medium text-editor-fg mb-1 block">
+                    Model
+                  </label>
+                  <ModelSelector
+                    id="llm-model"
+                    value={llmModel}
+                    onChange={(model) => {
+                      setLlmModel(model);
+                      flashSaved();
+                    }}
+                  />
+                  <p className="text-xs text-editor-muted mt-1">
+                    Claude Haiku 5.5 is the default: fast and inexpensive. Pick a higher tier for richer passages.
+                  </p>
+                </div>
+
+                {/* Temperature */}
+                <div>
+                  <label htmlFor="llm-temperature" className="text-sm font-medium text-editor-fg mb-1 block">
+                    Temperature: {llmTemperature.toFixed(1)}
+                  </label>
+                  <input
+                    id="llm-temperature"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={llmTemperature}
+                    disabled={!selectedModel.supportsTemperature}
+                    onChange={(e) => {
+                      setLlmTemperature(parseFloat(e.target.value));
+                      flashSaved();
+                    }}
+                    className="w-full accent-editor-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <div className="flex justify-between text-xs text-editor-muted mt-1">
+                    <span>More focused (0.0)</span>
+                    <span>More creative (1.0)</span>
+                  </div>
+                  {!selectedModel.supportsTemperature && (
+                    <p className="text-xs text-editor-muted mt-1">
+                      {selectedModel.label} manages its own sampling; temperature is ignored for this model.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

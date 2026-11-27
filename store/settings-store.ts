@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { DEFAULT_LLM_MODEL, resolveLlmModelId } from '@/lib/llm/models';
 
 export type TestDuration = 15 | 30 | 60 | 120 | 'content-length';
 // Static content from library
@@ -83,7 +84,7 @@ const defaultSettings = {
   aiGenerationRequested: false,
   customText: '',
   customTextRepeat: 'once' as CustomTextRepeat,
-  llmModel: 'gpt-6-luna',
+  llmModel: DEFAULT_LLM_MODEL,
   llmTemperature: 0.7,
   customPrompt: '',
   customSequences: [] as string[],
@@ -134,7 +135,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       setCustomTextRepeat: (repeat) => set({ customTextRepeat: repeat }),
 
-      setLlmModel: (model) => set({ llmModel: model }),
+      setLlmModel: (model) => set({ llmModel: resolveLlmModelId(model) }),
 
       setLlmTemperature: (temperature) => set({ llmTemperature: temperature }),
 
@@ -154,6 +155,15 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'typing-trainer-settings',
+      version: 1,
+      migrate: (persistedState, version) => {
+        const state = (persistedState ?? {}) as SettingsState;
+        if (version < 1) {
+          // v0 -> v1: model catalog changed (Anthropic added, legacy GPT IDs removed)
+          return { ...state, llmModel: resolveLlmModelId(state.llmModel) };
+        }
+        return state;
+      },
       partialize: (state) => {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { challengeMode, setChallengeMode, aiGenerationRequested, ...rest } = state;
