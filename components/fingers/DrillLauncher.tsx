@@ -11,6 +11,11 @@ import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
 
 export const FINGER_DRILL_LABEL = 'finger-drill';
+/** Per-mode labels so balanced and targeted drills can be compared in the finger analysis. */
+export const DRILL_MODE_LABELS: Record<DrillMode, string> = {
+  balanced: 'finger-drill-balanced',
+  targeted: 'finger-drill-targeted',
+};
 
 interface DrillLauncherProps {
   report: FingerReport;
@@ -34,7 +39,7 @@ export function DrillLauncher({ report }: DrillLauncherProps) {
     if (words.length === 0) return;
 
     const letters = (targets ?? []).flatMap((f) => getLettersForFinger(f));
-    const labels = [FINGER_DRILL_LABEL, ...(currentKeyboard ? [currentKeyboard] : [])];
+    const labels = [FINGER_DRILL_LABEL, DRILL_MODE_LABELS[mode], ...(currentKeyboard ? [currentKeyboard] : [])];
 
     resetTest();
     initializeTest(
@@ -58,6 +63,8 @@ export function DrillLauncher({ report }: DrillLauncherProps) {
         <h2 className="text-xl font-bold mb-1">Drill</h2>
         <p className="text-editor-muted text-sm">
           Drills use your current test duration and save like any other test, so every drill adds to the data above.
+          From now on each drill is labeled <span className="font-mono">{DRILL_MODE_LABELS.balanced}</span> or{' '}
+          <span className="font-mono">{DRILL_MODE_LABELS.targeted}</span>, so you can filter the analysis to either.
         </p>
       </div>
 
