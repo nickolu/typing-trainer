@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateTargetedPractice, generateMistakePractice, GenerateContentOptions } from '@/lib/llm/openai';
+import { resolveLlmModel } from '@/lib/llm/models';
+import { getProviderConfigError } from '@/lib/llm/provider';
+import { generateTargetedPractice, generateMistakePractice, GenerateContentOptions } from '@/lib/llm/generate';
 
 // Force this route to use Node.js runtime (not Edge)
 export const runtime = 'nodejs';
@@ -13,12 +15,10 @@ export async function POST(request: NextRequest) {
       options?: Omit<GenerateContentOptions, 'focusSequences'>;
     };
 
-    // Check if API key is configured server-side
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: 'OpenAI API key is not configured on the server' },
-        { status: 500 }
-      );
+    // Check that the API key for the selected model's provider is configured server-side
+    const configError = getProviderConfigError(resolveLlmModel(options?.model));
+    if (configError) {
+      return NextResponse.json({ error: configError }, { status: 500 });
     }
 
     // Word-error-based practice mode

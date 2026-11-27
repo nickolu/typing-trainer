@@ -22,7 +22,7 @@ A modern, local-first typing speed trainer built with Next.js, TypeScript, and T
 ### 🤖 AI-Powered Content
 - **Multiple content styles**: Prose, quotes, technical, or common phrases
 - **Custom prompts**: Fine-tune AI generation with additional instructions
-- **Model selection**: Choose between GPT-4o Mini, GPT-4o, or GPT-4 Turbo
+- **Model selection**: Choose between Anthropic Claude (Haiku 5.5 default, Sonnet 5.5) and OpenAI GPT-6 models, from the Settings page or the content options modal
 - **Temperature control**: Adjust creativity (0.0 - 1.0)
 
 ### 🎯 Targeted Practice
@@ -44,7 +44,7 @@ A modern, local-first typing speed trainer built with Next.js, TypeScript, and T
 - **Styling**: Tailwind CSS with custom theme
 - **State Management**: Zustand with localStorage persistence
 - **Database**: Firebase Firestore (cloud) + Firebase Auth
-- **AI Integration**: OpenAI API (server-side)
+- **AI Integration**: Vercel AI SDK with Anthropic and OpenAI providers (server-side)
 - **Charts**: Recharts for data visualization
 - **Fonts**: Inter (UI), JetBrains Mono (test content)
 - **Icons**: Lucide React
@@ -54,7 +54,7 @@ A modern, local-first typing speed trainer built with Next.js, TypeScript, and T
 ### Prerequisites
 - Node.js 18+ and npm
 - Firebase account and project (required for authentication and cloud storage)
-- OpenAI API key (optional, only needed for AI-generated content)
+- Anthropic and/or OpenAI API key (optional, only needed for AI-generated content)
 
 ### Installation
 
@@ -70,7 +70,7 @@ npm install
 # See FIREBASE_SETUP.md for detailed instructions
 # Create .env.local file with Firebase credentials:
 cp .env.example .env.local
-# Edit .env.local with your Firebase and OpenAI credentials
+# Edit .env.local with your Firebase, Anthropic and OpenAI credentials
 
 # Run development server
 npm run dev
@@ -128,7 +128,9 @@ typing-trainer/
 │   │   ├── calculations.ts         # WPM, accuracy, sequences
 │   │   └── mistake-analysis.ts     # Mistake pattern analysis
 │   ├── llm/
-│   │   └── openai.ts               # OpenAI integration
+│   │   ├── models.ts               # Model catalog (Anthropic + OpenAI)
+│   │   ├── provider.ts             # Vercel AI SDK provider resolution
+│   │   └── generate.ts             # Content generation
 │   ├── test-content.ts             # 50 static tests
 │   ├── types.ts                    # TypeScript types
 │   └── utils.ts                    # Utility functions

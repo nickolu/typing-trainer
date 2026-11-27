@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useSettingsStore, ContentStyle } from '@/store/settings-store';
 import { Sparkles, Settings2, X } from 'lucide-react';
+import { ModelSelector } from './ModelSelector';
+import { resolveLlmModel } from '@/lib/llm/models';
 
 interface LLMSettingsProps {
   isOpen: boolean;
@@ -19,11 +21,7 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
     setDefaultContentStyle,
   } = useSettingsStore();
 
-  const modelOptions = [
-    { value: 'gpt-6-luna', label: 'GPT-6 Luna (Default — Fast & Cheap)' },
-    { value: 'gpt-6-sol', label: 'GPT-6 Sol (Recommended)' },
-    { value: 'gpt-6-astra', label: 'GPT-6 Astra (Best Quality)' },
-  ];
+  const selectedModel = resolveLlmModel(llmModel);
 
   const styleOptions: { value: ContentStyle; label: string; description: string }[] = [
     { value: 'ai-prose', label: 'Prose', description: 'Literary fiction style' },
@@ -67,7 +65,7 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
               <div className="text-sm">
                 <p className="font-medium mb-1">Server-Side API Key</p>
                 <p className="text-editor-muted text-xs">
-                  The OpenAI API key is configured securely on the server. You can customize the generation preferences below.
+                  API keys are configured securely on the server. You can customize the generation preferences below.
                 </p>
               </div>
             </div>
@@ -76,19 +74,9 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
           {/* Model Selection */}
           <div>
             <label className="block text-sm font-medium mb-2">Model</label>
-            <select
-              value={llmModel}
-              onChange={(e) => setLlmModel(e.target.value)}
-              className="w-full px-3 py-2 bg-editor-bg border border-editor-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-editor-accent"
-            >
-              {modelOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <ModelSelector value={llmModel} onChange={setLlmModel} />
             <p className="text-xs text-editor-muted mt-1">
-              GPT-6 Luna is recommended for cost-effectiveness
+              Claude Haiku 5.5 is recommended for speed and cost-effectiveness
             </p>
           </div>
 
@@ -103,8 +91,9 @@ export function LLMSettings({ isOpen, onClose }: LLMSettingsProps) {
               max="1"
               step="0.1"
               value={llmTemperature}
+              disabled={!selectedModel.supportsTemperature}
               onChange={(e) => setLlmTemperature(parseFloat(e.target.value))}
-              className="w-full"
+              className="w-full disabled:opacity-50"
             />
             <div className="flex justify-between text-xs text-editor-muted mt-1">
               <span>More focused (0.0)</span>

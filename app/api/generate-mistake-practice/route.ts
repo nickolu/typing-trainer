@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateMistakePractice } from '@/lib/llm/openai';
+import { resolveLlmModel } from '@/lib/llm/models';
+import { getProviderConfigError } from '@/lib/llm/provider';
+import { generateMistakePractice } from '@/lib/llm/generate';
 
 // Force this route to use Node.js runtime (not Edge)
 export const runtime = 'nodejs';
@@ -26,6 +28,12 @@ export async function POST(request: NextRequest) {
         { error: 'Maximum 20 sequences allowed' },
         { status: 400 }
       );
+    }
+
+    // Check that the API key for the selected model's provider is configured server-side
+    const configError = getProviderConfigError(resolveLlmModel(options?.model));
+    if (configError) {
+      return NextResponse.json({ error: configError }, { status: 500 });
     }
 
     // Generate practice content
