@@ -22,6 +22,8 @@ import {
   convertTimestampToDate,
   removeUndefinedFields,
 } from './shared';
+import { getTestContent } from './test-content';
+import { normalizeWords } from '@/lib/text/normalize-typing-text';
 
 /**
  * Save a test result
@@ -343,4 +345,52 @@ export async function restoreTestResult(id: string, userId: string): Promise<voi
     console.error('Failed to restore test result:', error);
     throw error;
   }
+}
+
+// Word lists by testContents id, shared across callers so the stats page and the
+// aggregate analytics never fetch the same content twice in a session.
+const targetWordsCache = new Map<string, Promise<string[] | null>>();
+
+function fetchTargetWords(testContentId: string): Promise<string[] | null> {
+  let pending = targetWordsCache.get(testContentId);
+  if (!pending) {
+    pending = getTestContent(testContentId).then((content) =>
+      content?.words ? normalizeWords(content.words) : null
+    );
+    targetWordsCache.set(testContentId, pending);
+  }
+  return pending;
+}
+
+/**
+ * Fill in `targetWords` for results that don't carry them.
+ *
+ * New results store only `testContentId`; the words live in the testContents doc (see
+ * TestResult.targetWords). Per-word analysis (mistyped words, slow sequences) needs the
+ * words, so this resolves each distinct content id once and returns copies of the results
+ * with `targetWords` set. A result is returned unchanged when its content is missing or
+ * when the content has since been rewritten to a different length (it no longer matches
+ * what was typed).
+ */
+export async function hydrateTargetWords(results: TestResult[]): Promise<TestResult[]> {
+  const ids = new Set<string>();
+  for (const r of results) {
+    if ((!r.targetWords || r.targetWords.length === 0) && r.testContentId) {
+      ids.add(r.testContentId);
+    }
+  }
+  if (ids.size === 0) return results;
+
+  const fetched = await Promise.all(
+    Array.from(ids, async (id) => [id, await fetchTargetWords(id)] as const)
+  );
+  const wordsById = new Map(fetched);
+
+  return results.map((r) => {
+    if (r.targetWords && r.targetWords.length > 0) return r;
+    const words = r.testContentId ? wordsById.get(r.testContentId) : null;
+    if (!words) return r;
+    if (r.totalWords && words.length !== r.totalWords) return r;
+    return { ...r, targetWords: words };
+  });
 }

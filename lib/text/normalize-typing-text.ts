@@ -24,3 +24,13 @@ export function normalizeTypingText(text: string): string {
     .normalize('NFKD')
     .replace(COMBINING_MARKS, '');
 }
+
+/**
+ * Normalize each word with normalizeTypingText and re-split on whitespace, since a
+ * mapping (e.g. an em dash to "--") can leave a word containing spaces. This is the
+ * canonical word list a test is typed against; use it wherever targetWords are rebuilt
+ * from stored content so comparisons line up with what the user actually saw.
+ */
+export function normalizeWords(words: string[]): string[] {
+  return words.flatMap((w) => normalizeTypingText(w).split(/\s+/).filter(Boolean));
+}

@@ -1,15 +1,9 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { TestResult } from '@/lib/types';
-import {
-  getAggregateSequenceTimings,
-  getAggregateMistakes,
-  AggregateSequence,
-  AggregateMistakeData,
-} from '@/lib/db';
-import { useUserStore } from '@/store/user-store';
+import { aggregateSequenceTimings, aggregateMistakes } from '@/lib/db';
 import { useTestStore } from '@/store/test-store';
 import { useSettingsStore } from '@/store/settings-store';
 import { AggregateSequenceChart } from './AggregateSequenceChart';
@@ -19,55 +13,24 @@ import { Loader2, Target, BrainCircuit } from 'lucide-react';
 import { getRandomTest, textToWords, calculateRequiredWords } from '@/lib/test-content';
 
 interface AggregateAnalyticsProps {
+  /** Results to analyze — the stats page passes its time- and label-filtered set. */
   results: TestResult[];
+  /** True while the results' word lists are still being resolved. */
+  isLoading?: boolean;
 }
 
-export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
+export function AggregateAnalytics({ results, isLoading = false }: AggregateAnalyticsProps) {
   const router = useRouter();
-  const { currentUserId } = useUserStore();
   const { defaultDuration, llmModel, llmTemperature } = useSettingsStore();
   const { initializeTest, resetTest } = useTestStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const [twoCharSequences, setTwoCharSequences] = useState<AggregateSequence[]>([]);
-  const [threeCharSequences, setThreeCharSequences] = useState<AggregateSequence[]>([]);
-  const [mistakeData, setMistakeData] = useState<AggregateMistakeData>({
-    characterSubstitutions: [],
-    mistakeSequences: [],
-  });
+  // Computed from the results we're given (already filtered and hydrated by the stats
+  // page), so this section reflects the selected time range.
+  const twoCharSequences = useMemo(() => aggregateSequenceTimings(results, 2, 10), [results]);
+  const threeCharSequences = useMemo(() => aggregateSequenceTimings(results, 3, 10), [results]);
+  const mistakeData = useMemo(() => aggregateMistakes(results), [results]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
   const [practiceError, setPracticeError] = useState<string | null>(null);
-
-  // Load aggregate data when results change
-  useEffect(() => {
-    const loadAggregateData = async () => {
-      if (results.length === 0 || !currentUserId) {
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-
-      try {
-        // Load aggregate sequence timings in parallel
-        const [twoChar, threeChar, mistakes] = await Promise.all([
-          getAggregateSequenceTimings(currentUserId, 2, 10),
-          getAggregateSequenceTimings(currentUserId, 3, 10),
-          getAggregateMistakes(currentUserId),
-        ]);
-
-        setTwoCharSequences(twoChar);
-        setThreeCharSequences(threeChar);
-        setMistakeData(mistakes);
-      } catch (error) {
-        console.error('Failed to load aggregate analytics:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadAggregateData();
-  }, [results, currentUserId]);
 
   // Don't show anything if no results
   if (results.length === 0) {
@@ -80,7 +43,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
       <div className="bg-editor-bg border border-editor-muted rounded-lg p-12">
         <div className="flex flex-col items-center justify-center gap-4">
           <Loader2 className="w-8 h-8 animate-spin text-editor-accent" />
-          <p className="text-editor-muted">Analyzing your typing patterns across all tests...</p>
+          <p className="text-editor-muted">Analyzing your typing patterns...</p>
         </div>
       </div>
     );
@@ -96,7 +59,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
     return (
       <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 text-center">
         <p className="text-editor-muted">
-          Complete a few more tests to see aggregate analytics across your typing history!
+          No aggregate analytics for this range yet. Complete a few more tests to see your patterns here.
         </p>
       </div>
     );
@@ -172,7 +135,7 @@ export function AggregateAnalytics({ results }: AggregateAnalyticsProps) {
         <div>
           <h2 className="text-xl font-bold mb-1">Aggregate Analytics</h2>
           <p className="text-editor-muted text-sm">
-            Your typing patterns and common mistakes across all {results.length} test
+            Your typing patterns and common mistakes across these {results.length} test
             {results.length === 1 ? '' : 's'}
           </p>
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { formatNumber } from '@/lib/utils';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useUserStore } from '@/store/user-store';
 import { useTestStore } from '@/store/test-store';
@@ -61,15 +62,18 @@ interface DailyLeaderboardProps {
 function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
   const [entries, setEntries] = useState<DailyLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadLeaderboard() {
       setLoading(true);
+      setError(null);
       try {
         const data = await getDailyLeaderboard(date, 100, currentUserId ?? undefined, 'daily');
         setEntries(data);
       } catch (err) {
         console.error('Failed to load daily leaderboard:', err);
+        setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
@@ -85,9 +89,14 @@ function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
 
       {loading ? (
         <div className="p-8 text-center text-editor-muted">Loading leaderboard...</div>
+      ) : error ? (
+        <div className="p-8 text-center">
+          <p className="text-red-400">Couldn&apos;t load the leaderboard.</p>
+          <p className="text-editor-muted text-sm mt-1">{error}</p>
+        </div>
       ) : entries.length === 0 ? (
         <div className="p-8 text-center text-editor-muted">
-          No qualifying scores yet. Be the first!
+          No scores yet today. Be the first!
         </div>
       ) : (
         <table className="w-full">
@@ -122,9 +131,9 @@ function DailyLeaderboard({ date, currentUserId }: DailyLeaderboardProps) {
                   )}
                 </td>
                 <td className="px-6 py-3 text-right font-mono font-bold text-editor-fg">
-                  <span className={entry.rank <= 3 ? 'text-editor-accent' : ''}>{entry.wpm}</span>
+                  <span className={entry.rank <= 3 ? 'text-editor-accent' : ''}>{formatNumber(entry.wpm)}</span>
                 </td>
-                <td className="px-6 py-3 text-right text-editor-fg">{entry.accuracy}%</td>
+                <td className="px-6 py-3 text-right text-editor-fg">{formatNumber(entry.accuracy)}%</td>
                 <td className="px-6 py-3 text-right text-editor-fg font-mono">
                   {formatTime(entry.completionTime)}
                 </td>
@@ -475,7 +484,7 @@ export default function DailyChallengePage() {
             <div className="bg-editor-bg border border-editor-muted rounded-lg p-8 mb-8">
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <div className="text-3xl font-bold">{completedResult.wpm}</div>
+                  <div className="text-3xl font-bold">{formatNumber(completedResult.wpm)}</div>
                   <div className="text-editor-muted">WPM</div>
                 </div>
                 <div>
@@ -529,7 +538,7 @@ export default function DailyChallengePage() {
               )}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <div className="text-3xl font-bold">{existingScore.wpm}</div>
+                  <div className="text-3xl font-bold">{formatNumber(existingScore.wpm)}</div>
                   <div className="text-editor-muted">WPM</div>
                 </div>
                 <div>
